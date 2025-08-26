@@ -1,0 +1,56 @@
+#!/bin/bash
+# Bash script to enable or disable headless autostart on Linux machines using a systemd service
+
+PROGRAM_PATH="$(dirname "$(readlink -f "$0")")/../depinus"
+PROGRAM_ARGS="--headless"
+SERVICE_NAME="depinus-headless"
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run this script as root (e.g., using sudo)."
+    exit 1
+fi
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 enable | disable"
+    exit 1
+fi
+
+if [ "$1" == "enable" ]; then
+    echo "Enabling autostart via systemd service..."
+    cat > "$SERVICE_FILE" <<EOL
+[Unit]
+Description=Depinus Headless Mode Service
+After=network.target
+
+[Service]
+ExecStart=$PROGRAM_PATH $PROGRAM_ARGS
+Restart=no
+User=$(logname)
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME"
+    systemctl start "$SERVICE_NAME"
+    echo "Autostart enabled. Service created at $SERVICE_FILE and started."
+    exit 0
+fi
+
+if [ "$1" == "disable" ]; then
+    echo "Disabling autostart via systemd service..."
+    if [ -f "$SERVICE_FILE" ]; then
+        systemctl stop "$SERVICE_NAME"
+        systemctl disable "$SERVICE_NAME"
+        rm "$SERVICE_FILE"
+        systemctl daemon-reload
+        echo "Autostart disabled. Service removed from $SERVICE_FILE."
+    else
+        echo "Autostart is not enabled."
+    fi
+    exit 0
+fi
+
+echo "Usage: $0 enable | disable"
+exit 1

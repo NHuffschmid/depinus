@@ -1,0 +1,37 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Depinus backend API",
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "main": "app.js",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "config.ini": "^0.0.60",
+    "express": "^5.1.0",
+    "ini": "^5.0.0",
+    "server": "file:",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "swagger-express-mw": "^0.7.0",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "winston-syslog": "^2.7.1",
+    "ws": "^8.18.3",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "should": "^13.2.3",
+    "supertest": "^7.1.4"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "copy:assets": "node copy-esbuild-assets.js",
+    "build:es": "npm install && esbuild app.js --bundle --platform=node --outfile=dist/server.js && npm run copy:assets",
+    "serve": "node dist/server.js",
+    "test": "swagger project test"
+  }
+}

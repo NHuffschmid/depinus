@@ -1,0 +1,233 @@
+html, body {
+  height: 100%;
+  margin: 0px;
+}
+
+#root {
+  height: 100%;
+  margin: 0px;
+}
+
+.App {
+  text-align: center;
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.App-header {
+  background-color: #282c34;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+.shutdown {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.nav {
+  background-color: #333;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 2rem;
+}
+
+.nav ul {
+  padding: 0rem;
+  margin: 0rem;
+  list-style: none;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.nav a {
+  color: inherit;
+  text-decoration: none;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: .25rem;
+}
+
+.nav li {
+  align-items: center;
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+}
+
+.dashboard {
+  /*background-color: red;*/
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard button {
+  margin: 0.3rem;
+  flex: auto;
+}
+
+.dashboard div {
+  border: 1px solid #333;
+  border-radius: 12px;
+  background-color: #555;
+  color: white;
+  margin: 0.3rem;
+  padding: 0.5rem;
+  flex-basis: 40%;
+}
+
+.dashboard h1 {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.dashboard h2 {
+  font-size: 0.6rem;
+  margin: 0;
+}
+
+.dialog {
+  border: 2px solid #777;
+  padding: 0.3rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-rows: auto 1fr auto;
+}
+
+.dialog .dialog-form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.5rem
+}
+
+.partiture {
+  font-family: "Times New Roman", Times, serif;
+  font-weight: bold;
+}
+
+.progressSlider {
+  height: 1.2rem;
+}
+
+.progressSlider-track {
+  top: 0.5rem;
+  height: 0.5rem;
+  background: #ddd;
+}
+
+.progressSlider-track.progressSlider-track-0 {
+  background: #333;
+}
+
+.progressSlider-thumb {
+  cursor: pointer;
+  top: 0.1rem;
+  background: #555;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 100%;
+}
+
+.settingsSlider {
+  height: 2rem;
+}
+
+.settingsSlider-track {
+  top: 0.5rem;
+  height: 1rem;
+  background: #ddd;
+}
+
+.settingsSlider-thumb {
+  cursor: pointer;
+  color: white;
+  top: 0.2rem;
+  background: #555;
+  width: 3rem;
+  height: 1.7rem;
+  border-radius: 100%;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.menu-header {
+  background-color: #555;
+  color: white;
+  padding: 1rem;
+}
+
+.menu-item {
+  cursor: pointer;
+  padding: 2rem;
+  height: 1.5rem;
+  border-top: 1px solid #777;
+}
+
+.navButton {
+  position: absolute;
+  cursor: pointer;
+  font-size: 2rem;
+  background-color: transparent;
+  color: #111;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px 10px rgb(0, 0, 0);
+}
+
+.navButton:active {
+  transform: translateY(4px);
+}
+
+.treeview .tree,
+.treeview .tree-node-group {
+  font-size: 1.2rem;
+  list-style: none;
+  margin-left: 1rem;
+  padding: 0;
+}
+
+.treeview li.tree-leaf-list-item {
+  margin-left: 16px;
+}
+
+.treeview span {
+  margin-left: 0.3rem;
+}
+
+.treeview .tree-node__leaf {
+  font-size: 0.8rem;
+}
+
+.treeview .checkbox-icon {
+  margin-bottom: -0.2rem;
+}
+
+.treeview .arrow {
+  font-size: 2rem;
+  margin-left: -0.2rem;
+  vertical-align: middle;
+}
+
+.treeview .arrow--open {
+  transform: rotate(90deg);
+}
+
+.warning {
+  background-color: yellow;
+}
+
+.error {
+  background-color: red;
+}

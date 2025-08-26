@@ -1,0 +1,46 @@
+{
+  "name": "electron",
+  "version": "1.0.0",
+  "description": "Desktop version of Depinus",
+  "main": "dist/main.js",
+  "scripts": {
+    "clean": "node scripts/clean.js",
+    "build-piano_daemon": "cd python/depinus && pyinstaller --onefile --strip --clean --hidden-import mido.backends.rtmidi --log-level=WARN piano_daemon.py",
+    "build": "npm install && npm run build-piano_daemon && npm run build:es",
+    "prepackage": "npm run build-piano_daemon && npm install && node scripts/prepackage.js",
+    "postpackage": "node scripts/postpackage.js",
+    "start": "electron .",
+    "startheadless": "electron . --headless",
+    "copy:assets": "node copy-esbuild-assets.js",
+    "build:es": "esbuild main.js --bundle --platform=node --outfile=dist/main.js --external:electron && npm --prefix ./www/server run build:es && npm --prefix ./www/client run build:es && npm run copy:assets",
+    "package-win-x64": "npx electron-packager ./dist depinus --platform=win32 --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon.exe --extra-resource=scripts/autostart.bat --out=package --overwrite && npm run postpackage",
+    "package-linux-x64": "npx electron-packager ./dist depinus --platform=linux --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
+    "package-linux-arm64": "npx electron-packager ./dist depinus --platform=linux --arch=arm64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
+    "release": "node scripts/release.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Norbert Huffschmid",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "debug": "^4.4.1",
+    "ini": "^5.0.0",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8",
+    "multer": "^2.0.2",
+    "parseurl": "^1.3.3",
+    "qs": "^6.14.0",
+    "sqlite3": "^5.1.7",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "electron": "^37.3.1",
+    "electron-packager": "^17.1.2",
+    "esbuild": "^0.25.9",
+    "rcedit": "^4.0.1"
+  }
+}

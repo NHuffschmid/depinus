@@ -1,0 +1,66 @@
+// This script is executed after the Electron app has been packaged.
+// - move the DEPINUS license file from the app directory to the root directory
+// - update copyright owner
+
+const fs = require('fs');
+const path = require('path');
+const logger = require('../logger');
+const { execFileSync } = require('child_process');
+
+function determinePackageFolder(packageDir) {
+    // TODO: same code exists in release.js, refactor to a common module
+    const entries = fs.readdirSync(packageDir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (entry.isDirectory()) {
+            // first (and hopefully only) directory in the package dir
+            return entry.name;
+        }
+    }
+    throw new Error(`No package found in ${packageDir}`);
+}
+
+const packageFolder = determinePackageFolder(path.join(__dirname, '../package'));
+const rootDir = path.join(__dirname, `../package/${packageFolder}`);
+const resourcesDir = path.join(rootDir, 'resources');
+const appDir = path.join(resourcesDir, 'app');
+
+const existingLicenseFile = path.join(rootDir, 'LICENSE');
+const renamedLicenseFile = path.join(rootDir, 'LICENSE.electron.txt');
+if (fs.existsSync(existingLicenseFile)) {
+    fs.renameSync(existingLicenseFile, renamedLicenseFile);
+    logger.info(`Existing LICENSE file renamed to ${renamedLicenseFile}`);
+}
+
+const licenseFile = 'DEPINUS_LICENSE.md';
+const origLicenseFile = path.join(appDir, licenseFile);
+const newLicenseFile = path.join(rootDir, licenseFile);
+if (fs.existsSync(origLicenseFile)) {
+    fs.renameSync(origLicenseFile, newLicenseFile);
+    logger.info(`DEPINUS license file moved to ${newLicenseFile}`);
+} else {
+    logger.warn(`DEPINUS license file not found at ${origLicenseFile}`);
+}
+
+const depinusExecutable = path.join(rootDir, 'depinus');
+if (fs.existsSync(depinusExecutable)) {
+    logger.info(`Make ${depinusExecutable} executable...`);
+    fs.chmodSync(depinusExecutable, 0o755);
+}
+
+const autostartScript = path.join(resourcesDir, 'autostart');
+if (fs.existsSync(autostartScript)) {
+    logger.info(`Make ${autostartScript} executable...`);
+    fs.chmodSync(autostartScript, 0o755);
+}
+
+const depinusExe = path.join(rootDir, 'depinus.exe');
+if (process.platform === 'win32' && fs.existsSync(depinusExe)) {
+    try {
+        const rceditPath = path.join(__dirname, '../node_modules/rcedit/bin/rcedit.exe');
+        const owner = 'Norbert Huffschmid';
+        logger.info(`Setting copyright owner on ${depinusExe} using rcedit...`);
+        execFileSync(rceditPath, [depinusExe, '--set-version-string', 'LegalCopyright', owner], { stdio: 'inherit' });
+    } catch (err) {
+        logger.warn('rcedit failed: ' + err.message);
+    }
+}

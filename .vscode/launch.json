@@ -1,0 +1,94 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "PowerShell",
+            "request": "launch",
+            "name": "PowerShell Launch (current file)",
+            "script": "${file}",
+            "args": [],
+            "cwd": "${file}"
+        },
+        {
+            "type": "PowerShell",
+            "request": "launch",
+            "name": "Build Windows installer",
+            "script": "${workspaceFolder}/develop/installer/windows/build.ps1",
+            "args": [],
+            "cwd": "${workspaceFolder}/develop/installer/windows"
+        },
+        {
+            "name": "Frontend launcher",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/www/client",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Backend launcher",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/www/server",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Backend Test launcher",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/www/server",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "test"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "PianoDaemon",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/python/depinus/piano_daemon.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Depinus launcher (Debug)",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start",
+                "--",
+                "--inspect=9222", // activates the debugger
+                "--foo" // some custom argument
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch Chrome against localhost",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}/www/client"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Windows DEV environment",
+            "configurations": [
+                "PianoDaemon",
+                "Backend launcher",
+                "Frontend launcher"
+            ],
+            "stopAll": true
+        },
+    ]
+}

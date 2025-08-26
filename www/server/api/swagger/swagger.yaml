@@ -1,0 +1,479 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: Depinus Api
+  description: REST Api of the Depinus backend server
+basePath: /
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /archive/composers:
+    x-swagger-router-controller: composer
+    get:
+      description: Returns all composers from archive.
+      operationId: getComposers
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ComposerResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composer/{id}:
+    x-swagger-router-controller: composer
+    delete:
+      description: Removes a composer with all his/her compositions from the archive
+      operationId: deleteComposer
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the composer to be removed
+      responses:
+        "204":
+          description: Deleted
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      description: Modifies a composer in the archive
+      operationId: patchComposer
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: ID of the composer to be modified
+        - name: "firstname"
+          in: "formData"
+          description: "First name of the composer"
+          required: true
+          type: "string"
+        - name: "surname"
+          in: "formData"
+          description: "Surname of the composer"
+          required: true
+          type: "string"
+        - name: "image"
+          in: "formData"
+          description: "Image of the composer"
+          required: false
+          type: "file"
+      responses:
+        "204":
+          description: Modified
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composer:
+    x-swagger-router-controller: composer
+    post:
+      description: Adds a composer to the archive
+      operationId: postComposer
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: "firstname"
+          in: "formData"
+          description: "First name of the composer"
+          required: false
+          type: "string"
+        - name: "surname"
+          in: "formData"
+          description: "Surname of the composer"
+          required: true
+          type: "string"
+        - name: "image"
+          in: "formData"
+          description: "Image of the composer"
+          required: false
+          type: "file"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/ComposerResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composerImage:
+    x-swagger-router-controller: composerImage
+    get:
+      produces:
+        - image/*
+        - application/json
+      description: Returns a composer image.
+      parameters:
+        - in: query
+          name: composerId
+          type: integer
+          required: false
+          description: ID of a given composer
+        - in: query
+          name: composerName
+          type: string
+          required: false
+          description: Name of a given composer
+      operationId: composerImage
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file # this is OpenAPI 2.0 specific !
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composition/{id}:
+    x-swagger-router-controller: composition
+    get:
+      description: Returns a composition from the archive.
+      operationId: getComposition
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: returns the composition with the given ID
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/CompositionResponse"
+        "404":
+          description: Composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      description: Removes a composition from the archive
+      operationId: deleteComposition
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the composition to be removed
+      responses:
+        "204":
+          description: Deleted
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      description: Modifies a composition in the archive
+      operationId: patchComposition
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: id
+          in: path
+          type: integer
+          required: true
+          description: ID of the composition to be modified
+        - name: "name"
+          in: "formData"
+          description: "Name of the composition"
+          required: false
+          type: "string"
+        - name: "midifile"
+          in: "formData"
+          description: "Midi file to upload"
+          required: false
+          type: "file"
+      responses:
+        "204":
+          description: Modified
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composition:
+    x-swagger-router-controller: composition
+    post:
+      description: Adds a composition to the archive
+      operationId: postComposition
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: "name"
+          in: "formData"
+          description: "Name of the composition"
+          required: true
+          type: "string"
+        - name: "composerId"
+          in: "formData"
+          description: "Composer ID"
+          required: true
+          type: "integer"
+        - name: "midifile"
+          in: "formData"
+          description: "Midi file of the composition"
+          required: true
+          type: "file"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/CompositionResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/compositions:
+    x-swagger-router-controller: composition
+    get:
+      description: Returns compositions of a given composer from the archive.
+      parameters:
+        - in: query
+          name: composerId
+          type: integer
+          required: false
+          description: composer ID
+      operationId: getCompositionsOfComposer
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CompositionResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/export:
+    x-swagger-router-controller: export
+    post: # bloody swagger does not support body in GET request
+      description: Returns a zip file with selected archive data.
+      operationId: getArchiveExportFile
+      produces:
+        - application/octet-stream
+        - application/json
+      consumes:
+      - "application/json"
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                composerId:
+                  type: integer
+                  example: 8
+                compositionIds:
+                  type: array
+                  items:
+                    type: integer
+                    example: 113
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file # this is OpenAPI 2.0 specific !
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/import:
+    x-swagger-router-controller: import
+    post:
+      description: Imports the specified content of an archive file
+      operationId: importArchiveFile
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: "archivefile"
+          in: "formData"
+          description: "File with exported archive data"
+          required: true
+          type: "file"
+        - name: "importdata"
+          in: "formData"
+          description: "JSON-formatted string with import control info"
+          required: true
+          type: "string"
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/inspect:
+    x-swagger-router-controller: import
+    post:
+      description: Gets the content of an archive file
+      operationId: inspectArchiveFile
+      consumes:
+      - "multipart/form-data"
+      parameters:
+        - name: "archivefile"
+          in: "formData"
+          description: "File with exported archive data"
+          required: true
+          type: "file"
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              type: object
+              description: Composer
+              properties:
+                id:
+                  type: integer
+                firstname:
+                  type: string
+                surname:
+                  type: string
+                compositions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /info:
+    x-swagger-router-controller: info
+    get:
+      description: Returns info about Depinus.
+      operationId: info
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: object
+            required: [version, edition, webSocketUrl, platformData]
+            properties:
+              version:
+                type: string
+              edition:
+                type: string
+              webSocketUrl:
+                type: string
+              platformData:
+                #type: array
+                #items:
+                  type: object
+                  additionalProperties:
+                    type: "string"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /play:
+    x-swagger-router-controller: play
+    post:
+      description: Starts playing and returns info about played item.
+      consumes:
+        - application/json
+      parameters:
+        - name: body
+          in: body
+          required: true
+          description: Contains the composition ID (or 0 if a random composition should be played)
+          schema:
+            type: object
+            required: [compositionId]
+            properties:
+              compositionId:
+                type: integer
+      operationId: play
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/CompositionResponse"
+        "404":
+          description: Composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /shutdown:
+    x-swagger-router-controller: shutdown
+    post:
+      description: Shuts down the depinus server gracefully
+      #operationId: shutdown (see special handling in app.js)
+      consumes:
+      - "application/octet-stream"
+      responses:
+        "200":
+          description: Success
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+definitions:
+  ComposerResponse:
+    type: object
+    required: [id, firstname, surname]
+    properties:
+      id:
+        type: integer
+        example: 1
+      firstname:
+        type: string
+        example: Wolfgang Amadeus
+      surname:
+        type: string
+        example: Mozart
+  CompositionResponse:
+    type: object
+    required: [id, name, duration, composer_id]
+    properties:
+      id:
+        type: integer
+        example: 1
+      name:
+        type: string
+        example: For Elise
+      duration:
+        type: integer
+        example: 66
+      composer_id:
+        type: integer
+        example: 2
+  ErrorResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string

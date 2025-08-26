@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Splashscreen</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+            background: transparent;
+        }
+
+        h1, p {
+            margin: 0;
+            text-align: center;
+        }
+
+        img {
+            width: 200px;
+            height: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <img id="logo" src="logo.png" alt="Logo">
+    <h1 id="title">Title...</h1>
+    <p id="status">Loading...</p>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        ipcRenderer.on('update-logo', (event, imagePath) => {
+            const logo = document.getElementById('logo');
+            logo.src = imagePath;
+        });
+
+        ipcRenderer.on('update-title', (event, message) => {
+            const dynamicText = document.getElementById('title');
+            dynamicText.textContent = message;
+        });
+
+        ipcRenderer.on('update-status', (event, message) => {
+            const dynamicText = document.getElementById('status');
+            dynamicText.textContent = message;
+        });
+    </script>
+</body>
+
+</html>

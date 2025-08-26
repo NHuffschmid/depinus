@@ -1,0 +1,26 @@
+Features to implement:
+======================
+
+Hardware:
+add appropriate key press technology
+
+Software:
+implement playlists
+add remaining composers of Bernd Krüger in DB
+move billions of style definitions to CSS file(s)
+add additional midi repositories
+- e.g. from http://www.members.tripod.com/~rosemck1/jukebox-classical.html
+add "assign composition to other composer" feature
+add "remove" button for composer image
+add MacOS support
+add more GUI languages
+
+Bugs:
+=====
+
+- Kaiserwalzer crashes DurationCalculation
+- Duration of Ecossaises is calculated much too long
+- fix length of Mozart 8th sonata midi files (1-3)
+- analyse "Task exception was never retrieved" errors from piano_daemon log
+- Swagger GUI not working any more
+- remove --strip switch from PyInstaller (Windows) script
