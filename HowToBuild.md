@@ -50,6 +50,7 @@ Then install the following packages with pip (or some other package manager):
 - edit the scripts section of the package.json file in the root folder
 - add a new package script according to your needs
 - open a terminal in the root folder
+- enter npm run build
 - enter npm run <your_package_script>
 
 That's it!
