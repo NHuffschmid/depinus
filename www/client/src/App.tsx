@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
 import type { KeyboardRef } from './components/react-piano-keyboard/src/Keyboard';
 import "./App.css";
