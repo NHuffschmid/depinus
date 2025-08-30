@@ -91,7 +91,7 @@ function App(): JSX.Element {
     <React.Fragment>
       {isActive ? (
         <div className='App'>
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <header className="App-header">
               <Keyboard
                 ref={keyboardRef}
