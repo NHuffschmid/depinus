@@ -52,41 +52,30 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "PianoDaemon",
+            "name": "PianoDaemon launcher",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/python/depinus/piano_daemon.py",
             "console": "integratedTerminal"
         },
         {
-            "name": "Depinus launcher (Debug)",
-            "type": "node",
-            "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "start",
-                "--",
-                "--inspect=9222", // activates the debugger
-                "--foo" // some custom argument
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Launch Chrome against localhost",
+            "name": "Launch Chrome against Vite dev server",
             "type": "chrome",
             "request": "launch",
-            "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}/www/client"
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/www/client/src",
+            "sourceMaps": true,
+            "trace": true
         }
     ],
     "compounds": [
         {
             "name": "Windows DEV environment",
             "configurations": [
-                "PianoDaemon",
+                "PianoDaemon launcher",
                 "Backend launcher",
-                "Frontend launcher"
+                "Frontend launcher",
+                "Launch Chrome against Vite dev server"
             ],
             "stopAll": true
         },
