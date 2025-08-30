@@ -3,6 +3,7 @@
 # Piano player
 
 import asyncio
+import configparser
 import mido
 import os
 
@@ -21,12 +22,19 @@ class PianoPlayer:
 
         super().__init__()
 
-        self.dynamics = 50
-        self.tempo = 1.0
+        # Load default settings from config file
+        configFile = os.environ.get('DEPINUS_HOME', os.getcwd()) + '/depinus.conf'
+        self._configFile = configFile
+        self._config = configparser.ConfigParser()
+        self._config.read(configFile)
+        settings = self._config['Settings'] if 'Settings' in self._config else {}
+
+        self.dynamics = int(settings.get('dynamics', 50))
+        self.tempo = float(settings.get('tempo', 1.0))
+        self._transposition = int(settings.get('transposition', 0))
 
         self._playtask = None
         self._currentComposition = None
-        self._transposition = 0
         self._playTime = 0
         self._pausing = False
         self._transpositionPending = False
@@ -66,12 +74,35 @@ class PianoPlayer:
     def transposition(self):
         '''Gets the transposition.'''
         return self._transposition
-    
+
     @transposition.setter
     def transposition(self, value):
-        '''Sets the transposition.'''
+        '''Sets the transposition and persists to config.'''
         self._transposition = value
         self._transpositionPending = True
+        self._persist_config('transposition', str(value))
+
+    @property
+    def tempo(self):
+        '''Gets the tempo.'''
+        return self._tempo
+
+    @tempo.setter
+    def tempo(self, value):
+        '''Sets the tempo and persists to config.'''
+        self._tempo = value
+        self._persist_config('tempo', str(value))
+
+    @property
+    def dynamics(self):
+        '''Gets the dynamics.'''
+        return self._dynamics
+
+    @dynamics.setter
+    def dynamics(self, value):
+        '''Sets the dynamics and persists to config.'''
+        self._dynamics = value
+        self._persist_config('dynamics', str(value))
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
@@ -275,3 +306,12 @@ class PianoPlayer:
             if (self._midiOutput is not None):
                 self._midiOutput.close()
                 self._midiOutput = None    
+
+
+    def _persist_config(self, key, value):
+        '''Persist a setting to depinus.conf.'''
+        if 'Settings' not in self._config:
+            self._config['Settings'] = {}
+        self._config['Settings'][key] = value
+        with open(self._configFile, 'w') as configfile:
+            self._config.write(configfile)
