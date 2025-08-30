@@ -5,17 +5,16 @@ import DynamicsController from "../components/DynamicsController";
 import TempoController from "../components/TempoController";
 import TranspositionController from "../components/TranspositionController";
 
-const Settings = () => {
-
-    return (
-        <div>
-            <LanguageSelector />
-            <ColorSelector />
-            <DynamicsController />
-            <TempoController />
-            <TranspositionController />
-        </div>
-    )
+const Settings: React.FC = () => {
+	return (
+		<div>
+			<LanguageSelector />
+			<ColorSelector />
+			<DynamicsController />
+			<TempoController />
+			<TranspositionController />
+		</div>
+	);
 }
 
-export default Settings
+export default Settings;

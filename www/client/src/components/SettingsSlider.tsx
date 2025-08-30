@@ -1,0 +1,73 @@
+import React, { useState } from 'react';
+import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import ReactSlider from 'react-slider';
+
+export interface SettingsSliderProps {
+	title: string;
+	min: number;
+	max: number;
+	defaultValue: number;
+	websocketCommand: string;
+	descriptionLeft?: React.ReactNode;
+	descriptionRight?: React.ReactNode;
+	sliderToWebsocketConverter?: (value: number) => number;
+	websocketToSliderConverter?: (value: number) => number;
+}
+
+const SettingsSlider: React.FC<SettingsSliderProps> = (props) => {
+	const [sliderValue, setSliderValue] = useState<number>(props.defaultValue);
+
+	const webSocket = useDepinusWebSocket({
+		name: 'SettingsSlider',
+		onInfoMessage: (message: any) => {
+			if (props.websocketCommand in message) {
+				if (props.websocketToSliderConverter) {
+					setSliderValue(props.websocketToSliderConverter(message[props.websocketCommand]));
+				} else {
+					setSliderValue(message[props.websocketCommand]);
+				}
+			}
+		}
+	});
+
+	const sliderChanged = (value: number) => {
+		let convertedValue = props.sliderToWebsocketConverter ? props.sliderToWebsocketConverter(value) : value;
+		webSocket.sendSettingsCommand(props.websocketCommand, convertedValue);
+	};
+
+	return (
+		<React.Fragment>
+			<div style={{
+				margin: '1rem 0rem',
+				display: 'grid',
+				gridTemplateRows: 'auto 3rem',
+				gridTemplateColumns: '4rem 1fr 4rem',
+				alignItems: 'center'
+			}}>
+				<div />
+				<div>{props.title}:</div>
+				<div />
+				<div className='partiture'>{props.descriptionLeft}</div>
+				<div>
+					<ReactSlider
+						min={props.min}
+						max={props.max}
+						className="settingsSlider"
+						thumbClassName="settingsSlider-thumb"
+						trackClassName="settingsSlider-track"
+						defaultValue={sliderValue}
+						value={sliderValue}
+						onChange={sliderChanged}
+						renderThumb={(thumbProps: any) =>
+							<div {...thumbProps}>
+								{props.sliderToWebsocketConverter ? props.sliderToWebsocketConverter(sliderValue) : sliderValue}
+							</div>}
+					/>
+				</div>
+				<div className='partiture'>{props.descriptionRight}</div>
+			</div>
+		</React.Fragment>
+	);
+};
+
+export default SettingsSlider;
