@@ -4,8 +4,6 @@ import asyncio
 import configparser
 import json
 import os
-import pathlib
-import sys
 import websockets
 
 from depinus import logger
@@ -91,19 +89,19 @@ class WebsocketServer:
 
                 if (mido_message.type.startswith('note_o')):
                     velocity = 0 if (mido_message.type == 'note_off') else mido_message.velocity
-                    wsMessage = json.dumps({
+                    ws_message = json.dumps({
                         'messageType': 'keyboard',
                         'note': mido_message.note,
                         'velocity': velocity
                     })
-                    logger.debug('JSON Message: ' + wsMessage)
-                    asyncio.create_task(websocket.send(wsMessage))
+                    logger.debug('JSON Message: ' + ws_message)
+                    asyncio.create_task(websocket.send(ws_message))
 
                 if (mido_message.type == 'control_change'):
                     if (mido_message.control == 123):
                         # all notes off - send special message to release all keys
-                        wsMessage = json.dumps({'messageType': 'keyboard', 'note': 0, 'velocity': 0})
-                        await websocket.send(wsMessage)
+                        ws_message = json.dumps({'messageType': 'keyboard', 'note': 0, 'velocity': 0})
+                        await websocket.send(ws_message)
 
 
         except (ConnectionClosedOK, ConnectionClosedError) as exc:
@@ -113,13 +111,13 @@ class WebsocketServer:
 
     async def send_info_message(self, info, websocket=None):
 
-        wsMessage = json.dumps(info)
+        ws_message = json.dumps(info)
         if (websocket):
-            logger.debug('Sending websocket info message: ' + str(wsMessage))
-            await websocket.send(wsMessage) # send to one specific websocket client
+            logger.debug('Sending websocket info message: ' + str(ws_message))
+            await websocket.send(ws_message) # send to one specific websocket client
         else:
-            logger.debug('Broadcasting websocket info message: ' + str(wsMessage))
-            websockets.broadcast(self._websockets, wsMessage)
+            logger.debug('Broadcasting websocket info message: ' + str(ws_message))
+            websockets.broadcast(self._websockets, ws_message)
 
 
     async def run(self):
@@ -127,10 +125,10 @@ class WebsocketServer:
         Runs the websocket server
         '''
         try:
-            configFile = os.environ['DEPINUS_HOME'] + '/depinus.conf'    
-            logger.debug('configFile: ' + configFile)
+            config_file = os.environ['DEPINUS_HOME'] + '/depinus.conf'    
+            logger.debug('config file: ' + config_file)
             config=configparser.ConfigParser()
-            config.read(configFile)
+            config.read(config_file)
             port = config['Network']['piano_daemon_websocket_port']
 
             # we reduce the close_timeout from 10 to 2 seconds
@@ -155,49 +153,49 @@ class WebsocketServer:
 
             async for command in websocket:
                 #logger.info('Websocket command received: ' + command)
-                jsonMessage = json.loads(command)
+                json_message = json.loads(command)
 
-                if (jsonMessage['commandType'] == 'keyboard'):
-                    if (jsonMessage['pressed'] == True):
-                        event = KeyboardCommand(jsonMessage['note'], 100)
+                if (json_message['commandType'] == 'keyboard'):
+                    if (json_message['pressed'] == True):
+                        event = KeyboardCommand(json_message['note'], 100)
                     else:
-                        event = KeyboardCommand(jsonMessage['note'], 0)
+                        event = KeyboardCommand(json_message['note'], 0)
 
                     # notify registered observers
                     for callback in self._keyboard_command_callbacks:
                         await callback(event)
 
-                elif (jsonMessage['commandType'] == 'control'):
-                    cmd = ControlCommand(jsonMessage['command'])
+                elif (json_message['commandType'] == 'control'):
+                    cmd = ControlCommand(json_message['command'])
 
                     if (cmd.command == 'play_composition'):
-                        cmd.name = jsonMessage['name']
-                        cmd.composer = jsonMessage['composer']
-                        cmd.duration = jsonMessage['duration']
-                        cmd.mididata = bytes(jsonMessage['mididata']['data'])
+                        cmd.name = json_message['name']
+                        cmd.composer = json_message['composer']
+                        cmd.duration = json_message['duration']
+                        cmd.mididata = bytes(json_message['mididata']['data'])
 
-                    if ('value' in jsonMessage):
-                        cmd.value = jsonMessage['value']
+                    if ('value' in json_message):
+                        cmd.value = json_message['value']
 
                     # notify registered observers
                     for callback in self._control_command_callbacks:
                         await callback(cmd)
 
-                elif (jsonMessage['commandType'] == 'rpc'):
-                    errMsg = None
-                    if 'method' not in jsonMessage:
-                        errMsg = "No method found in RPC request"
-                    elif jsonMessage['method'] not in self._rpc_methods:
-                        errMsg = f"Unknown method '{jsonMessage['method']}'"
+                elif (json_message['commandType'] == 'rpc'):
+                    err_msg = None
+                    if 'method' not in json_message:
+                        err_msg = "No method found in RPC request"
+                    elif json_message['method'] not in self._rpc_methods:
+                        err_msg = f"Unknown method '{json_message['method']}'"
                     else:
                         logger.debug('RPC request received')
-                        result = await self._rpc_methods[jsonMessage['method']](**jsonMessage.get('params', {}))
+                        result = await self._rpc_methods[json_message['method']](**json_message.get('params', {}))
 
-                    if (errMsg):
-                        logger.error(errMsg)
+                    if (err_msg):
+                        logger.error(err_msg)
                         message = {
                             "messageType": "rtc_response",
-                            "error": errMsg
+                            "error": err_msg
                         }
                     else:
                         message = {
@@ -205,11 +203,11 @@ class WebsocketServer:
                             "result": result
                         }
 
-                    wsMessage = json.dumps(message)
-                    await websocket.send(wsMessage)
+                    ws_message = json.dumps(message)
+                    await websocket.send(ws_message)
 
                 else:
-                    raise ValueError('Unsupported command type: ' + jsonMessage['commandType'])
+                    raise ValueError('Unsupported command type: ' + json_message['commandType'])
                 
             self._websockets.remove(websocket)
             logger.debug('Removed websocket client.')

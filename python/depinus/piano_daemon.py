@@ -27,8 +27,8 @@ class PianoDaemon:
         self._websocket_server = WebsocketServer()
         self._piano_player = PianoPlayer()
 
-        outputNames = mido.get_output_names()
-        self._midiOutPort = outputNames[len(outputNames) - 1] # use external USB midi device
+        output_names = mido.get_output_names()
+        self._midi_out_port = output_names[len(output_names) - 1] # use external USB midi device
 
 
     async def run(self):
@@ -121,19 +121,19 @@ class PianoDaemon:
                 })
             
             # find position in midi file
-            await self._piano_player.gotoPlayTime(cmd.value)
+            await self._piano_player.goto_play_time(cmd.value)
 
             # update clients
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
-                    'isStoppable': self._piano_player.isStoppable,
-                    'isPlayable': self._piano_player.isPlayable,
-                    'isPauseable': self._piano_player.isPauseable,
+                    'isStoppable': self._piano_player.is_stoppable,
+                    'isPlayable': self._piano_player.is_playable,
+                    'isPauseable': self._piano_player.is_pauseable,
                     'composition': {
-                        'name': self._piano_player.currentComposition.Name, 
-                        'composerName': self._piano_player.currentComposition.Composer, 
-                        'duration': self._piano_player.currentComposition.Duration,
+                        'name': self._piano_player.current_composition.name, 
+                        'composerName': self._piano_player.current_composition.composer, 
+                        'duration': self._piano_player.current_composition.duration,
                         'playTime': cmd.value
                     }
                 })
@@ -169,17 +169,17 @@ class PianoDaemon:
             'dynamics': self._piano_player.dynamics,
             'transposition': self._piano_player.transposition
         }
-        composition = self._piano_player.currentComposition
-        if (composition):
+        composition = self._piano_player.current_composition
+        if composition:
             info['composition'] = {
-                'name': composition.Name, 
-                'composerName': composition.Composer, 
-                'duration': composition.Duration,
-                'playTime': self._piano_player.playTime
+                'name': composition.name, 
+                'composerName': composition.composer, 
+                'duration': composition.duration,
+                'playTime': self._piano_player.play_time
             }
-            info['isStoppable'] = self._piano_player.isStoppable
-            info['isPlayable'] = self._piano_player.isPlayable
-            info['isPauseable'] = self._piano_player.isPauseable
+            info['isStoppable'] = self._piano_player.is_stoppable
+            info['isPlayable'] = self._piano_player.is_playable
+            info['isPauseable'] = self._piano_player.is_pauseable
         else:
             info['isStoppable'] = False
             info['isPlayable'] = False
@@ -190,7 +190,6 @@ class PianoDaemon:
 
     async def _on_play_composition(self, name, composer, duration, mididata):
         logger.info('Going to play: %s...' % name)
-        #composition = Composition(name, composer, duration, mididata)
         composition = Composition(name, composer, duration, bytes(mididata))
         await self._piano_player.play(composition)
         await self._websocket_server.send_info_message(
@@ -200,10 +199,10 @@ class PianoDaemon:
                 'isPlayable': False,
                 'isPauseable': True,
                 'composition': {
-                    'name': self._piano_player.currentComposition.Name, 
-                    'composerName': self._piano_player.currentComposition.Composer, 
-                    'duration': self._piano_player.currentComposition.Duration,
-                    'playTime': self._piano_player.playTime
+                    'name': self._piano_player.current_composition.name, 
+                    'composerName': self._piano_player.current_composition.composer, 
+                    'duration': self._piano_player.current_composition.duration,
+                    'playTime': self._piano_player.play_time
                 }
             })
 
@@ -229,9 +228,9 @@ class PianoDaemon:
                 'isPlayable': True,
                 'isPauseable': False,
                 'composition': {
-                    'name': self._piano_player.currentComposition.Name, 
-                    'composerName': self._piano_player.currentComposition.Composer, 
-                    'duration': self._piano_player.currentComposition.Duration,
+                    'name': self._piano_player.current_composition.name, 
+                    'composerName': self._piano_player.current_composition.composer, 
+                    'duration': self._piano_player.current_composition.duration,
                     'playTime': 0
                 }
             })

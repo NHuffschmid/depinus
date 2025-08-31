@@ -13,17 +13,17 @@ def setup_logger():
     system = platform.system()
 
     if system == "Windows":
-        logfile = str((pathlib.Path(os.environ['APPDATA']) / 'Depinus/logs/PianoDaemon.log').resolve())
+        log_file = str((pathlib.Path(os.environ['APPDATA']) / 'Depinus/logs/PianoDaemon.log').resolve())
     elif system == "Darwin": # MacOS
         # untested!!!
-        logfile = str((pathlib.Path(os.environ['HOME']) / 'Library/Application Support/Depinus/logs/PianoDaemon.log').resolve())
+        log_file = str((pathlib.Path(os.environ['HOME']) / 'Library/Application Support/Depinus/logs/PianoDaemon.log').resolve())
     else: # Linux
-        logdir = pathlib.Path.home() / ".config/Depinus/logs"
-        logdir.mkdir(parents=True, exist_ok=True)
-        logfile = logdir / "PianoDaemon.log"
+        log_dir = pathlib.Path.home() / ".config/Depinus/logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "PianoDaemon.log"
 
     file_handler = TimedRotatingFileHandler(
-        filename=logfile,
+        filename=log_file,
         when="midnight",
         interval=1, # each day
         backupCount=7, # days

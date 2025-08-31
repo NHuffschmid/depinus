@@ -23,53 +23,53 @@ class PianoPlayer:
         super().__init__()
 
         # Load default settings from config file
-        configFile = os.environ.get('DEPINUS_HOME', os.getcwd()) + '/depinus.conf'
-        self._configFile = configFile
+        config_file = os.environ.get('DEPINUS_HOME', os.getcwd()) + '/depinus.conf'
+        self._config_file = config_file
         self._config = configparser.ConfigParser()
-        self._config.read(configFile)
+        self._config.read(config_file)
         settings = self._config['Settings'] if 'Settings' in self._config else {}
 
         self.dynamics = int(settings.get('dynamics', 50))
         self.tempo = float(settings.get('tempo', 1.0))
         self._transposition = int(settings.get('transposition', 0))
 
-        self._playtask = None
-        self._currentComposition = None
-        self._playTime = 0
+        self._play_task = None
+        self._current_composition = None
+        self._play_time = 0
         self._pausing = False
-        self._transpositionPending = False
-        self._positioningPending = False
+        self._transposition_pending = False
+        self._positioning_pending = False
         self._midi_messages_callbacks = set()
         self._play_end_callbacks = set()
-        self._midiOutput = None
-        outputNames = mido.get_output_names()
-        self._midiOutPort = outputNames[len(outputNames) - 1] # use external USB midi device
+        self._midi_output = None
+        output_names = mido.get_output_names()
+        self._midi_out_port = output_names[len(output_names) - 1] # use external USB midi device
 
     @property
-    def currentComposition(self):
+    def current_composition(self):
         '''Gets the current composition.'''
-        return self._currentComposition
-    
+        return self._current_composition
+
     @property
-    def playTime(self):
+    def play_time(self):
         '''Gets the number of seconds the current composition is already played.'''
-        return self._playTime
-    
+        return self._play_time
+
     @property
-    def isStoppable(self):
+    def is_stoppable(self):
         '''True if the piano player can receive a stop command.'''
-        return not self._playtask.done()
-    
+        return not self._play_task.done()
+
     @property
-    def isPlayable(self):
+    def is_playable(self):
         '''True if the piano player can start playing.'''
-        return self._pausing or self._playtask.done()
-    
+        return self._pausing or self._play_task.done()
+
     @property
-    def isPauseable(self):
+    def is_pauseable(self):
         '''True if the piano player can make a pause.'''
-        return (not self._pausing) and (not self._playtask.done())
-    
+        return (not self._pausing) and (not self._play_task.done())
+
     @property
     def transposition(self):
         '''Gets the transposition.'''
@@ -79,7 +79,7 @@ class PianoPlayer:
     def transposition(self, value):
         '''Sets the transposition and persists to config.'''
         self._transposition = value
-        self._transpositionPending = True
+        self._transposition_pending = True
         self._persist_config('transposition', str(value))
 
     @property
@@ -126,13 +126,13 @@ class PianoPlayer:
         Parameters:
             message: The midi message to play
         '''
-        if (self._midiOutput is None or self._midiOutput.closed):
+        if (self._midi_output is None or self._midi_output.closed):
             # player is not playing => open a new midi output port
-            with mido.open_output(self._midiOutPort) as midiOutput:
-                midiOutput.send(message)
+            with mido.open_output(self._midi_out_port) as midi_output:
+                midi_output.send(message)
         else:
             # player is playing => add midi message to the current output port
-            self._midiOutput.send(message)
+            self._midi_output.send(message)
 
     async def play(self, composition=None):
         '''
@@ -146,20 +146,20 @@ class PianoPlayer:
             self._pausing = False  # continue playing
             logger.info('Resume playing')
         else:
-            if (self._playtask != None) and (not self._playtask.done()):
+            if (self._play_task is not None) and (not self._play_task.done()):
                 # stop playing the current composition
                 await self.stop()
 
-            if (composition != None):
-                self._currentComposition = composition
+            if (composition is not None):
+                self._current_composition = composition
 
-            if (self._currentComposition == None):
+            if (self._current_composition is None):
                 raise ValueError('No composition available to play')
 
             logger.info('Playing composition from composer %s with title: %s' %
-                          (self._currentComposition.Composer, self._currentComposition.Name))
-            self._playtask = asyncio.create_task(
-                self._play_mididata(self._currentComposition.Mididata))
+                          (self._current_composition.composer, self._current_composition.name))
+            self._play_task = asyncio.create_task(
+                self._play_mididata(self._current_composition.midi_data))
 
     async def gotoPlayTime(self, position):
         '''
@@ -169,29 +169,29 @@ class PianoPlayer:
             position: The current position in the current composition
         '''
 
-        if (self._currentComposition == None):
+        if (self._current_composition == None):
             raise ValueError('No composition available for positioning')
 
-        self._positioningPending = True
+        self._positioning_pending = True
 
-        if (self._playtask != None) and (not self._playtask.done()):
+        if (self._play_task != None) and (not self._play_task.done()):
             await self.stop()
         else:
             self.pause()
 
-        self._playtask = asyncio.create_task(
-            self._play_mididata(self._currentComposition.Mididata, position))
+        self._play_task = asyncio.create_task(
+            self._play_mididata(self._currentComposition.midi_data, position))
 
         # wait until new position is found
-        while (self._positioningPending):
+        while (self._positioning_pending):
             await asyncio.sleep(0.5)
 
     async def stop(self):
         '''Stops playing.'''
-        if (self._playtask):
-            self._playtask.cancel()
+        if (self._play_task):
+            self._play_task.cancel()
             try:
-                await self._playtask
+                await self._play_task
             except asyncio.CancelledError:
                 pass
 
@@ -206,24 +206,24 @@ class PianoPlayer:
         startup_jingle_path = Path(os.environ['DEPINUS_APP_PATH']) / 'startup_jingle.mid'
 
         with open(startup_jingle_path, 'rb') as jingle_file:
-            mididata = jingle_file.read()
-        await self._play_mididata(mididata)
+            midi_data = jingle_file.read()
+        await self._play_mididata(midi_data)
             
-    async def _play_mididata(self, mididata, position=0):
+    async def _play_mididata(self, midi_data, position=0):
 
         # create midifile from mididata
-        with open(MIDI_FILE_PATH, 'wb') as midifile:
-            midifile.write(mididata)
+        with open(MIDI_FILE_PATH, 'wb') as midi_file:
+            midi_file.write(midi_data)
 
-        self._midiOutput = mido.open_output(self._midiOutPort)
+        self._midi_output = mido.open_output(self._midi_out_port)
 
         try:
 
-            midofile = mido.MidiFile(MIDI_FILE_PATH)
+            mido_file = mido.MidiFile(MIDI_FILE_PATH)
 
             if (position == 0):
                 # log some meta information
-                for i, track in enumerate(midofile.tracks):
+                for i, track in enumerate(mido_file.tracks):
                     logger.debug("Track %d: %s" % (i, track.name))
                     for msg in track:
                         if (msg.is_meta):
@@ -234,28 +234,28 @@ class PianoPlayer:
 
             # play it
 
-            self._playTime = 0
+            self._play_time = 0
 
-            for message in midofile:
+            for message in mido_file:
 
                 if (message.time > 0):
-                    self._playTime += message.time
-                    if (not self._positioningPending):
+                    self._play_time += message.time
+                    if (not self._positioning_pending):
                         await asyncio.sleep(message.time / self.tempo)
 
-                if (self._positioningPending and (self._playTime > position)):
-                    self._positioningPending = False
+                if (self._positioning_pending and (self._play_time > position)):
+                    self._positioning_pending = False
 
-                if (self._transpositionPending):
-                    self._midiOutput.reset()  # reset active keys
-                    self._transpositionPending = False
+                if (self._transposition_pending):
+                    self._midi_output.reset()  # reset active keys
+                    self._transposition_pending = False
 
                 logger.debug('Midifile message:  %s' % str(message))
 
-                while ((self._pausing == True) and not self._positioningPending):
+                while ((self._pausing == True) and not self._positioning_pending):
                     await asyncio.sleep(0.5)
 
-                if (not self._positioningPending):
+                if (not self._positioning_pending):
                     # some message types (like program_change) seem to block the send command
                     # mido's play() function seem to filter them out, but is buggy in other terms:
                     # https://github.com/mido/mido/issues/458
@@ -272,40 +272,40 @@ class PianoPlayer:
                                 message.velocity = int(
                                     message.velocity * self.dynamics / DYNAMICS_DEFAULT)
 
-                        self._midiOutput.send(message)
+                        self._midi_output.send(message)
                         for callback in self._midi_messages_callbacks:
                             await callback(message)
 
             logger.info('End of midifile reached.')
 
-            self._playTime = 0
+            self._play_time = 0
 
-            if (self._currentComposition != None): # happens in case of startup jingle
+            if (self._current_composition != None): # happens in case of startup jingle
                 for callback in self._play_end_callbacks:
                     await callback()
 
         except asyncio.CancelledError:
 
             #logger.info('CancelledError received.')
-            if (not self._positioningPending):
+            if (not self._positioning_pending):
                 self._pausing = False
-                self._playTime = 0
+                self._play_time = 0
 
                 for callback in self._play_end_callbacks:
                     await callback()
 
-            self._midiOutput.reset()
+            self._midi_output.reset()
             raise
 
         except BaseException:
             logger.exception('BaseException received.')
-            self._midiOutput.reset()
+            self._midi_output.reset()
             raise
     
         finally:
-            if (self._midiOutput is not None):
-                self._midiOutput.close()
-                self._midiOutput = None    
+            if (self._midi_output is not None):
+                self._midi_output.close()
+                self._midi_output = None    
 
 
     def _persist_config(self, key, value):
@@ -313,5 +313,5 @@ class PianoPlayer:
         if 'Settings' not in self._config:
             self._config['Settings'] = {}
         self._config['Settings'][key] = value
-        with open(self._configFile, 'w') as configfile:
-            self._config.write(configfile)
+        with open(self._config_file, 'w') as config_file:
+            self._config.write(config_file)
