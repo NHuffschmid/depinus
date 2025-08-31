@@ -10,6 +10,7 @@ from depinus import logger
 from depinus.websocket_server import WebsocketServer
 from depinus.composition import Composition
 from depinus.piano_player import PianoPlayer
+from depinus.midi_interface_observer import MidiInterfaceObserver
 
 class PianoDaemon:
     '''Creates and wires up the main components'''
@@ -26,9 +27,7 @@ class PianoDaemon:
 
         self._websocket_server = WebsocketServer()
         self._piano_player = PianoPlayer()
-
-        output_names = mido.get_output_names()
-        self._midi_out_port = output_names[len(output_names) - 1] # use external USB midi device
+        self._midi_interface_observer = MidiInterfaceObserver()
 
 
     async def run(self):
@@ -42,6 +41,9 @@ class PianoDaemon:
 
             logger.info('Start websocket server...')
             self._background_tasks.add(asyncio.create_task(self._websocket_server.run()))
+
+            logger.info('Start midi interface observer...')
+            self._midi_interface_observer.start()
 
             ######################
             # wire up components #
