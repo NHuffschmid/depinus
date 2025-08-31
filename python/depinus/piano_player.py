@@ -1,9 +1,7 @@
-#!/usr/bin/env python
-
 # Piano player
 
 import asyncio
-import configparser
+from .config_utils import read_config, persist_config_setting
 import mido
 import os
 
@@ -23,10 +21,7 @@ class PianoPlayer:
         super().__init__()
 
         # Load default settings from config file
-        config_file = os.environ.get('DEPINUS_HOME', os.getcwd()) + '/depinus.conf'
-        self._config_file = config_file
-        self._config = configparser.ConfigParser()
-        self._config.read(config_file)
+        self._config = read_config()
         settings = self._config['Settings'] if 'Settings' in self._config else {}
 
         self.dynamics = int(settings.get('dynamics', 50))
@@ -80,7 +75,7 @@ class PianoPlayer:
         '''Sets the transposition and persists to config.'''
         self._transposition = value
         self._transposition_pending = True
-        self._persist_config('transposition', str(value))
+        persist_config_setting('Settings', 'transposition', str(value))
 
     @property
     def tempo(self):
@@ -91,7 +86,7 @@ class PianoPlayer:
     def tempo(self, value):
         '''Sets the tempo and persists to config.'''
         self._tempo = value
-        self._persist_config('tempo', str(value))
+        persist_config_setting('Settings', 'tempo', str(value))
 
     @property
     def dynamics(self):
@@ -102,7 +97,7 @@ class PianoPlayer:
     def dynamics(self, value):
         '''Sets the dynamics and persists to config.'''
         self._dynamics = value
-        self._persist_config('dynamics', str(value))
+        persist_config_setting('Settings', 'dynamics', str(value))
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
@@ -308,10 +303,3 @@ class PianoPlayer:
                 self._midi_output = None    
 
 
-    def _persist_config(self, key, value):
-        '''Persist a setting to depinus.conf.'''
-        if 'Settings' not in self._config:
-            self._config['Settings'] = {}
-        self._config['Settings'][key] = value
-        with open(self._config_file, 'w') as config_file:
-            self._config.write(config_file)

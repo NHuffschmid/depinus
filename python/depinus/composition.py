@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # A piece of music
 
 class Composition:

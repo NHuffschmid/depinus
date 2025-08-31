@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import asyncio
-import configparser
+from .config_utils import read_config
 import json
 import os
 import websockets
@@ -125,10 +125,7 @@ class WebsocketServer:
         Runs the websocket server
         '''
         try:
-            config_file = os.environ['DEPINUS_HOME'] + '/depinus.conf'    
-            logger.debug('config file: ' + config_file)
-            config=configparser.ConfigParser()
-            config.read(config_file)
+            config = read_config()
             port = config['Network']['piano_daemon_websocket_port']
 
             # we reduce the close_timeout from 10 to 2 seconds
