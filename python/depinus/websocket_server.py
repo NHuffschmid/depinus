@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import asyncio
-from .config_utils import read_config
 import json
 import os
 import websockets
@@ -27,9 +26,11 @@ class KeyboardCommand:
 class WebsocketServer:
     '''Handles the websocket connection(s) with the React frontend'''
     
-    def __init__(self):
+    def __init__(self, port):
         '''
         Constructor
+        Parameters:
+            port: Port to run the websocket server on
         '''
 
         super().__init__()
@@ -38,6 +39,7 @@ class WebsocketServer:
         self._keyboard_command_callbacks = set()
         self._connect_notification_callbacks = set()
         self._rpc_methods = {}
+        self._port = port
 
 
     def register_for_control_commands(self, callback):
@@ -125,14 +127,11 @@ class WebsocketServer:
         Runs the websocket server
         '''
         try:
-            config = read_config()
-            port = config['Network']['piano_daemon_websocket_port']
-
             # we reduce the close_timeout from 10 to 2 seconds
             # otherwise sleeping smartphone browsers will block other connected clients too long
 
-            logger.info('Starting websocket server on port %s...' % port)
-            await websockets.serve(self._websocket_handler, '', int(port))
+            logger.info('Starting websocket server on port %s...' % self._port)
+            await websockets.serve(self._websocket_handler, '', int(self._port))
 
         except (Exception) as exc:
             logger.exception("Websocket server crashed: " + str(exc))

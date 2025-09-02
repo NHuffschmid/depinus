@@ -1,7 +1,6 @@
 # Piano player
 
 import asyncio
-from .config_utils import read_config, persist_config_setting
 import mido
 import os
 
@@ -20,14 +19,6 @@ class PianoPlayer:
 
         super().__init__()
 
-        # Load default settings from config file
-        self._config = read_config()
-        settings = self._config['Settings'] if 'Settings' in self._config else {}
-
-        self.dynamics = int(settings.get('dynamics', 50))
-        self.tempo = float(settings.get('tempo', 1.0))
-        self._transposition = int(settings.get('transposition', 0))
-
         self._play_task = None
         self._current_composition = None
         self._play_time = 0
@@ -36,9 +27,6 @@ class PianoPlayer:
         self._positioning_pending = False
         self._midi_messages_callbacks = set()
         self._play_end_callbacks = set()
-        self._midi_output = None
-        output_names = mido.get_output_names()
-        self._midi_out_port = output_names[len(output_names) - 1] # use external USB midi device
 
     @property
     def current_composition(self):
@@ -72,10 +60,9 @@ class PianoPlayer:
 
     @transposition.setter
     def transposition(self, value):
-        '''Sets the transposition and persists to config.'''
+        '''Sets the transposition.'''
         self._transposition = value
         self._transposition_pending = True
-        persist_config_setting('Settings', 'transposition', str(value))
 
     @property
     def tempo(self):
@@ -84,9 +71,8 @@ class PianoPlayer:
 
     @tempo.setter
     def tempo(self, value):
-        '''Sets the tempo and persists to config.'''
+        '''Sets the tempo.'''
         self._tempo = value
-        persist_config_setting('Settings', 'tempo', str(value))
 
     @property
     def dynamics(self):
@@ -95,9 +81,19 @@ class PianoPlayer:
 
     @dynamics.setter
     def dynamics(self, value):
-        '''Sets the dynamics and persists to config.'''
+        '''Sets the dynamics.'''
         self._dynamics = value
-        persist_config_setting('Settings', 'dynamics', str(value))
+
+    @property
+    def midi_out_port(self):
+        '''Gets the MIDI out port.'''
+        return self._midi_out_port
+
+    @midi_out_port.setter
+    def midi_out_port(self, value):
+        '''Sets the MIDI out port.'''
+        logger.info('Set MIDI out port: %s' % value)
+        self._midi_out_port = value
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages

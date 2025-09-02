@@ -1,6 +1,5 @@
 import asyncio
 import mido
-from .config_utils import persist_config_setting
 
 class MidiInterfaceObserver:
     """
@@ -10,13 +9,26 @@ class MidiInterfaceObserver:
         self.interval = interval  # seconds
         self._task = None
         self._running = False
+        self._observers = []
+        self._last_interfaces = None
+
+    def register(self, callback):
+        """Register a callback to be notified when interfaces change."""
+        if callback not in self._observers:
+            self._observers.append(callback)
+
+    def unregister(self, callback):
+        if callback in self._observers:
+            self._observers.remove(callback)
 
     async def _observe(self):
         self._running = True
         while self._running:
             output_names = mido.get_output_names()
-            # Save as comma-separated string in depinus.conf under section 'Midi', key 'output_interfaces'
-            persist_config_setting('Midi', 'output_interfaces', ','.join(output_names))
+            if output_names != self._last_interfaces:
+                self._last_interfaces = output_names.copy()
+                for callback in self._observers:
+                    await callback(output_names)
             await asyncio.sleep(self.interval)
 
     def start(self):
