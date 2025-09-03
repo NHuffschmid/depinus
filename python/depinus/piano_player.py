@@ -17,10 +17,9 @@ class PianoPlayer:
     def __init__(self):
         '''Constructor'''
 
-        super().__init__()
-
         self._play_task = None
         self._current_composition = None
+        self._midi_output = None
         self._play_time = 0
         self._pausing = False
         self._transposition_pending = False

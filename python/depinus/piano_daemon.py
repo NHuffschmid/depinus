@@ -124,6 +124,10 @@ class PianoDaemon:
             )
         elif (cmd.command == 'selectedMidiOutPort'):
             logger.info('selectedMidiOutPort command received: ' + cmd.value)
+
+            # we currently cannot change the MIDI output port while playing
+            await self._piano_player.stop()
+
             self._piano_player.midi_out_port = cmd.value
             persist_config_setting('Midi', 'midi_out_port', cmd.value)
             await self._websocket_server.send_info_message(
