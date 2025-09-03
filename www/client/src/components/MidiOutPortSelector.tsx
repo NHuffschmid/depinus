@@ -25,7 +25,7 @@ const MidiOutPortSelector: React.FC = () => {
 	};
 
 	return (
-		<React.Fragment>
+		<div>
 			{t('MidiOut')}:&nbsp;
 			<select
 				value={selectedPort}
@@ -36,7 +36,7 @@ const MidiOutPortSelector: React.FC = () => {
 					<option key={opt} value={opt}>{opt}</option>
 				))}
 			</select>
-		</React.Fragment>
+		</div>
 	);
 }
 

@@ -8,9 +8,13 @@ import TranspositionController from "../components/TranspositionController";
 
 const Settings: React.FC = () => {
 	return (
-		<div>
-			<LanguageSelector />
+		<div style={{
+			display: 'flex',
+			flexDirection: 'column',
+			gap: '1rem'
+		}}>
 			<ColorSelector />
+			<LanguageSelector />
 			<MidiOutPortSelector />
 			<DynamicsController />
 			<TempoController />

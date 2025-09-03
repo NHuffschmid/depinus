@@ -38,7 +38,6 @@ const SettingsSlider: React.FC<SettingsSliderProps> = (props) => {
     return (
         <React.Fragment>
             <div style={{
-                margin: '1rem 0rem',
                 display: 'grid',
                 gridTemplateRows: 'auto 3rem',
                 gridTemplateColumns: '4rem 1fr 4rem',

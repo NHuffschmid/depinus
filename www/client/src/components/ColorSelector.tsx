@@ -16,7 +16,7 @@ const ColorSelector: React.FC = () => {
 	}
 
 	return (
-		<div style={{ margin: '1rem' }}>
+		<div>
 			<button
 				style={{
 					color: 'white',

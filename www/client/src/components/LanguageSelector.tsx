@@ -6,7 +6,7 @@ const LanguageSelector: React.FC = () => {
 	const { t } = useTranslation();
 
 	return (
-		<React.Fragment>
+		<div>
 			{t('Language')}:&nbsp;
 			<select
 				value={i18n.language}
@@ -17,7 +17,7 @@ const LanguageSelector: React.FC = () => {
 				<option value="en">English</option>
 				<option value="de">Deutsch</option>
 			</select>
-		</React.Fragment>
+		</div>
 	);
 }
 
