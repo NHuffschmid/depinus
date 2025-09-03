@@ -124,11 +124,8 @@ class PianoDaemon:
             )
         elif (cmd.command == 'selectedMidiOutPort'):
             logger.info('selectedMidiOutPort command received: ' + cmd.value)
-
-            # we currently cannot change the MIDI output port while playing
-            await self._piano_player.stop()
-
-            self._piano_player.midi_out_port = cmd.value
+            self._midi_out_ports_selected = cmd.value
+            self._piano_player.set_midi_out_port(cmd.value)
             persist_config_setting('Midi', 'midi_out_port', cmd.value)
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'selectedMidiOutPort' : cmd.value }
@@ -275,9 +272,6 @@ class PianoDaemon:
     async def _on_midi_interfaces_changed(self, interfaces):
         '''Callback for MIDI interface changes.'''
 
-        # we currently cannot change the MIDI output port while playing
-        await self._piano_player.stop()
-
         self._midi_out_ports_available = interfaces
         midi_out_port_config = None
         config = read_config()
@@ -299,7 +293,7 @@ class PianoDaemon:
                 'selectedMidiOutPort': self._midi_out_ports_selected
             })
 
-        self._piano_player.midi_out_port = self._midi_out_ports_selected
+        self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
 
 
 if __name__ == '__main__':

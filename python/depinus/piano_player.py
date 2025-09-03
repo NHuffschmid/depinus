@@ -83,16 +83,13 @@ class PianoPlayer:
         '''Sets the dynamics.'''
         self._dynamics = value
 
-    @property
-    def midi_out_port(self):
-        '''Gets the MIDI out port.'''
-        return self._midi_out_port
-
-    @midi_out_port.setter
-    def midi_out_port(self, value):
+    def set_midi_out_port(self, value):
         '''Sets the MIDI out port.'''
         logger.info('Set MIDI out port: %s' % value)
-        self._midi_out_port = value
+        if (self._midi_output is not None):
+            self._midi_output.close()
+        if value:
+            self._midi_output = mido.open_output(value)
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
@@ -116,7 +113,7 @@ class PianoPlayer:
         Parameters:
             message: The midi message to play
         '''
-        if (self._midi_output is None or self._midi_output.closed):
+        if (self._midi_output is None):
             # player is not playing => open a new midi output port
             with mido.open_output(self._midi_out_port) as midi_output:
                 midi_output.send(message)
@@ -205,8 +202,6 @@ class PianoPlayer:
         with open(MIDI_FILE_PATH, 'wb') as midi_file:
             midi_file.write(midi_data)
 
-        self._midi_output = mido.open_output(self._midi_out_port)
-
         try:
 
             mido_file = mido.MidiFile(MIDI_FILE_PATH)
@@ -262,9 +257,10 @@ class PianoPlayer:
                                 message.velocity = int(
                                     message.velocity * self.dynamics / DYNAMICS_DEFAULT)
 
-                        self._midi_output.send(message)
-                        for callback in self._midi_messages_callbacks:
-                            await callback(message)
+                        if (self._midi_output is not None):
+                            self._midi_output.send(message)
+                            for callback in self._midi_messages_callbacks:
+                                await callback(message)
 
             logger.info('End of midifile reached.')
 
@@ -291,10 +287,3 @@ class PianoPlayer:
             logger.exception('BaseException received.')
             self._midi_output.reset()
             raise
-    
-        finally:
-            if (self._midi_output is not None):
-                self._midi_output.close()
-                self._midi_output = None    
-
-
