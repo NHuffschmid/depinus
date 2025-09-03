@@ -83,13 +83,18 @@ class PianoPlayer:
         '''Sets the dynamics.'''
         self._dynamics = value
 
-    def set_midi_out_port(self, value):
+    async def set_midi_out_port(self, value):
         '''Sets the MIDI out port.'''
         logger.info('Set MIDI out port: %s' % value)
         if (self._midi_output is not None):
             self._midi_output.close()
         if value:
-            self._midi_output = mido.open_output(value)
+            try:
+                self._midi_output = mido.open_output(value)
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to open MIDI output port '{value}': {e}")
+                await self.stop()
+                self._midi_output = None
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
