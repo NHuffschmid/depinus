@@ -153,7 +153,7 @@ class PianoPlayer:
             self._play_task = asyncio.create_task(
                 self._play_mididata(self._current_composition.midi_data))
 
-    async def gotoPlayTime(self, position):
+    async def goto_play_time(self, position):
         '''
         Sets a specific playtime.
 
@@ -172,7 +172,7 @@ class PianoPlayer:
             self.pause()
 
         self._play_task = asyncio.create_task(
-            self._play_mididata(self._currentComposition.midi_data, position))
+            self._play_mididata(self._current_composition.midi_data, position))
 
         # wait until new position is found
         while (self._positioning_pending):
