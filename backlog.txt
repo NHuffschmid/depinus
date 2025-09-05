@@ -24,4 +24,3 @@ Bugs:
 - analyse "Task exception was never retrieved" errors from piano_daemon log
 - Swagger GUI not working any more
 - remove --strip switch from PyInstaller (Windows) script
-- unplugging the MIDI USB adapter makes the PianoPlayer crash
