@@ -15,3 +15,4 @@
 - migrated from REACT CRA to Vite
 - use snake_case instead of CamelCase in Python code
 - converted (partially) JSX frontend code to TSX
+- avoid GTK error messages in headless mode
