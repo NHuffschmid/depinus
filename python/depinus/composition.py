@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-
 # A piece of music
-
 
 class Composition:
     '''Composition class'''
     
-    def __init__(self, name, composer, duration, mididata):
+    def __init__(self, name, composer, duration, midi_data):
         '''
         Constructor
         
@@ -14,9 +11,9 @@ class Composition:
             name: Title
             composer: The one who wrote it
             duration: Total time in seconds
-            mididata: Binary midi data
+            midi_data: Binary midi data
         '''
-        self.Name = name
-        self.Composer = composer
-        self.Duration = duration
-        self.Mididata = mididata
+        self.name = name
+        self.composer = composer
+        self.duration = duration
+        self.midi_data = midi_data

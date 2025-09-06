@@ -10,6 +10,8 @@ from depinus import logger
 from depinus.websocket_server import WebsocketServer
 from depinus.composition import Composition
 from depinus.piano_player import PianoPlayer
+from depinus.midi_interface_observer import MidiInterfaceObserver
+from depinus.config_utils import read_config, persist_config_setting
 
 class PianoDaemon:
     '''Creates and wires up the main components'''
@@ -24,11 +26,22 @@ class PianoDaemon:
         # see https://docs.python.org/3.10/library/asyncio-task.html#asyncio.create_task
         self._background_tasks = set() # avoid tasks getting garbage collected
 
-        self._websocket_server = WebsocketServer()
-        self._piano_player = PianoPlayer()
+        # Load default settings from config file
+        config = read_config()
+        settings = config['Settings'] if 'Settings' in config else {}
 
-        outputNames = mido.get_output_names()
-        self._midiOutPort = outputNames[len(outputNames) - 1] # use external USB midi device
+        port = config['Network']['piano_daemon_websocket_port']
+        self._websocket_server = WebsocketServer(port)
+
+        self._piano_player = PianoPlayer()
+        self._piano_player.dynamics = int(settings.get('dynamics', 50))
+        self._piano_player.tempo = float(settings.get('tempo', 1.0))
+        self._piano_player.transposition = int(settings.get('transposition', 0))
+
+        self._midi_interface_observer = MidiInterfaceObserver()
+        self._midi_interface_observer.register(self._on_midi_interfaces_changed)
+        self._midi_out_ports_available = []
+        self._midi_out_ports_selected = None
 
 
     async def run(self):
@@ -42,6 +55,9 @@ class PianoDaemon:
 
             logger.info('Start websocket server...')
             self._background_tasks.add(asyncio.create_task(self._websocket_server.run()))
+
+            logger.info('Start midi interface observer...')
+            self._midi_interface_observer.start()
 
             ######################
             # wire up components #
@@ -88,20 +104,31 @@ class PianoDaemon:
         elif (cmd.command == 'tempo'):
             logger.info('tempo command received: ' + str(cmd.value))
             self._piano_player.tempo = cmd.value
+            persist_config_setting('Settings', 'tempo', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'tempo' : cmd.value }
             )
         elif (cmd.command == 'dynamics'):
             logger.info('dynamics command received: ' + str(cmd.value))
             self._piano_player.dynamics = cmd.value
+            persist_config_setting('Settings', 'dynamics', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'dynamics' : cmd.value }
             )
         elif (cmd.command == 'transposition'):
             logger.info('transposition command received: ' + str(cmd.value))
             self._piano_player.transposition = cmd.value
+            persist_config_setting('Settings', 'transposition', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'transposition' : cmd.value }
+            )
+        elif (cmd.command == 'selectedMidiOutPort'):
+            logger.info('selectedMidiOutPort command received: ' + cmd.value)
+            self._midi_out_ports_selected = cmd.value
+            await self._piano_player.set_midi_out_port(cmd.value)
+            persist_config_setting('Midi', 'midi_out_port', cmd.value)
+            await self._websocket_server.send_info_message(
+                { 'messageType': 'info', 'selectedMidiOutPort' : cmd.value }
             )
         elif (cmd.command == 'gotoPlayTime'):
             logger.info('gotoPlayTime (%s sec) command received.' % str(cmd.value))
@@ -121,19 +148,19 @@ class PianoDaemon:
                 })
             
             # find position in midi file
-            await self._piano_player.gotoPlayTime(cmd.value)
+            await self._piano_player.goto_play_time(cmd.value)
 
             # update clients
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
-                    'isStoppable': self._piano_player.isStoppable,
-                    'isPlayable': self._piano_player.isPlayable,
-                    'isPauseable': self._piano_player.isPauseable,
+                    'isStoppable': self._piano_player.is_stoppable,
+                    'isPlayable': self._piano_player.is_playable,
+                    'isPauseable': self._piano_player.is_pauseable,
                     'composition': {
-                        'name': self._piano_player.currentComposition.Name, 
-                        'composerName': self._piano_player.currentComposition.Composer, 
-                        'duration': self._piano_player.currentComposition.Duration,
+                        'name': self._piano_player.current_composition.name, 
+                        'composerName': self._piano_player.current_composition.composer, 
+                        'duration': self._piano_player.current_composition.duration,
                         'playTime': cmd.value
                     }
                 })
@@ -169,28 +196,29 @@ class PianoDaemon:
             'dynamics': self._piano_player.dynamics,
             'transposition': self._piano_player.transposition
         }
-        composition = self._piano_player.currentComposition
-        if (composition):
+        composition = self._piano_player.current_composition
+        if composition:
             info['composition'] = {
-                'name': composition.Name, 
-                'composerName': composition.Composer, 
-                'duration': composition.Duration,
-                'playTime': self._piano_player.playTime
+                'name': composition.name, 
+                'composerName': composition.composer, 
+                'duration': composition.duration,
+                'playTime': self._piano_player.play_time
             }
-            info['isStoppable'] = self._piano_player.isStoppable
-            info['isPlayable'] = self._piano_player.isPlayable
-            info['isPauseable'] = self._piano_player.isPauseable
+            info['isStoppable'] = self._piano_player.is_stoppable
+            info['isPlayable'] = self._piano_player.is_playable
+            info['isPauseable'] = self._piano_player.is_pauseable
         else:
             info['isStoppable'] = False
             info['isPlayable'] = False
             info['isPauseable'] = False
+        info['availableMidiOutPorts'] = self._midi_out_ports_available
+        info['selectedMidiOutPort'] = self._midi_out_ports_selected
 
         await self._websocket_server.send_info_message(info, websocket)
 
 
     async def _on_play_composition(self, name, composer, duration, mididata):
         logger.info('Going to play: %s...' % name)
-        #composition = Composition(name, composer, duration, mididata)
         composition = Composition(name, composer, duration, bytes(mididata))
         await self._piano_player.play(composition)
         await self._websocket_server.send_info_message(
@@ -200,10 +228,10 @@ class PianoDaemon:
                 'isPlayable': False,
                 'isPauseable': True,
                 'composition': {
-                    'name': self._piano_player.currentComposition.Name, 
-                    'composerName': self._piano_player.currentComposition.Composer, 
-                    'duration': self._piano_player.currentComposition.Duration,
-                    'playTime': self._piano_player.playTime
+                    'name': self._piano_player.current_composition.name, 
+                    'composerName': self._piano_player.current_composition.composer, 
+                    'duration': self._piano_player.current_composition.duration,
+                    'playTime': self._piano_player.play_time
                 }
             })
 
@@ -229,9 +257,9 @@ class PianoDaemon:
                 'isPlayable': True,
                 'isPauseable': False,
                 'composition': {
-                    'name': self._piano_player.currentComposition.Name, 
-                    'composerName': self._piano_player.currentComposition.Composer, 
-                    'duration': self._piano_player.currentComposition.Duration,
+                    'name': self._piano_player.current_composition.name, 
+                    'composerName': self._piano_player.current_composition.composer, 
+                    'duration': self._piano_player.current_composition.duration,
                     'playTime': 0
                 }
             })
@@ -240,6 +268,32 @@ class PianoDaemon:
         await self._websocket_server.send_keyboard_message(
             mido.Message('note_on', note=0, velocity=0)
         )
+
+    async def _on_midi_interfaces_changed(self, interfaces):
+        '''Callback for MIDI interface changes.'''
+
+        self._midi_out_ports_available = interfaces
+        midi_out_port_config = None
+        config = read_config()
+        if 'Midi' in config and 'midi_out_port' in config['Midi']:
+            midi_out_port_config = config['Midi']['midi_out_port']
+
+        if interfaces:
+            if midi_out_port_config and midi_out_port_config in interfaces:
+                self._midi_out_ports_selected = midi_out_port_config
+            else:
+                self._midi_out_ports_selected = interfaces[-1]
+        else:
+            self._midi_out_ports_selected = None
+
+        await self._websocket_server.send_info_message(
+            {
+                'messageType': 'info',
+                'availableMidiOutPorts': self._midi_out_ports_available,
+                'selectedMidiOutPort': self._midi_out_ports_selected
+            })
+
+        await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
 
 
 if __name__ == '__main__':

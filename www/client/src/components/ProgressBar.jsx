@@ -47,8 +47,11 @@ const ProgressBar = () => {
         }
       }
 
+      // TODO: rework this strange waiting indication handling
+      
       if (
         (totalTime === 0) ||
+        message['selectedMidiOutPort'] ||
         message['dynamics'] ||
         message['tempo'] ||
         message['transposition'] ||
