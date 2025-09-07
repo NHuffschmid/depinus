@@ -1,9 +1,9 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from 'react';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 
-export default function Dashboard() {
+interface DashboardProps {}
 
+const Dashboard: React.FC<DashboardProps> = () => {
     const [isBackwardable] = useState(false);
     const [isStoppable, setIsStoppable] = useState(false);
     const [composer, setComposer] = useState('');
@@ -14,7 +14,7 @@ export default function Dashboard() {
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
-        onInfoMessage: (message) => {
+        onInfoMessage: (message: any) => {
             if ('composition' in message) {
                 setComposition(message['composition']['name']);
                 setComposer(message['composition']['composerName']);
@@ -57,3 +57,5 @@ export default function Dashboard() {
         </div>
     )
 }
+
+export default Dashboard;
