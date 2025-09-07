@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 
-interface DashboardProps {}
+interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
     const [isBackwardable] = useState(false);

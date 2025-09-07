@@ -5,68 +5,68 @@ import UploadCompositionDialog from './UploadCompositionDialog';
 import { backendUrl } from '../../config';
 
 interface UploadCompositionPanelProps {
-  composerId: number;
-  finished: () => void;
+    composerId: number;
+    finished: () => void;
 }
 
 const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) => {
-  const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | undefined>();
-  const { t } = useTranslation();
+    const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | undefined>();
+    const { t } = useTranslation();
 
-  //console.log('Uploading composition data');
-  const uploadComposition = (title: string, midifile: File) => {
-    return new Promise<void>((resolve, reject) => {
-      const formData = new FormData();
-      formData.append('name', title);
-      formData.append('composerId', String(props.composerId));
-      formData.append('midifile', midifile);
-      fetch(backendUrl + '/archive/composition', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => {
-          if (response.status === 200) {
-            resolve();
-          } else {
-            response.json().then((data) => {
-              reject(data.message);
-            });
-          }
-        })
-        .catch((error) => {
-          reject(error);
+    //console.log('Uploading composition data');
+    const uploadComposition = (title: string, midifile: File) => {
+        return new Promise<void>((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('name', title);
+            formData.append('composerId', String(props.composerId));
+            formData.append('midifile', midifile);
+            fetch(backendUrl + '/archive/composition', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((response) => {
+                    if (response.status === 200) {
+                        resolve();
+                    } else {
+                        response.json().then((data) => {
+                            reject(data.message);
+                        });
+                    }
+                })
+                .catch((error) => {
+                    reject(error);
+                });
         });
-    });
-  };
+    };
 
-  const uploadFinished = (error?: any) => {
-    setUploadDialogIsOpen(false);
-    if (error) {
-      setErrorMessage(error.toString());
-    }
-    props.finished();
-  };
+    const uploadFinished = (error?: any) => {
+        setUploadDialogIsOpen(false);
+        if (error) {
+            setErrorMessage(error.toString());
+        }
+        props.finished();
+    };
 
-  return (
-    <div>
-      <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
-      <UploadCompositionDialog
-        open={uploadDialogIsOpen}
-        header={t('Add midifile to archive')}
-        title={''}
-        midifileIsMandatory={true}
-        upload={uploadComposition}
-        finished={uploadFinished}
-      />
-      <MessageDialog
-        open={errorMessage !== undefined}
-        setMessage={setErrorMessage}
-        header={t('UploadFailed')}
-        message={errorMessage}
-      />
-    </div>
-  );
+    return (
+        <div>
+            <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
+            <UploadCompositionDialog
+                open={uploadDialogIsOpen}
+                header={t('Add midifile to archive')}
+                title={''}
+                midifileIsMandatory={true}
+                upload={uploadComposition}
+                finished={uploadFinished}
+            />
+            <MessageDialog
+                open={errorMessage !== undefined}
+                setMessage={setErrorMessage}
+                header={t('UploadFailed')}
+                message={errorMessage}
+            />
+        </div>
+    );
 }
 
 export default UploadCompositionPanel;

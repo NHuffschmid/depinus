@@ -31,7 +31,7 @@ function CustomLink({ to, children, ...props }: CustomLinkProps) {
     const isActive = useMatch({ path: resolvedPath.pathname, end: true })
     const [cookies] = useCookies(['color']);
     return (
-    <li style={ isActive ? {backgroundColor: cookies.color} : undefined }>
+        <li style={isActive ? { backgroundColor: cookies.color } : undefined}>
             <Link to={to} {...props}>
                 {children}
             </Link>
