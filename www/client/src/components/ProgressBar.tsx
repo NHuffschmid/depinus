@@ -89,9 +89,6 @@ const ProgressBar: React.FC = () => {
                         className="progressSlider"
                         thumbClassName="progressSlider-thumb"
                         trackClassName="progressSlider-track"
-                        
-                        
-                        
                         defaultValue={0}
                         value={playTime}
                         onChange={sliderChanged}
