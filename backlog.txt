@@ -24,3 +24,4 @@ Bugs:
 - analyse "Task exception was never retrieved" errors from piano_daemon log
 - Swagger GUI not working any more
 - remove --strip switch from PyInstaller (Windows) script
+- POST method "play" on backend does not return (and make backend test fail)
