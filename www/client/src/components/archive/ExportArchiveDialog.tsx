@@ -59,22 +59,27 @@ const ExportArchiveDialog: React.FC<ExportArchiveDialogProps> = (props) => {
             .then((data) => {
                 const tvData: any[] = [];
                 data.forEach((composer: any) => {
-                    const tvdComposer = {
-                        'type': 'composer',
-                        'id': composer.id,
-                        'name': composer.firstname + ' ' + composer.surname,
-                        'compositions': []
+                    const tvdComposer: {
+                        type: string;
+                        id: number;
+                        name: string;
+                        compositions: { type: string; id: number; name: string }[];
+                    } = {
+                        type: 'composer',
+                        id: composer.id,
+                        name: composer.firstname + ' ' + composer.surname,
+                        compositions: []
                     };
                     // get all compositions of given composer
                     fetch(backendUrl + '/archive/compositions?composerId=' + composer.id)
                         .then((response) => response.json())
                         .then((data) => {
                             data.forEach((composition: any) => {
-                                const tvdComposition = {
-                                    'type': 'composition',
-                                    'id': composition.id,
-                                    'name': composition.name
-                                }
+                                const tvdComposition: { type: string; id: number; name: string } = {
+                                    type: 'composition',
+                                    id: composition.id,
+                                    name: composition.name
+                                };
                                 tvdComposer.compositions.push(tvdComposition);
                                 SetTreeViewData(tvData);
                             });

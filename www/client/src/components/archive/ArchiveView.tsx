@@ -59,11 +59,12 @@ const ArchiveView: React.FC = () => {
                                     background: selectedComposition && (composition.id === parseInt(selectedComposition.id)) ? cookies.color : 'transparent'
                                 }}
                                 key={composition.id}
-                                value={composition.id}
+                                data-id={composition.id}
                                 onClick={(e) => {
+                                    const id = (e.target as HTMLElement).getAttribute('data-id');
                                     if (!selectedComposition) {
                                         for (const comp of compositions) {
-                                            if (comp.id === parseInt((e.target as HTMLLIElement).value)) {
+                                            if (comp.id === parseInt(id ?? '')) {
                                                 setSelectedComposition(comp);
                                             }
                                         }

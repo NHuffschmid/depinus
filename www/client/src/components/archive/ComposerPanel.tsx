@@ -65,7 +65,7 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
                         });
                     } else if (response.status === 204) {
                         getComposers();
-                        setSelectedComposer({ firstname, surname, id: selectedComposer.id });
+                        setSelectedComposer({ firstname, surname, id: selectedComposer ? selectedComposer.id : 0 });
                         setImageTag(Math.random().toString().slice(2));
                         resolve();
                     } else {
@@ -158,7 +158,7 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
                 </button>
             ) : null}
             <button
-                title={t('Add new composer to archive')}
+                title={t('Add new composer to archive') ?? ''}
                 onClick={() => {
                     setUploadComposerDialogHeader(t('Add new composer to archive') ?? undefined);
                     setSelectedComposer(null);

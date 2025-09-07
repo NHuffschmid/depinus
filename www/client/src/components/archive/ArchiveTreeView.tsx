@@ -113,7 +113,7 @@ const ArchiveTreeView = forwardRef<ArchiveTreeViewRef, ArchiveTreeViewProps>((pr
                 }: any) => {
                     setTimeout(() => { // avoid render collision warning
                         // disable composers without compositions
-                        // const nodeProps = getNodeProps();
+                        const nodeProps = getNodeProps();
                         if (!isBranch && (element.parent === 'archive') && !(nodeProps as any).disabled) {
                             dispatch({ type: 'DISABLE', id: element.id })
                         }
