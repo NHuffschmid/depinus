@@ -4,6 +4,8 @@ import ImportArchiveDialog from './ImportArchiveDialog';
 
 interface ImportArchiveButtonProps {
     children?: React.ReactNode;
+    angle: number;
+    radius: number;
 }
 
 const ImportArchiveButton: React.FC<ImportArchiveButtonProps> = (props) => {

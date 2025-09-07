@@ -1,15 +1,12 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from 'qrcode.react';
 import { backendUrl } from '../config';
 
-export default function About() {
-
+const About: React.FC = () => {
     const { t } = useTranslation();
-
-    const [infoData, setInfoData] = useState();
-    const [remoteControlUrl, setRemoteControlUrl] = useState();
+    const [infoData, setInfoData] = useState<any>();
+    const [remoteControlUrl, setRemoteControlUrl] = useState<string>();
 
     useEffect(() => {
         fetch(backendUrl + '/info')
@@ -18,19 +15,19 @@ export default function About() {
                 setInfoData(data);
                 let url = 'http://' + data['platformData']['Hostname'];
                 if (window.location.port) {
-                    url += ':' + window.location.port
+                    url += ':' + window.location.port;
                 }
                 setRemoteControlUrl(url);
                 //console.log(data);
             })
     }, []);
 
-    let tableRows = [];
+    let tableRows: JSX.Element[] = [];
     if (infoData != null) {
         for (const [key, value] of Object.entries(infoData['platformData'])) {
             tableRows.push(<tr key={key}>
                 <td style={{ textAlign: 'right' }}>{key}:</td>
-                <td style={{ textAlign: 'left', padding: '0 1rem' }}>{value}</td>
+                <td style={{ textAlign: 'left', padding: '0 1rem' }}>{String(value)}</td>
             </tr>);
         }
     }
@@ -67,17 +64,20 @@ export default function About() {
                         marginBottom: '1rem',
                     }}><tbody>{tableRows}</tbody></table>
                     <QRCodeSVG
-                        value={remoteControlUrl}
+                        value={remoteControlUrl ?? ''}
                         level={"Q"}
                         imageSettings={{
                             src: "favicon.ico",
                             height: 32,
                             width: 32,
+                            excavate: true
                         }}
                     />
                     <h3>{t('Remote control') + ': ' + remoteControlUrl}</h3>
                 </div>
             ) : ''}
         </React.Fragment>
-    )
+    );
 }
+
+export default About;

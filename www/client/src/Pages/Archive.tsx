@@ -1,8 +1,7 @@
 import React from 'react';
 import ArchiveView from "../components/archive/ArchiveView";
 
-const Archive = () => {
-
+const Archive: React.FC = () => {
     return (
         <div style={{ margin: '0.5rem' }}>
             <ArchiveView />
@@ -10,4 +9,4 @@ const Archive = () => {
     )
 }
 
-export default Archive
+export default Archive;

@@ -4,6 +4,8 @@ import ExportArchiveDialog from './ExportArchiveDialog';
 
 interface ExportArchiveButtonProps {
     children?: React.ReactNode;
+    angle: number;
+    radius: number;
 }
 
 const ExportArchiveButton: React.FC<ExportArchiveButtonProps> = (props) => {
