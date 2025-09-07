@@ -51,9 +51,16 @@ function play(req, res) {
               })
                 .then(() => {
                   logger.debug(`RPC call finished successful.`);
+                  res.json({
+                    id: id,
+                    name: compositionName,
+                    duration: duration,
+                    composer_id: composer_id
+                  });
                 })
                 .catch((err) => {
-                  logger.error('RPC error: ' + err);
+                  logger.error(err);
+                  res.status(500).json({ 'message': err.toString() });
                 });
             }
           });

@@ -179,13 +179,18 @@ class WebsocketServer:
 
                 elif (json_message['commandType'] == 'rpc'):
                     err_msg = None
+                    result = None
                     if 'method' not in json_message:
                         err_msg = "No method found in RPC request"
                     elif json_message['method'] not in self._rpc_methods:
                         err_msg = f"Unknown method '{json_message['method']}'"
                     else:
                         logger.debug('RPC request received')
-                        result = await self._rpc_methods[json_message['method']](**json_message.get('params', {}))
+                        try:
+                            result = await self._rpc_methods[json_message['method']](**json_message.get('params', {}))
+                        except Exception as exc:
+                            err_msg = f"RPC error: {str(exc)}"
+                            logger.exception(err_msg)
 
                     if (err_msg):
                         logger.error(err_msg)
