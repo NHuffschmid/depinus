@@ -89,9 +89,9 @@ const ProgressBar: React.FC = () => {
                         className="progressSlider"
                         thumbClassName="progressSlider-thumb"
                         trackClassName="progressSlider-track"
-                        //renderTrack={(props, state) => <div {...props} style={{ background: '#0f0'}} />}
-                        //renderTrack={(props, state) => <div class="progressSlider" style="position: relative;"><div class="progressSlider-track progressSlider-track-0" style="position: absolute; left: 0px; right: 823.353px;"></div><div class="progressSlider-track progressSlider-track-1" style="position: absolute; left: 74.8503px; right: 0px;"></div><div class="progressSlider-thumb progressSlider-thumb-0 " tabindex="0" role="slider" aria-orientation="horizontal" aria-valuenow="7" aria-valuemin="0" aria-valuemax="84" style="position: absolute; touch-action: none; z-index: 1; left: 74.8503px;"></div></div>}
-                        //renderTrack={(props, state) => <div class="progressSlider"><div class="progressSlider-track progressSlider-track-0"></div><div class="progressSlider-track progressSlider-track-1"></div><div class="progressSlider-thumb progressSlider-thumb-0 " tabindex="0" role="slider" aria-orientation="horizontal" aria-valuenow="7" aria-valuemin="0" aria-valuemax="84"></div></div>}
+                        
+                        
+                        
                         defaultValue={0}
                         value={playTime}
                         onChange={sliderChanged}
