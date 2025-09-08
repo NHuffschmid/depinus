@@ -6,10 +6,8 @@ import { Link, useResolvedPath, useMatch } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCookies } from 'react-cookie';
 
-export default function Navbar() {
-
+const Navbar: React.FC = () => {
     const { t } = useTranslation();
-
     return (
         <nav className="nav">
             <ul>
@@ -22,16 +20,23 @@ export default function Navbar() {
     )
 }
 
-function CustomLink({ to, children, ...props }) {
+interface CustomLinkProps {
+    to: string;
+    children: React.ReactNode;
+    [key: string]: any;
+}
+
+function CustomLink({ to, children, ...props }: CustomLinkProps) {
     const resolvedPath = useResolvedPath(to)
     const isActive = useMatch({ path: resolvedPath.pathname, end: true })
     const [cookies] = useCookies(['color']);
-
     return (
-        <li style={ isActive ? {backgroundColor: cookies.color} : null}>
+        <li style={isActive ? { backgroundColor: cookies.color } : undefined}>
             <Link to={to} {...props}>
                 {children}
             </Link>
         </li>
     )
 }
+
+export default Navbar;

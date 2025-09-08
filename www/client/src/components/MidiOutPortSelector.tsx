@@ -21,7 +21,7 @@ const MidiOutPortSelector: React.FC = () => {
 
 	const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
 		setSelectedPort(e.target.value);
-        webSocket.sendSettingsCommand('selectedMidiOutPort', e.target.value);
+		webSocket.sendSettingsCommand('selectedMidiOutPort', e.target.value);
 	};
 
 	return (

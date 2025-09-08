@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import DemoButton from "../components/DemoButton";
 import ShutdownButton from "../components/ShutdownButton";
@@ -7,20 +6,18 @@ import ExportArchiveButton from "../components/archive/ExportArchiveButton";
 import ImportArchiveButton from "../components/archive/ImportArchiveButton";
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 
-const Home = () => {
-
-    const [angle, setAngle] = useState(Math.random() * 2.0 * Math.PI);
-
+const Home: React.FC = () => {
+    const [angle, setAngle] = useState<number>(Math.random() * 2.0 * Math.PI);
     const { t } = useTranslation();
 
     useDepinusWebSocket({
         name: 'Home',
         onKeyboardMessage: () => {
             // with each key press/release nav buttons are rotated a bit further
-            setAngle(angle + 0.001);
+            setAngle(prev => prev + 0.001);
         }
     });
- 
+
     return (
         <div style={{ background: 'transparent', flex: '1 1 auto', position: 'relative' }}>
             <DemoButton angle={angle} radius={0}>{t('Demo')}</DemoButton>
@@ -31,4 +28,4 @@ const Home = () => {
     )
 }
 
-export default Home
+export default Home;

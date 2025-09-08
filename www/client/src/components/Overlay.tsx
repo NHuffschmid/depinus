@@ -1,16 +1,14 @@
-import React from 'react';
-import { useState } from "react";
+import React, { useState } from 'react';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { backendUrl } from '../config';
 
-export default function Overlay() {
-
-    const [composerImageUrl, setComposerImageUrl] = useState('');
-    const [isPauseable, setIsPauseable] = useState(false);
+const Overlay: React.FC = () => {
+    const [composerImageUrl, setComposerImageUrl] = useState<string>('');
+    const [isPauseable, setIsPauseable] = useState<boolean>(false);
 
     useDepinusWebSocket({
         name: 'Overlay',
-        onInfoMessage: (message) => {
+        onInfoMessage: (message: any) => {
             if ('composition' in message) {
                 setComposerImageUrl(backendUrl +
                     "/archive/composerImage?composerName=" + message['composition']['composerName']);
@@ -34,8 +32,10 @@ export default function Overlay() {
                 backgroundRepeat: 'no-repeat',
                 zIndex: -1,
                 opacity: 0.2,
-                backgroundImage: isPauseable ? `url('${composerImageUrl}')` : null
+                backgroundImage: isPauseable ? `url('${composerImageUrl}')` : undefined
             }}
         />
     )
 }
+
+export default Overlay;
