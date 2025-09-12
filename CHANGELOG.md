@@ -3,10 +3,16 @@
 ## [0.8.0] - Pachelbel
 - Going public
 
-## [0.x.y] - Telemann (not released yet)
+## [0.x.y] - Corelli (not released yet)
 
 ### Features
 - Added MIDI out port setting
+- Enhanced music archive by:
+  - Mussorgski
+  - Ravel
+  - Schubert
+  - Schumann
+  - Tschaikovski
 
 ### Bugfixes
 - None
@@ -16,3 +22,4 @@
 - use snake_case instead of CamelCase in Python code
 - converted JSX frontend code to TSX
 - avoid GTK error messages in headless mode
+- worked around zero width space issue when storing composition names in DB
