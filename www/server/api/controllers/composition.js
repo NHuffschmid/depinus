@@ -100,8 +100,11 @@ function deleteComposition(req, res) {
 function patchComposition(req, res) {
 
   if (req.swagger.params.name) {
+    // TODO: deal with midifile update as well
+    // TODO: clarify where zero width spaces are coming from
+    const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
     db.run(`UPDATE composition SET name=(?) WHERE id=${req.swagger.params.id.value};`,
-      [req.swagger.params.name.value], (err) => {
+      [compositionName], (err) => {
         if (err) {
           res.status(500).json({ 'message': err.toString() });
         }
@@ -134,9 +137,11 @@ function postComposition(req, res) {
   // insert composition to DB
   calculateMidifileDuration(req.swagger.params.midifile.value.buffer)
     .then((duration) => {
+      // TODO: clarify where zero width spaces are coming from
+      const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
       db.run('INSERT INTO composition(name, composer_id, duration, midifile) VALUES (?, ?, ?, ?)',
         [
-          req.swagger.params.name.value,
+          compositionName,
           req.swagger.params.composerId.value,
           duration,
           req.swagger.params.midifile.value.buffer], function (err, lastID) {
