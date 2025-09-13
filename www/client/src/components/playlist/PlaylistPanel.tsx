@@ -1,27 +1,19 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslation } from "react-i18next";
-import PlaylistSelector, { PlaylistSelectorRef } from './PlaylistSelector';
-
-const initialPlaylists = [
-    'Classical Favorites',
-    'Jazz Essentials',
-    'Rock Hits',
-    'Chill Vibes'
-];
+import PlaylistSelector from './PlaylistSelector';
+import { usePlaylistContext } from './PlaylistContext';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
-    const selectorRef = useRef<PlaylistSelectorRef>(null);
+    const { playlists, setPlaylists } = usePlaylistContext();
 
     const handleAdd = () => {
-        const current = selectorRef.current?.getPlaylist() || [];
-        selectorRef.current?.setPlaylist([...current, 'New Playlist']);
+        setPlaylists([...playlists, 'New Playlist']);
     };
 
     const handleDelete = () => {
-        const current = selectorRef.current?.getPlaylist() || [];
-        if (current.length > 0) {
-            selectorRef.current?.setPlaylist(current.slice(0, -1));
+        if (playlists.length > 0) {
+            setPlaylists(playlists.slice(0, -1));
         }
     };
 
@@ -34,7 +26,7 @@ const PlaylistPanel: React.FC = () => {
             backgroundColor: 'gray',
             padding: '0.2rem'
         }}>
-            <PlaylistSelector ref={selectorRef} playlists={initialPlaylists} />
+            <PlaylistSelector playlists={playlists} />
             <button
                 title={t('Create new playlist') ?? ''}
                 onClick={handleAdd} style={{ marginLeft: '1rem' }}>

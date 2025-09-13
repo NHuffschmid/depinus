@@ -1,26 +1,14 @@
-import React, { useState, useImperativeHandle, forwardRef } from 'react';
 
-export interface PlaylistSelectorRef {
-    getPlaylist: () => string[];
-    setPlaylist: (playlist: string[]) => void;
-}
+import React from 'react';
+import { usePlaylistContext } from './PlaylistContext';
 
 interface PlaylistSelectorProps {
     playlists: string[];
     onSelect?: (selected: string) => void;
 }
 
-const PlaylistSelector = forwardRef<PlaylistSelectorRef, PlaylistSelectorProps>(({ playlists, onSelect }, ref) => {
-    const [playlist, setPlaylist] = useState<string[]>(playlists);
-    const [selected, setSelected] = useState<string>(playlists[0] || '');
-
-    useImperativeHandle(ref, () => ({
-        getPlaylist: () => playlist,
-        setPlaylist: (newPlaylist: string[]) => {
-            setPlaylist(newPlaylist);
-            setSelected(newPlaylist[0] || '');
-        }
-    }), [playlist]);
+const PlaylistSelector: React.FC<PlaylistSelectorProps> = ({ playlists, onSelect }) => {
+    const { selected, setSelected } = usePlaylistContext();
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelected(e.target.value);
@@ -30,12 +18,12 @@ const PlaylistSelector = forwardRef<PlaylistSelectorRef, PlaylistSelectorProps>(
     return (
         <div>
             <select id="playlist-combobox" style={{ fontSize: '1.2rem' }} value={selected} onChange={handleChange}>
-                {playlist.map((pl, idx) => (
+                {playlists.map((pl, idx) => (
                     <option key={idx} value={pl}>{pl}</option>
                 ))}
             </select>
         </div>
     );
-});
+};
 
 export default PlaylistSelector;
