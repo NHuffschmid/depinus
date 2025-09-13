@@ -29,8 +29,7 @@ const PlaylistSelector = forwardRef<PlaylistSelectorRef, PlaylistSelectorProps>(
 
     return (
         <div>
-            <label htmlFor="playlist-combobox">Select Playlist:</label>
-            <select id="playlist-combobox" value={selected} onChange={handleChange}>
+            <select id="playlist-combobox" style={{ fontSize: '1.2rem' }} value={selected} onChange={handleChange}>
                 {playlist.map((pl, idx) => (
                     <option key={idx} value={pl}>{pl}</option>
                 ))}
