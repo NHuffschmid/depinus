@@ -6,6 +6,7 @@ import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Home from "./Pages/Home";
 import Archive from "./Pages/Archive";
+import Playlist from "./Playlist";
 import Settings from "./Pages/Settings";
 import About from "./Pages/About";
 import Navbar from "./components/Navbar";
@@ -108,6 +109,7 @@ function App(): JSX.Element {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/Archive" element={<Archive />} />
+              <Route path="/Playlist" element={<Playlist />} />
               <Route path="/Settings" element={<Settings />} />
               <Route path="/About" element={<About />} />
             </Routes>
