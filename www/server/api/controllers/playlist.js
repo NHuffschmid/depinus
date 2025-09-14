@@ -88,8 +88,7 @@ function getPlaylistCompositions(req, res) {
 
 function addCompositionToPlaylist(req, res) {
     const playlistId = req.swagger.params.id.value;
-    const compositionId = req.swagger.params.compositionId.value;
-    const position = req.swagger.params.position.value || 0;
+    const { compositionId, position = 0 } = req.body;
     db.run('INSERT INTO playlist_composition (playlist_id, composition_id, position) VALUES (?, ?, ?);',
         [playlistId, compositionId, position], (err) => {
             if (err) {
@@ -125,7 +124,7 @@ function removeCompositionFromPlaylist(req, res) {
     const playlistId = req.swagger.params.id.value;
     const compositionId = req.swagger.params.compositionId.value;
     db.run('DELETE FROM playlist_composition WHERE playlist_id = ? AND composition_id = ?;',
-        [playlistId, compositionId], (err) => {
+        [playlistId, compositionId], function (err) {
             if (err) {
                 res.status(500).json({ 'message': err.toString() });
                 logger.error(err.message);

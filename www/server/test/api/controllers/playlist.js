@@ -63,8 +63,8 @@ describe('controllers', function () {
       it('should add a composition to the playlist', function (done) {
         request(BACKEND_URL)
           .post('/playlist/' + playlistId + '/compositions')
-          .field('compositionId', compositionId)
-          .field('position', 1)
+          .send({ compositionId: compositionId, position: 1 })
+          .set('Content-Type', 'application/json')
           .expect(204)
           .end(function (err, res) {
             should.not.exist(err);
@@ -103,11 +103,10 @@ describe('controllers', function () {
       });
     });
 
-    describe('DELETE /playlist/{id}/compositions', function () {
+    describe('DELETE /playlist/{id}/compositions/{compositionId}', function () {
       it('should remove a composition from the playlist', function (done) {
         request(BACKEND_URL)
-          .delete('/playlist/' + playlistId + '/compositions')
-          .field('compositionId', compositionId)
+          .delete('/playlist/' + playlistId + '/compositions/' + compositionId)
           .expect(204)
           .end(function (err, res) {
             should.not.exist(err);

@@ -469,22 +469,28 @@ paths:
     post:
       description: Adds a composition to a playlist.
       operationId: addCompositionToPlaylist
+      produces:
+        - application/json
+      consumes:
+        - application/json
       parameters:
         - in: path
           name: id
           type: integer
           required: true
           description: ID of the playlist
-        - name: compositionId
-          in: formData
-          description: ID of the composition
-          required: true
-          type: integer
-        - name: position
-          in: formData
-          description: Position in playlist
-          required: false
-          type: integer
+        - in: body
+          name: body
+          schema:
+            type: object
+            required: [compositionId]
+            properties:
+              compositionId:
+                description: ID of the composition
+                type: integer
+              position:
+                description: Position in playlist
+                type: integer
       responses:
         "204":
           description: Added
@@ -522,6 +528,8 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /playlist/{id}/compositions/{compositionId}:
+    x-swagger-router-controller: playlist
     delete:
       description: Removes a composition from a playlist.
       operationId: removeCompositionFromPlaylist
@@ -531,11 +539,11 @@ paths:
           type: integer
           required: true
           description: ID of the playlist
-        - name: compositionId
-          in: formData
-          description: ID of the composition
-          required: true
+        - in: path
+          name: compositionId
           type: integer
+          required: true
+          description: ID of the composition
       responses:
         "204":
           description: Removed
