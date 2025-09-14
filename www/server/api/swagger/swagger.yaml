@@ -364,6 +364,181 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /playlist:
+    x-swagger-router-controller: playlist
+    get:
+      description: Returns all playlists.
+      operationId: getPlaylists
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PlaylistResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      description: Creates a new playlist.
+      operationId: postPlaylist
+      consumes:
+      - "application/x-www-form-urlencoded"
+      parameters:
+        - name: "name"
+          in: "formData"
+          description: "Name of the playlist"
+          required: false
+          type: "string"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlaylistResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /playlist/{id}:
+    x-swagger-router-controller: playlist
+    get:
+      description: Returns a playlist by ID.
+      operationId: getPlaylist
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlaylistResponse"
+        "404":
+          description: Playlist not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      description: Deletes a playlist by ID.
+      operationId: deletePlaylist
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+      responses:
+        "204":
+          description: Deleted
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /playlist/{id}/compositions:
+    x-swagger-router-controller: playlist
+    get:
+      description: Returns all compositions in a playlist.
+      operationId: getPlaylistCompositions
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CompositionResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      description: Adds a composition to a playlist.
+      operationId: addCompositionToPlaylist
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+        - name: compositionId
+          in: formData
+          description: ID of the composition
+          required: true
+          type: integer
+        - name: position
+          in: formData
+          description: Position in playlist
+          required: false
+          type: integer
+      responses:
+        "204":
+          description: Added
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      description: Updates the order of compositions in a playlist.
+      operationId: updatePlaylistOrder
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+        - name: order
+          in: body
+          required: true
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                compositionId:
+                  type: integer
+                position:
+                  type: integer
+      responses:
+        "204":
+          description: Order updated
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      description: Removes a composition from a playlist.
+      operationId: removeCompositionFromPlaylist
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist
+        - name: compositionId
+          in: formData
+          description: ID of the composition
+          required: true
+          type: integer
+      responses:
+        "204":
+          description: Removed
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /info:
     x-swagger-router-controller: info
     get:
@@ -471,6 +646,16 @@ definitions:
       composer_id:
         type: integer
         example: 2
+  PlaylistResponse:
+    type: object
+    required: [id, name]
+    properties:
+      id:
+        type: integer
+        example: 1
+      name:
+        type: string
+        example: "My Playlist"
   ErrorResponse:
     required:
       - message
