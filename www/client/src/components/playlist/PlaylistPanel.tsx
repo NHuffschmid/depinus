@@ -1,16 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from './PlaylistContext';
+import CreatePlaylistDialog from './CreatePlaylistDialog';
+import { MessageDialog } from '../MessageBox';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
     const { playlists, setPlaylists, selected, setSelected } = usePlaylistContext();
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [createDialogHeader, setCreateDialogHeader] = useState<string | undefined>(undefined);
+    const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
     const handleAdd = () => {
-        const newName = `New Playlist ${playlists.length + 1}`;
-        setPlaylists([...playlists, newName]);
-        setSelected(newName);
+        setCreateDialogHeader(t('Create new playlist') ?? undefined);
+        setCreateDialogOpen(true);
     };
 
     const handleDelete = () => {
@@ -23,6 +27,48 @@ const PlaylistPanel: React.FC = () => {
             } else {
                 setSelected('');
             }
+        }
+    };
+
+    const createPlaylist = (name: string) => {
+        return new Promise<void>((resolve, reject) => {
+            if (playlists.includes(name)) {
+                reject(new Error(t('Playlist name already exists') || 'Playlist name already exists'));
+                return;
+            }
+            // Beispiel für Backend-Aufruf (anpassen!):
+            /*
+            fetch(backendUrl + '/playlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        setPlaylists([...playlists, name]);
+                        setSelected(name);
+                        resolve();
+                    } else {
+                        response.json().then(data => {
+                            reject(new Error(data.message));
+                        });
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+            */
+            // Lokale Logik (ohne Backend):
+            setPlaylists([...playlists, name]);
+            setSelected(name);
+            resolve();
+        });
+    };
+
+    const createDialogFinished = (error?: any) => {
+        setCreateDialogOpen(false);
+        if (error) {
+            setErrorMessage(error.toString());
         }
     };
 
@@ -56,6 +102,18 @@ const PlaylistPanel: React.FC = () => {
                 onClick={handleDelete}>
                 {t('Delete') ?? ''}
             </button>
+            <CreatePlaylistDialog
+                open={createDialogOpen}
+                header={createDialogHeader}
+                createPlaylist={createPlaylist}
+                finished={createDialogFinished}
+            />
+            <MessageDialog
+                open={errorMessage !== undefined}
+                setMessage={setErrorMessage}
+                header={t('UploadFailed')}
+                message={errorMessage}
+            />
         </div>
     );
 };
