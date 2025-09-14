@@ -63,16 +63,25 @@ function deletePlaylist(req, res) {
 
 function getPlaylistCompositions(req, res) {
     const id = req.swagger.params.id.value;
-    db.all(`SELECT c.id, c.name, c.duration, c.composer_id
-          FROM playlist_composition pc
-          JOIN composition c ON pc.composition_id = c.id
-          WHERE pc.playlist_id = ?
-          ORDER BY pc.position;`, [id], (err, rows) => {
+    db.get('SELECT id FROM playlist WHERE id = ?', [id], (err, row) => {
         if (err) {
             res.status(500).json({ 'message': err.toString() });
             logger.error(err.message);
+        } else if (!row) {
+            res.status(404).json({ 'message': 'Playlist not found' });
         } else {
-            res.json(rows);
+            db.all(`SELECT c.id, c.name, c.duration, c.composer_id
+                      FROM playlist_composition pc
+                      JOIN composition c ON pc.composition_id = c.id
+                      WHERE pc.playlist_id = ?
+                      ORDER BY pc.position;`, [id], (err2, rows) => {
+                if (err2) {
+                    res.status(500).json({ 'message': err2.toString() });
+                    logger.error(err2.message);
+                } else {
+                    res.json(rows);
+                }
+            });
         }
     });
 }

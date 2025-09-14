@@ -458,6 +458,10 @@ paths:
             type: array
             items:
               $ref: "#/definitions/CompositionResponse"
+        "404":
+          description: Playlist not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         default:
           description: Error
           schema:
