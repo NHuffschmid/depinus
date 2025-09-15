@@ -190,6 +190,18 @@ html, body {
   transform: translateY(4px);
 }
 
+.mediaButton {
+  font-size: 2.5em;
+  padding: 0.3em 0.7em;
+  line-height: 1;
+  border-radius: 1em;
+}
+
+.mediaButton:active {
+  background-color: var(--media-active-color, #555);
+  transform: translateY(4px);
+}
+
 .treeview .tree,
 .treeview .tree-node-group {
   font-size: 1.2rem;

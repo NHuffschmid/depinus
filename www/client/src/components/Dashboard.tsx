@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 
 interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
+    const [cookies] = useCookies(['color']);
     const [isBackwardable] = useState(false);
     const [isStoppable, setIsStoppable] = useState(false);
     const [composer, setComposer] = useState('');
@@ -45,15 +47,36 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
 
     return (
-        <div className='dashboard'>
-            <button disabled={!isBackwardable}>|&lt;</button>
-            <button disabled={!isStoppable} onClick={handleStop}>O</button>
+        <div
+            className='dashboard'
+            style={{ '--media-active-color': cookies.color } as React.CSSProperties}
+        >
+            <button
+                className="mediaButton"
+                disabled={!isBackwardable}
+            >{"\u23EE"}
+            </button>
+            <button
+                className="mediaButton"
+                disabled={!isStoppable}
+                onClick={handleStop}
+            >{"\u23F9"}
+            </button>
             <div>
                 <h1>&#8203;{composer}</h1>
                 <h2>&#8203;{composition}</h2>
             </div>
-            <button disabled={!isPlayable && !isPauseable} onClick={handlePlayPause}>{isPauseable ? "||" : ">"}</button>
-            <button disabled={!isForwardable}>&gt;|</button>
+            <button
+                className="mediaButton"
+                disabled={!isPlayable && !isPauseable}
+                onClick={handlePlayPause}
+            >{isPauseable ? "\u23F8" : "\u23F5"}
+            </button>
+            <button
+                className="mediaButton"
+                disabled={!isForwardable}
+            >{"\u23ED"}
+            </button>
         </div>
     )
 }
