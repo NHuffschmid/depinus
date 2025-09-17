@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { backendUrl } from '../../config';
 
+export interface Playlist {
+    id: number;
+    name: string;
+}
+
 interface PlaylistContextType {
-    playlists: string[];
-    setPlaylists: (playlists: string[]) => void;
-    selected: string;
-    setSelected: (selected: string) => void;
+    playlists: Playlist[];
+    setPlaylists: (playlists: Playlist[]) => void;
+    selected: number | null;
+    setSelected: (selected: number | null) => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(undefined);
@@ -19,17 +24,15 @@ export const usePlaylistContext = () => {
 };
 
 export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
-    const [playlists, setPlaylists] = useState<string[]>([]);
-    const [selected, setSelected] = useState<string>('');
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const [selected, setSelected] = useState<number | null>(null);
 
     useEffect(() => {
         fetch(backendUrl + '/playlist')
             .then((response) => response.json())
             .then((data) => {
-                // data is array of { id, name }
-                const names = data.map((pl: { id: number, name: string }) => pl.name);
-                setPlaylists(names);
-                if (names.length > 0) setSelected(names[0]);
+                setPlaylists(data);
+                if (data.length > 0) setSelected(data[0].id);
             });
     }, []);
 

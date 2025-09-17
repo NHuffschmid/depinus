@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
-import { usePlaylistContext } from './PlaylistContext';
+import { usePlaylistContext, Playlist } from './PlaylistContext';
 import CreatePlaylistDialog from './CreatePlaylistDialog';
 import { MessageDialog } from '../MessageBox';
 import { backendUrl } from '../../config';
@@ -19,21 +19,35 @@ const PlaylistPanel: React.FC = () => {
     };
 
     const handleDelete = () => {
-        if (playlists.length > 0) {
-            const idx = playlists.indexOf(selected);
-            const newPlaylists = playlists.filter(pl => pl !== selected);
-            setPlaylists(newPlaylists);
-            if (newPlaylists.length > 0) {
-                setSelected(newPlaylists[Math.max(0, idx - (idx === newPlaylists.length ? 1 : 0))]);
-            } else {
-                setSelected('');
-            }
+        if (playlists.length > 0 && selected !== null) {
+            fetch(backendUrl + '/playlist/' + selected, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (response.status === 204) {
+                        const idx = playlists.findIndex(pl => pl.id === selected);
+                        const newPlaylists = playlists.filter(pl => pl.id !== selected);
+                        setPlaylists(newPlaylists);
+                        if (newPlaylists.length > 0) {
+                            setSelected(newPlaylists[Math.max(0, idx - (idx === newPlaylists.length ? 1 : 0))].id);
+                        } else {
+                            setSelected(null);
+                        }
+                    } else {
+                        response.json().then(data => {
+                            setErrorMessage(data.message);
+                        });
+                    }
+                })
+                .catch(error => {
+                    setErrorMessage(error.toString());
+                });
         }
     };
 
     const createPlaylist = (name: string) => {
         return new Promise<void>((resolve, reject) => {
-            if (playlists.includes(name)) {
+            if (playlists.some(pl => pl.name === name)) {
                 reject(new Error(t('Playlist already exists') || 'Playlist already exists'));
                 return;
             }
@@ -44,9 +58,11 @@ const PlaylistPanel: React.FC = () => {
             })
                 .then(response => {
                     if (response.status === 200) {
-                        setPlaylists([...playlists, name]);
-                        setSelected(name);
-                        resolve();
+                        response.json().then((data: { id: number, name: string }) => {
+                            setPlaylists([...playlists, { id: data.id, name: data.name }]);
+                            setSelected(data.id);
+                            resolve();
+                        });
                     } else {
                         response.json().then(data => {
                             reject(new Error(data.message));
@@ -79,11 +95,11 @@ const PlaylistPanel: React.FC = () => {
                 <select
                     id="playlist-combobox"
                     style={{ fontSize: '1.2rem' }}
-                    value={selected}
-                    onChange={e => setSelected(e.target.value)}
+                    value={selected ?? ''}
+                    onChange={e => setSelected(Number(e.target.value))}
                 >
-                    {playlists.map((pl, idx) => (
-                        <option key={idx} value={pl}>{pl}</option>
+                    {playlists.map((pl) => (
+                        <option key={pl.id} value={pl.id}>{pl.name}</option>
                     ))}
                 </select>
             </div>
