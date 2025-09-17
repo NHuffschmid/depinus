@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from './PlaylistContext';
 import CreatePlaylistDialog from './CreatePlaylistDialog';
 import { MessageDialog } from '../MessageBox';
+import { backendUrl } from '../../config';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
@@ -33,15 +34,13 @@ const PlaylistPanel: React.FC = () => {
     const createPlaylist = (name: string) => {
         return new Promise<void>((resolve, reject) => {
             if (playlists.includes(name)) {
-                reject(new Error(t('Playlist name already exists') || 'Playlist name already exists'));
+                reject(new Error(t('Playlist already exists') || 'Playlist already exists'));
                 return;
             }
-            // Beispiel für Backend-Aufruf (anpassen!):
-            /*
             fetch(backendUrl + '/playlist', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ name })
             })
                 .then(response => {
                     if (response.status === 200) {
@@ -57,11 +56,6 @@ const PlaylistPanel: React.FC = () => {
                 .catch(error => {
                     reject(error);
                 });
-            */
-            // Lokale Logik (ohne Backend):
-            setPlaylists([...playlists, name]);
-            setSelected(name);
-            resolve();
         });
     };
 
