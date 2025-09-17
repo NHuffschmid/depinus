@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import StopIcon from '@mui/icons-material/Stop';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 
@@ -54,13 +59,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <button
                 className="mediaButton"
                 disabled={!isBackwardable}
-            >{"\u23EE"}
+            >
+                <SkipPreviousIcon fontSize="inherit" />
             </button>
             <button
                 className="mediaButton"
                 disabled={!isStoppable}
                 onClick={handleStop}
-            >{"\u23F9"}
+            >
+                <StopIcon fontSize="inherit" />
             </button>
             <div>
                 <h1>&#8203;{composer}</h1>
@@ -70,12 +77,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 className="mediaButton"
                 disabled={!isPlayable && !isPauseable}
                 onClick={handlePlayPause}
-            >{isPauseable ? "\u23F8" : "\u23F5"}
+            >
+                {isPauseable ? <PauseIcon fontSize="inherit" /> : <PlayArrowIcon fontSize="inherit" />}
             </button>
             <button
                 className="mediaButton"
                 disabled={!isForwardable}
-            >{"\u23ED"}
+            >
+                <SkipNextIcon fontSize="inherit" />
             </button>
         </div>
     )
