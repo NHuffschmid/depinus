@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { backendUrl } from '../../config';
 
 interface PlaylistContextType {
     playlists: string[];
@@ -18,13 +19,19 @@ export const usePlaylistContext = () => {
 };
 
 export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
-    const [playlists, setPlaylists] = useState<string[]>([
-        'Classical Favorites',
-        'Jazz Essentials',
-        'Rock Hits',
-        'Chill Vibes'
-    ]);
-    const [selected, setSelected] = useState<string>(playlists[0]);
+    const [playlists, setPlaylists] = useState<string[]>([]);
+    const [selected, setSelected] = useState<string>('');
+
+    useEffect(() => {
+        fetch(backendUrl + '/playlist')
+            .then((response) => response.json())
+            .then((data) => {
+                // data is array of { id, name }
+                const names = data.map((pl: { id: number, name: string }) => pl.name);
+                setPlaylists(names);
+                if (names.length > 0) setSelected(names[0]);
+            });
+    }, []);
 
     return (
         <PlaylistContext.Provider value={{ playlists, setPlaylists, selected, setSelected }}>
