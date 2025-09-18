@@ -60,7 +60,7 @@ const CreatePlaylistDialog: React.FC<UploadComposerDialogProps> = (props) => {
                             })
                             .catch((error) => {
                                 setUploading(false);
-                                props.finished(error);
+                                props.finished(error.message);
                             });
                     }}
                 >

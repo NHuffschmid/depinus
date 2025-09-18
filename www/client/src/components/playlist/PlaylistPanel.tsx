@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext, Playlist } from './PlaylistContext';
 import CreatePlaylistDialog from './CreatePlaylistDialog';
-import { MessageDialog } from '../MessageBox';
+import { MessageDialog, ConfirmationDialog } from '../MessageBox';
 import { backendUrl } from '../../config';
 
 const PlaylistPanel: React.FC = () => {
@@ -12,14 +12,20 @@ const PlaylistPanel: React.FC = () => {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [createDialogHeader, setCreateDialogHeader] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
+    const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
 
     const handleAdd = () => {
         setCreateDialogHeader(t('Create new playlist') ?? undefined);
         setCreateDialogOpen(true);
     };
 
-    const handleDelete = () => {
-        if (playlists.length > 0 && selected !== null) {
+    const showDeleteConfirmationDialog = () => {
+        setConfirmationMessage(t('Delete playlist permanently?')?.toString() ?? '');
+    };
+
+    const deleteConfirmed = (result: boolean) => {
+        setConfirmationMessage(undefined);
+        if (result == true) {
             fetch(backendUrl + '/playlist/' + selected, {
                 method: 'DELETE'
             })
@@ -109,9 +115,16 @@ const PlaylistPanel: React.FC = () => {
                 +
             </button>
             <button
-                onClick={handleDelete}>
+                onClick={showDeleteConfirmationDialog}>
                 {t('Delete') ?? ''}
             </button>
+            <ConfirmationDialog
+                open={confirmationMessage !== undefined}
+                setMessage={setConfirmationMessage}
+                header={(playlists.find(pl => pl.id === selected)?.name)}
+                message={confirmationMessage}
+                onConfirm={deleteConfirmed}
+            />
             <CreatePlaylistDialog
                 open={createDialogOpen}
                 header={createDialogHeader}
@@ -121,7 +134,7 @@ const PlaylistPanel: React.FC = () => {
             <MessageDialog
                 open={errorMessage !== undefined}
                 setMessage={setErrorMessage}
-                header={t('UploadFailed')}
+                header={t('Playlist')}
                 message={errorMessage}
             />
         </div>
