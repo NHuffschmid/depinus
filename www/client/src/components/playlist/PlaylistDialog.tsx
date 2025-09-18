@@ -3,15 +3,15 @@ import { useTranslation } from "react-i18next";
 import WaitingIndicator from '../WaitingIndicator';
 import Modal from 'react-modal';
 
-interface UploadComposerDialogProps {
+interface PlaylistDialogProps {
     open: boolean;
     header: React.ReactNode;
-    name?: { name: string; id: number } | null;
-    createPlaylist: (name: string) => Promise<void>;
+    name?: string | null;
+    action: (name: string) => Promise<void>;
     finished: (error?: any) => void;
 }
 
-const CreatePlaylistDialog: React.FC<UploadComposerDialogProps> = (props) => {
+const PlaylistDialog: React.FC<PlaylistDialogProps> = (props) => {
     const [isValid, setIsValid] = useState(false);
     const [uploading, setUploading] = useState(false);
     const { t } = useTranslation();
@@ -40,7 +40,8 @@ const CreatePlaylistDialog: React.FC<UploadComposerDialogProps> = (props) => {
                     type='text'
                     id="name"
                     size={1}
-                    defaultValue={props.name ? props.name.name : ''}
+                    maxLength={60}
+                    defaultValue={props.name ? props.name : ''}
                     onChange={() => {
                         setIsValid((document.getElementById('name') as HTMLInputElement).value.length > 0);
                     }}
@@ -51,7 +52,7 @@ const CreatePlaylistDialog: React.FC<UploadComposerDialogProps> = (props) => {
                     disabled={!isValid || uploading}
                     onClick={() => {
                         setUploading(true);
-                        props.createPlaylist(
+                        props.action(
                             (document.getElementById('name') as HTMLInputElement).value
                         )
                             .then(() => {
@@ -81,4 +82,4 @@ const CreatePlaylistDialog: React.FC<UploadComposerDialogProps> = (props) => {
     );
 }
 
-export default CreatePlaylistDialog;
+export default PlaylistDialog;

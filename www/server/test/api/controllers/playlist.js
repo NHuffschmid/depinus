@@ -59,6 +59,37 @@ describe('controllers', function () {
       });
     });
 
+    describe('PATCH /playlist/{id}', function () {
+      it('should rename the playlist', function (done) {
+        request(BACKEND_URL)
+          .patch('/playlist/' + playlistId)
+          .set('Content-Type', 'application/x-www-form-urlencoded')
+          .set('Accept', 'application/json')
+          .send('name=Renamed Playlist')
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function (err, res) {
+            should.not.exist(err);
+            res.body.should.have.property('id', playlistId);
+            res.body.should.have.property('name', 'Renamed Playlist');
+            done();
+          });
+      });
+      it('should reflect the new name when fetching the playlist', function (done) {
+        request(BACKEND_URL)
+          .get('/playlist/' + playlistId)
+          .set('Accept', 'application/json')
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function (err, res) {
+            should.not.exist(err);
+            res.body.id.should.eql(playlistId);
+            res.body.name.should.eql('Renamed Playlist');
+            done();
+          });
+      });
+    });
+
     describe('POST /playlist/{id}/compositions', function () {
       it('should add a composition to the playlist', function (done) {
         request(BACKEND_URL)

@@ -6,6 +6,7 @@ module.exports = {
     postPlaylist,
     getPlaylist,
     deletePlaylist,
+    patchPlaylist,
     getPlaylistCompositions,
     addCompositionToPlaylist,
     updatePlaylistOrder,
@@ -57,6 +58,19 @@ function deletePlaylist(req, res) {
             logger.error(err.message);
         } else {
             res.status(204).send();
+        }
+    });
+}
+
+function patchPlaylist(req, res) {
+    const id = req.swagger.params.id.value;
+    const name = req.swagger.params.name.value;
+    db.run('UPDATE playlist SET name = ? WHERE id = ?;', [name.trim(), id], function (err) {
+        if (err) {
+            res.status(500).json({ message: err.toString() });
+            logger.error(err.message);
+        } else {
+            res.status(200).json({ id, name: name.trim() });
         }
     });
 }

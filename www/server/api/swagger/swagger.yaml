@@ -440,6 +440,31 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    patch:
+      description: Renames a playlist by ID.
+      operationId: patchPlaylist
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the playlist to rename
+        - name: name
+          in: formData
+          description: New name of the playlist
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlaylistResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /playlist/{id}/compositions:
     x-swagger-router-controller: playlist
     get:

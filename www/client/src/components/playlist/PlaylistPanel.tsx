@@ -2,21 +2,32 @@
 import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext, Playlist } from './PlaylistContext';
-import CreatePlaylistDialog from './CreatePlaylistDialog';
+import PlaylistDialog from './PlaylistDialog';
 import { MessageDialog, ConfirmationDialog } from '../MessageBox';
 import { backendUrl } from '../../config';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
     const { playlists, setPlaylists, selected, setSelected } = usePlaylistContext();
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const [createDialogHeader, setCreateDialogHeader] = useState<string | undefined>(undefined);
-    const [errorMessage, setErrorMessage] = useState<string | undefined>();
-    const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
+    const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
+    const [playlistDialogHeader, setPlaylistDialogHeader] = useState<string | undefined>(undefined);
+    const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>(undefined);
+    const [action, setAction] = useState<((name: string) => Promise<void>) | undefined>(undefined);
+    const [playlistName, setPlaylistName] = useState<string | undefined>(undefined);
 
     const handleAdd = () => {
-        setCreateDialogHeader(t('Create new playlist') ?? undefined);
-        setCreateDialogOpen(true);
+        setPlaylistDialogHeader(t('Create new playlist') ?? undefined);
+        setAction(() => createPlaylist);
+        setPlaylistName(undefined);
+        setPlaylistDialogOpen(true);
+    };
+
+    const handleRename = () => {
+        setPlaylistDialogHeader(t('Rename playlist') ?? undefined);
+        setAction(() => renamePlaylist);
+        setPlaylistName(playlists.find(pl => pl.id === selected)?.name);
+        setPlaylistDialogOpen(true);
     };
 
     const showDeleteConfirmationDialog = () => {
@@ -81,8 +92,37 @@ const PlaylistPanel: React.FC = () => {
         });
     };
 
-    const createDialogFinished = (error?: any) => {
-        setCreateDialogOpen(false);
+    const renamePlaylist = (name: string) => {
+        return new Promise<void>((resolve, reject) => {
+            if (playlists.some(pl => pl.name === name)) {
+                reject(new Error(t('Playlist already exists') || 'Playlist already exists'));
+                return;
+            }
+            fetch(backendUrl + '/playlist/' + selected, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ name })
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        response.json().then((data: { id: number, name: string }) => {
+                            setPlaylists(playlists.map(pl => pl.id === selected ? { ...pl, name: data.name } : pl));
+                            resolve();
+                        });
+                    } else {
+                        response.json().then(data => {
+                            reject(new Error(data.message));
+                        });
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    };
+
+    const playlistDialogFinished = (error?: any) => {
+        setPlaylistDialogOpen(false);
         if (error) {
             setErrorMessage(error.toString());
         }
@@ -100,7 +140,7 @@ const PlaylistPanel: React.FC = () => {
             <div>
                 <select
                     id="playlist-combobox"
-                    style={{ fontSize: '1.2rem' }}
+                    style={{ fontSize: '1.2rem', minWidth: '12rem' }}
                     value={selected ?? ''}
                     onChange={e => setSelected(Number(e.target.value))}
                 >
@@ -109,15 +149,27 @@ const PlaylistPanel: React.FC = () => {
                     ))}
                 </select>
             </div>
+            {playlists.length > 0 && selected && (
+                <button
+                    style={{ marginLeft: '1rem' }}
+                    onClick={handleRename}
+                >
+                    {t('Rename')}
+                </button>
+            )}
             <button
                 title={t('Create new playlist') ?? ''}
-                onClick={handleAdd} style={{ marginLeft: '1rem' }}>
+                onClick={handleAdd}
+            >
                 +
             </button>
-            <button
-                onClick={showDeleteConfirmationDialog}>
-                {t('Delete') ?? ''}
-            </button>
+            {playlists.length > 0 && selected && (
+                <button
+                    onClick={showDeleteConfirmationDialog}
+                >
+                    {t('Delete') ?? ''}
+                </button>
+            )}
             <ConfirmationDialog
                 open={confirmationMessage !== undefined}
                 setMessage={setConfirmationMessage}
@@ -125,11 +177,12 @@ const PlaylistPanel: React.FC = () => {
                 message={confirmationMessage}
                 onConfirm={deleteConfirmed}
             />
-            <CreatePlaylistDialog
-                open={createDialogOpen}
-                header={createDialogHeader}
-                createPlaylist={createPlaylist}
-                finished={createDialogFinished}
+            <PlaylistDialog
+                open={playlistDialogOpen}
+                header={playlistDialogHeader}
+                name={playlistName}
+                action={action ?? (async () => { })}
+                finished={playlistDialogFinished}
             />
             <MessageDialog
                 open={errorMessage !== undefined}
