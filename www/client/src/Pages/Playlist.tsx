@@ -1,5 +1,5 @@
 import React from 'react';
-import PlaylistPanel from './components/playlist/PlaylistPanel';
+import PlaylistPanel from '../components/playlist/PlaylistPanel';
 
 const Playlist: React.FC = () => {
     return (

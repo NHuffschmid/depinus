@@ -6,7 +6,7 @@ import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Home from "./Pages/Home";
 import Archive from "./Pages/Archive";
-import Playlist from "./Playlist";
+import Playlist from "./Pages/Playlist";
 import Settings from "./Pages/Settings";
 import About from "./Pages/About";
 import Navbar from "./components/Navbar";
