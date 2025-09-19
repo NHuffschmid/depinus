@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from "react-i18next";
 import { MessageDialog, ConfirmationDialog } from "../MessageBox";
 import UploadComposerDialog from "./UploadComposerDialog";
@@ -145,16 +148,15 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
                 />
             ) : null}
             {selectedComposer ? (
-                <button onClick={() => {
-                    setUploadComposerDialogHeader(t('Edit') ?? undefined);
-                    setUploadComposerDialogIsOpen(true);
-                }}>
-                    {t('Edit')}
-                </button>
-            ) : null}
-            {selectedComposer ? (
-                <button onClick={showDeleteConfirmationDialog}>
-                    {t('Delete')}
+                <button
+                    title={t('Edit composer') ?? ''}
+                    style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
+                    onClick={() => {
+                        setUploadComposerDialogHeader(t('Edit') ?? undefined);
+                        setUploadComposerDialogIsOpen(true);
+                    }}
+                >
+                    <EditIcon fontSize="small" />
                 </button>
             ) : null}
             <button
@@ -167,9 +169,19 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
                     props.updateComposer(null);
                     setUploadComposerDialogIsOpen(true);
                 }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
             >
-                +
+                <AddIcon fontSize="small" />
             </button>
+            {selectedComposer ? (
+                <button
+                    title={t('Delete composer') ?? ''}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
+                    onClick={showDeleteConfirmationDialog}
+                >
+                    <DeleteIcon fontSize="small" />
+                </button>
+            ) : null}
             <UploadComposerDialog
                 open={uploadComposerDialogIsOpen}
                 header={uploadComposerDialogHeader}
