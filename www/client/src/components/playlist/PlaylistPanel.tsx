@@ -1,5 +1,8 @@
 
 import React, { useState } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext, Playlist } from './PlaylistContext';
 import PlaylistDialog from './PlaylistDialog';
@@ -140,7 +143,7 @@ const PlaylistPanel: React.FC = () => {
             <div>
                 <select
                     id="playlist-combobox"
-                    style={{ fontSize: '1.2rem', minWidth: '12rem' }}
+                    style={{ fontSize: '1.5rem', minWidth: '12rem' }}
                     value={selected ?? ''}
                     onChange={e => setSelected(Number(e.target.value))}
                 >
@@ -151,23 +154,27 @@ const PlaylistPanel: React.FC = () => {
             </div>
             {playlists.length > 0 && selected && (
                 <button
-                    style={{ marginLeft: '1rem' }}
+                    style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
                     onClick={handleRename}
+                    title={t('Rename playlist') ?? ''}
                 >
-                    {t('Rename')}
+                    <EditIcon fontSize="small" />
                 </button>
             )}
             <button
                 title={t('Create new playlist') ?? ''}
                 onClick={handleAdd}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
             >
-                +
+                <AddIcon fontSize="small" />
             </button>
             {playlists.length > 0 && selected && (
                 <button
                     onClick={showDeleteConfirmationDialog}
+                    title={t('Delete playlist') ?? ''}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
                 >
-                    {t('Delete') ?? ''}
+                    <DeleteIcon fontSize="small" />
                 </button>
             )}
             <ConfirmationDialog
