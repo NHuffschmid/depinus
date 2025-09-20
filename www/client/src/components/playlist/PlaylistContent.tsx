@@ -28,7 +28,7 @@ const PlaylistContent: React.FC = () => {
                         {compositions === null
                             ? 'Loading...'
                             : compositions.length === 0
-                                ? t('Please go to archive to fill playlist')
+                                ? t('Please go to archive to fill this playlist')
                                 : (
                                     <ul className="composition-list">
                                         {compositions.map(composition => (
