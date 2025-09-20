@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from './PlaylistContext';
 import { backendUrl } from '../../config';
 
 const PlaylistContent: React.FC = () => {
+    const { t } = useTranslation();
     const { playlists, selected } = usePlaylistContext();
     const selectedPlaylist = playlists.find(pl => pl.id === selected);
-    const [compositionCount, setCompositionCount] = useState<number | null>(null);
+    const [compositions, setCompositions] = useState<any[] | null>(null);
 
     useEffect(() => {
         if (selectedPlaylist) {
             fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
-                .then((compositions: any[]) => setCompositionCount(compositions.length))
-                .catch(() => setCompositionCount(null));
+                .then((compositions: any[]) => setCompositions(compositions))
+                .catch(() => setCompositions(null));
         } else {
-            setCompositionCount(null);
+            setCompositions(null);
         }
     }, [selectedPlaylist]);
 
@@ -22,15 +24,25 @@ const PlaylistContent: React.FC = () => {
         <div style={{ marginTop: '1rem' }}>
             {selectedPlaylist ? (
                 <>
-                    <h2>{selectedPlaylist.name}</h2>
                     <div>
-                        {compositionCount !== null
-                            ? `${compositionCount} Track${compositionCount === 1 ? '' : 's'}`
-                            : 'Loading...'}
+                        {compositions === null
+                            ? 'Loading...'
+                            : compositions.length === 0
+                                ? t('Please go to archive to fill playlist')
+                                : (
+                                    <ul className="composition-list">
+                                        {compositions.map(composition => (
+                                            <li
+                                                className="composition-listitem"
+                                                key={composition.id}>{composition.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                     </div>
                 </>
             ) : (
-                <span>No playlist selected</span>
+                <span>{t('No playlist selected')}</span>
             )}
         </div>
     );

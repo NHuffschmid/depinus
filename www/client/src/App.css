@@ -191,6 +191,20 @@ html, body {
   transform: translateY(4px);
 }
 
+.composition-list {
+  list-style: none;
+  padding: 0.5rem;
+  margin: 0;
+  border: 1px solid #333;
+  border-radius: 12px;
+}
+
+.composition-listitem {
+  margin: 0rem;
+  padding: 0rem;
+  text-align: left;
+}
+
 .mediaButton {
   font-size: 1.5em;
   padding: 0;
