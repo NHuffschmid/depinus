@@ -3,15 +3,20 @@ import React, { useState } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import { useTranslation } from "react-i18next";
-import { usePlaylistContext, Playlist } from './PlaylistContext';
+import ShuffleIcon from '@mui/icons-material/Shuffle';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import RepeatOneIcon from '@mui/icons-material/RepeatOne';
 import PlaylistDialog from './PlaylistDialog';
 import { MessageDialog, ConfirmationDialog } from '../MessageBox';
 import { backendUrl } from '../../config';
+import { useTranslation } from "react-i18next";
+import { usePlaylistContext, Playlist } from './PlaylistContext';
+import { useCookies } from 'react-cookie';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
-    const { playlists, setPlaylists, selected, setSelected } = usePlaylistContext();
+    const { playlists, setPlaylists, selected, setSelected, shuffle, setShuffle, repeat, setRepeat } = usePlaylistContext();
+    const [cookies] = useCookies(['color']);
     const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
     const [playlistDialogHeader, setPlaylistDialogHeader] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -138,9 +143,10 @@ const PlaylistPanel: React.FC = () => {
             alignItems: 'center',
             gap: '0.3rem',
             backgroundColor: 'gray',
-            padding: '0.2rem'
+            padding: '0.2rem',
+            justifyContent: 'space-between'
         }}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                 <select
                     id="playlist-combobox"
                     style={{ fontSize: '1.5rem', minWidth: '12rem' }}
@@ -151,32 +157,73 @@ const PlaylistPanel: React.FC = () => {
                         <option key={pl.id} value={pl.id}>{pl.name}</option>
                     ))}
                 </select>
-            </div>
-            {playlists.length > 0 && selected && (
+                {playlists.length > 0 && selected && (
+                    <button
+                        style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
+                        onClick={handleRename}
+                        title={t('Rename playlist') ?? ''}
+                    >
+                        <EditIcon fontSize="small" />
+                    </button>
+                )}
                 <button
-                    style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
-                    onClick={handleRename}
-                    title={t('Rename playlist') ?? ''}
-                >
-                    <EditIcon fontSize="small" />
-                </button>
-            )}
-            <button
-                title={t('Create new playlist') ?? ''}
-                onClick={handleAdd}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
-            >
-                <AddIcon fontSize="small" />
-            </button>
-            {playlists.length > 0 && selected && (
-                <button
-                    onClick={showDeleteConfirmationDialog}
-                    title={t('Delete playlist') ?? ''}
+                    title={t('Create new playlist') ?? ''}
+                    onClick={handleAdd}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
                 >
-                    <DeleteIcon fontSize="small" />
+                    <AddIcon fontSize="small" />
                 </button>
-            )}
+                {playlists.length > 0 && selected && (
+                    <button
+                        onClick={showDeleteConfirmationDialog}
+                        title={t('Delete playlist') ?? ''}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </button>
+                )}
+            </div>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                marginLeft: 'auto'
+            }}>
+                <button
+                    title={t('Shuffle')?.toString() ?? ''}
+                    onClick={() => setShuffle(!shuffle)}
+                    style={{
+                        background: shuffle ? cookies.color : '#e0e0e0',
+                        border: 'none',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: shuffle ? '#fff' : undefined
+                    }}
+                >
+                    <ShuffleIcon style={{ color: shuffle ? '#fff' : undefined }} />
+                </button>
+                <button
+                    title={t('Repeat') ?? ''}
+                    onClick={() => setRepeat(repeat === 'off' ? 'playlist' : repeat === 'playlist' ? 'composition' : 'off')}
+                    style={{
+                        background: repeat !== 'off' ? cookies.color : '#e0e0e0',
+                        border: 'none',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: repeat !== 'off' ? '#fff' : undefined
+                    }}
+                >
+                    {repeat === 'composition'
+                        ? <RepeatOneIcon style={{ color: '#fff' }} />
+                        : <RepeatIcon style={{ color: repeat !== 'off' ? '#fff' : undefined }} />}
+                </button>
+            </div>
             <ConfirmationDialog
                 open={confirmationMessage !== undefined}
                 setMessage={setConfirmationMessage}

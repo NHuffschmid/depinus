@@ -6,11 +6,17 @@ export interface Playlist {
     name: string;
 }
 
+type RepeatMode = 'off' | 'playlist' | 'composition';
+
 interface PlaylistContextType {
     playlists: Playlist[];
     setPlaylists: (playlists: Playlist[]) => void;
     selected: number | null;
     setSelected: (selected: number | null) => void;
+    shuffle: boolean;
+    setShuffle: (shuffle: boolean) => void;
+    repeat: RepeatMode;
+    setRepeat: (repeat: RepeatMode) => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(undefined);
@@ -26,6 +32,8 @@ export const usePlaylistContext = () => {
 export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selected, setSelected] = useState<number | null>(null);
+    const [shuffle, setShuffle] = useState<boolean>(false);
+    const [repeat, setRepeat] = useState<RepeatMode>('off');
 
     useEffect(() => {
         fetch(backendUrl + '/playlist')
@@ -37,7 +45,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     return (
-        <PlaylistContext.Provider value={{ playlists, setPlaylists, selected, setSelected }}>
+        <PlaylistContext.Provider value={{ playlists, setPlaylists, selected, setSelected, shuffle, setShuffle, repeat, setRepeat }}>
             {children}
         </PlaylistContext.Provider>
     );
