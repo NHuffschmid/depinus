@@ -9,7 +9,7 @@ module.exports = {
     patchPlaylist,
     getPlaylistCompositions,
     addCompositionToPlaylist,
-    updatePlaylistOrder,
+    patchComposition,
     removeCompositionFromPlaylist
 };
 
@@ -103,18 +103,27 @@ function getPlaylistCompositions(req, res) {
 function addCompositionToPlaylist(req, res) {
     const playlistId = req.swagger.params.id.value;
     const { compositionId, position = 0 } = req.body;
-    db.run('INSERT INTO playlist_composition (playlist_id, composition_id, position) VALUES (?, ?, ?);',
-        [playlistId, compositionId, position], (err) => {
-            if (err) {
-                res.status(500).json({ 'message': err.toString() });
-                logger.error(err.message);
-            } else {
-                res.status(204).send();
-            }
-        });
+    db.get('SELECT id FROM composition WHERE id = ?', [compositionId], (err, row) => {
+        if (err) {
+            res.status(500).json({ 'message': err.toString() });
+            logger.error(err.message);
+        } else if (!row) {
+            res.status(404).json({ 'message': 'Composition not found' });
+        } else {
+            db.run('INSERT INTO playlist_composition (playlist_id, composition_id, position) VALUES (?, ?, ?);',
+                [playlistId, compositionId, position], (err2) => {
+                    if (err2) {
+                        res.status(500).json({ 'message': err2.toString() });
+                        logger.error(err2.message);
+                    } else {
+                        res.status(204).send();
+                    }
+                });
+        }
+    });
 }
 
-function updatePlaylistOrder(req, res) {
+function patchComposition(req, res) {
     const playlistId = req.swagger.params.id.value;
     const order = req.body;
     const updateTasks = order.map(item => {

@@ -519,13 +519,17 @@ paths:
       responses:
         "204":
           description: Added
+        "404":
+          description: Composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         default:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
     patch:
       description: Updates the order of compositions in a playlist.
-      operationId: updatePlaylistOrder
+      operationId: patchComposition
       consumes:
         - application/json
       parameters:
