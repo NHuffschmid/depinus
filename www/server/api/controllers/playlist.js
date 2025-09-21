@@ -158,13 +158,31 @@ function patchComposition(req, res) {
 function removeCompositionFromPlaylist(req, res) {
     const playlistId = req.swagger.params.id.value;
     const compositionId = req.swagger.params.compositionId.value;
-    db.run('DELETE FROM playlist_composition WHERE playlist_id = ? AND composition_id = ?;',
-        [playlistId, compositionId], function (err) {
-            if (err) {
-                res.status(500).json({ 'message': err.toString() });
-                logger.error(err.message);
-            } else {
-                res.status(204).send();
-            }
-        });
+    // evaluate position of composition to be deleted
+    db.get('SELECT position FROM playlist_composition WHERE playlist_id = ? AND composition_id = ?', [playlistId, compositionId], (err, row) => {
+        if (err) {
+            res.status(500).json({ 'message': err.toString() });
+            logger.error(err.message);
+        } else if (!row) {
+            res.status(404).json({ 'message': 'Composition not found in playlist' });
+        } else {
+            const deletedPos = row.position;
+            db.run('DELETE FROM playlist_composition WHERE playlist_id = ? AND composition_id = ?;', [playlistId, compositionId], function (err2) {
+                if (err2) {
+                    res.status(500).json({ 'message': err2.toString() });
+                    logger.error(err2.message);
+                } else {
+                    // Decrement all subsequent positions by 1
+                    db.run('UPDATE playlist_composition SET position = position - 1 WHERE playlist_id = ? AND position > ?', [playlistId, deletedPos], function (err3) {
+                        if (err3) {
+                            res.status(500).json({ 'message': err3.toString() });
+                            logger.error(err3.message);
+                        } else {
+                            res.status(204).send();
+                        }
+                    });
+                }
+            });
+        }
+    });
 }
