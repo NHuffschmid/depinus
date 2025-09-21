@@ -43,22 +43,6 @@ describe('controllers', function () {
       });
     });
 
-    describe('GET /playlist/{id}', function () {
-      it('should return the created playlist', function (done) {
-        request(BACKEND_URL)
-          .get('/playlist/' + playlistId)
-          .set('Accept', 'application/json')
-          .expect('Content-Type', /json/)
-          .expect(200)
-          .end(function (err, res) {
-            should.not.exist(err);
-            res.body.id.should.eql(playlistId);
-            res.body.name.should.eql('Test Playlist');
-            done();
-          });
-      });
-    });
-
     describe('PATCH /playlist/{id}', function () {
       it('should rename the playlist', function (done) {
         request(BACKEND_URL)
@@ -72,19 +56,6 @@ describe('controllers', function () {
             should.not.exist(err);
             res.body.should.have.property('id', playlistId);
             res.body.should.have.property('name', 'Renamed Playlist');
-            done();
-          });
-      });
-      it('should reflect the new name when fetching the playlist', function (done) {
-        request(BACKEND_URL)
-          .get('/playlist/' + playlistId)
-          .set('Accept', 'application/json')
-          .expect('Content-Type', /json/)
-          .expect(200)
-          .end(function (err, res) {
-            should.not.exist(err);
-            res.body.id.should.eql(playlistId);
-            res.body.name.should.eql('Renamed Playlist');
             done();
           });
       });

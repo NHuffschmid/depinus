@@ -402,28 +402,6 @@ paths:
             $ref: "#/definitions/ErrorResponse"
   /playlist/{id}:
     x-swagger-router-controller: playlist
-    get:
-      description: Returns a playlist by ID.
-      operationId: getPlaylist
-      parameters:
-        - in: path
-          name: id
-          type: integer
-          required: true
-          description: ID of the playlist
-      responses:
-        "200":
-          description: Success
-          schema:
-            $ref: "#/definitions/PlaylistResponse"
-        "404":
-          description: Playlist not found
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
     delete:
       description: Deletes a playlist by ID.
       operationId: deletePlaylist
