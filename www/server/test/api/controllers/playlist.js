@@ -124,12 +124,12 @@ describe('controllers', function () {
       });
     });
 
-    describe('PATCH /playlist/{id}/compositions', function () {
-      it('should update the order of compositions in the playlist', function (done) {
-        const order = [{ compositionId: compositionId, position: 2 }];
+    describe('PATCH /playlist/{id}/compositions/{compositionId}', function () {
+      it('should update the position of a composition in the playlist', function (done) {
+        const patchObj = { position: 0 };
         request(BACKEND_URL)
-          .patch('/playlist/' + playlistId + '/compositions')
-          .send(order)
+          .patch('/playlist/' + playlistId + '/compositions/' + compositionId)
+          .send(patchObj)
           .set('Accept', 'application/json')
           .expect(204)
           .end(function (err, res) {
@@ -137,29 +137,29 @@ describe('controllers', function () {
             done();
           });
       });
-    });
 
-    describe('DELETE /playlist/{id}/compositions/{compositionId}', function () {
-      it('should remove a composition from the playlist', function (done) {
-        request(BACKEND_URL)
-          .delete('/playlist/' + playlistId + '/compositions/' + compositionId)
-          .expect(204)
-          .end(function (err, res) {
-            should.not.exist(err);
-            done();
-          });
+      describe('DELETE /playlist/{id}/compositions/{compositionId}', function () {
+        it('should remove a composition from the playlist', function (done) {
+          request(BACKEND_URL)
+            .delete('/playlist/' + playlistId + '/compositions/' + compositionId)
+            .expect(204)
+            .end(function (err, res) {
+              should.not.exist(err);
+              done();
+            });
+        });
       });
-    });
 
-    describe('DELETE /playlist/{id}', function () {
-      it('should delete the playlist', function (done) {
-        request(BACKEND_URL)
-          .delete('/playlist/' + playlistId)
-          .expect(204)
-          .end(function (err, res) {
-            should.not.exist(err);
-            done();
-          });
+      describe('DELETE /playlist/{id}', function () {
+        it('should delete the playlist', function (done) {
+          request(BACKEND_URL)
+            .delete('/playlist/' + playlistId)
+            .expect(204)
+            .end(function (err, res) {
+              should.not.exist(err);
+              done();
+            });
+        });
       });
     });
   });

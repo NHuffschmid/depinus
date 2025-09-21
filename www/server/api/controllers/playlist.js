@@ -137,22 +137,55 @@ function addCompositionToPlaylist(req, res) {
 
 function patchComposition(req, res) {
     const playlistId = req.swagger.params.id.value;
-    const order = req.body;
-    const updateTasks = order.map(item => {
-        return new Promise((resolve, reject) => {
-            db.run('UPDATE playlist_composition SET position = ? WHERE playlist_id = ? AND composition_id = ?;',
-                [item.position, playlistId, item.compositionId], (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-        });
-    });
-    Promise.all(updateTasks)
-        .then(() => res.status(204).send())
-        .catch(err => {
+    const compositionId = req.swagger.params.compositionId.value;
+    const { position } = req.body;
+    db.all('SELECT composition_id FROM playlist_composition WHERE playlist_id = ? ORDER BY position', [playlistId], (err, rows) => {
+        if (err) {
             res.status(500).json({ 'message': err.toString() });
             logger.error(err.message);
+            return;
+        }
+        if (!rows || rows.length === 0) {
+            res.status(404).json({ 'message': 'Playlist not found or empty' });
+            return;
+        }
+        const maxPos = rows.length - 1;
+        if (typeof position !== 'number' || position < 0 || position > maxPos) {
+            res.status(400).json({ 'message': `Invalid position: must be between 0 and ${maxPos}` });
+            return;
+        }
+        // Find current position of the track to be moved
+        const oldIndex = rows.findIndex(r => r.composition_id === compositionId || r.composition_id == compositionId);
+        if (oldIndex === -1) {
+            res.status(404).json({ 'message': 'Composition not found in playlist' });
+            return;
+        }
+        if (oldIndex === position) {
+            // No change needed
+            res.status(204).send();
+            return;
+        }
+        // Remove the element at old position and insert it at new position
+        const newOrder = rows.map(r => r.composition_id);
+        newOrder.splice(oldIndex, 1);
+        newOrder.splice(position, 0, compositionId);
+        // Create update tasks for all positions
+        const updateTasks = newOrder.map((cid, idx) => {
+            return new Promise((resolve, reject) => {
+                db.run('UPDATE playlist_composition SET position = ? WHERE playlist_id = ? AND composition_id = ?;',
+                    [idx, playlistId, cid], (err2) => {
+                        if (err2) reject(err2);
+                        else resolve();
+                    });
+            });
         });
+        Promise.all(updateTasks)
+            .then(() => res.status(204).send())
+            .catch(err3 => {
+                res.status(500).json({ 'message': err3.toString() });
+                logger.error(err3.message);
+            });
+    });
 }
 
 function removeCompositionFromPlaylist(req, res) {

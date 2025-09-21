@@ -526,8 +526,9 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /playlist/{id}/compositions/{compositionId}:
     patch:
-      description: Updates the order of compositions in a playlist.
+      description: Updates the position of a composition in a playlist.
       operationId: patchComposition
       consumes:
         - application/json
@@ -537,26 +538,36 @@ paths:
           type: integer
           required: true
           description: ID of the playlist
-        - name: order
+        - in: path
+          name: compositionId
+          type: integer
+          required: true
+          description: ID of the composition to move
+        - name: body
           in: body
           required: true
           schema:
-            type: array
-            items:
-              type: object
-              properties:
-                compositionId:
-                  type: integer
-                position:
-                  type: integer
+            type: object
+            required: [position]
+            properties:
+              position:
+                type: integer
+                description: New position (0-based)
       responses:
         "204":
-          description: Order updated
+          description: Position updated
+        "400":
+          description: Invalid position
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        "404":
+          description: Playlist or composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         default:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-  /playlist/{id}/compositions/{compositionId}:
     x-swagger-router-controller: playlist
     delete:
       description: Removes a composition from a playlist.
