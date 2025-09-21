@@ -102,7 +102,7 @@ function getPlaylistCompositions(req, res) {
 
 function addCompositionToPlaylist(req, res) {
     const playlistId = req.swagger.params.id.value;
-    const { compositionId, position = 0 } = req.body;
+    const { compositionId } = req.body;
     db.get('SELECT id FROM composition WHERE id = ?', [compositionId], (err, row) => {
         if (err) {
             res.status(500).json({ 'message': err.toString() });
@@ -110,15 +110,27 @@ function addCompositionToPlaylist(req, res) {
         } else if (!row) {
             res.status(404).json({ 'message': 'Composition not found' });
         } else {
-            db.run('INSERT INTO playlist_composition (playlist_id, composition_id, position) VALUES (?, ?, ?);',
-                [playlistId, compositionId, position], (err2) => {
-                    if (err2) {
-                        res.status(500).json({ 'message': err2.toString() });
-                        logger.error(err2.message);
-                    } else {
-                        res.status(204).send();
-                    }
-                });
+            db.get('SELECT MAX(position) as maxPos FROM playlist_composition WHERE playlist_id = ?', [playlistId], (err2, row2) => {
+                if (err2) {
+                    res.status(500).json({ 'message': err2.toString() });
+                    logger.error(err2.message);
+                } else {
+                    const nextPos = (row2 && row2.maxPos !== null) ? row2.maxPos + 1 : 0;
+                    db.run('INSERT INTO playlist_composition (playlist_id, composition_id, position) VALUES (?, ?, ?);',
+                        [playlistId, compositionId, nextPos], (err3) => {
+                            if (err3) {
+                                res.status(500).json({ 'message': err3.toString() });
+                                logger.error(err3.message);
+                            } else {
+                                res.status(200).json({
+                                    playlistId: playlistId,
+                                    compositionId: compositionId,
+                                    position: nextPos
+                                });
+                            }
+                        });
+                }
+            });
         }
     });
 }

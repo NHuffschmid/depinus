@@ -513,12 +513,11 @@ paths:
               compositionId:
                 description: ID of the composition
                 type: integer
-              position:
-                description: Position in playlist
-                type: integer
       responses:
-        "204":
+        "200":
           description: Added
+          schema:
+            $ref: "#/definitions/PlaylistCompositionResponse"
         "404":
           description: Composition not found
           schema:
@@ -697,6 +696,19 @@ definitions:
       name:
         type: string
         example: "My Playlist"
+  PlaylistCompositionResponse:
+    type: object
+    required: [playlistId, compositionId, position]
+    properties:
+      playlistId:
+        type: integer
+        example: 1
+      compositionId:
+        type: integer
+        example: 2
+      position:
+        type: integer
+        example: 0
   ErrorResponse:
     required:
       - message

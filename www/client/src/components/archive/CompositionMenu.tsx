@@ -87,7 +87,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
             body: JSON.stringify({ compositionId: props.composition.id })
         })
             .then(res => {
-                if (res.status === 204) {
+                if (res.status === 200) {
                     props.finished();
                 } else {
                     res.json().then(data => setErrorMessage(data.message || 'Error at adding to playlist'));

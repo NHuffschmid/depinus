@@ -94,11 +94,16 @@ describe('controllers', function () {
       it('should add a composition to the playlist', function (done) {
         request(BACKEND_URL)
           .post('/playlist/' + playlistId + '/compositions')
-          .send({ compositionId: compositionId, position: 1 })
+          .send({ compositionId: compositionId })
           .set('Content-Type', 'application/json')
-          .expect(204)
+          .expect(200)
+          .expect('Content-Type', /json/)
           .end(function (err, res) {
             should.not.exist(err);
+            res.body.should.have.property('playlistId', playlistId);
+            res.body.should.have.property('compositionId', compositionId);
+            res.body.should.have.property('position').which.is.a.Number();
+            res.body.position.should.be.greaterThanOrEqual(0);
             done();
           });
       });
