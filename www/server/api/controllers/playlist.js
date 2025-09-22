@@ -69,11 +69,12 @@ function getPlaylistCompositions(req, res) {
         } else if (!row) {
             res.status(404).json({ 'message': 'Playlist not found' });
         } else {
-            db.all(`SELECT c.id, c.name, c.duration, c.composer_id
-                      FROM playlist_composition pc
-                      JOIN composition c ON pc.composition_id = c.id
-                      WHERE pc.playlist_id = ?
-                      ORDER BY pc.position;`, [id], (err2, rows) => {
+            db.all(`SELECT pc.playlist_id as playlistId, c.id as compositionId, pc.position, c.name as compositionName, co.firstname as composerFirstname, co.surname as composerSurname
+                    FROM playlist_composition pc
+                    JOIN composition c ON pc.composition_id = c.id
+                    JOIN composer co ON c.composer_id = co.id
+                    WHERE pc.playlist_id = ?
+                    ORDER BY pc.position;`, [id], (err2, rows) => {
                 if (err2) {
                     res.status(500).json({ 'message': err2.toString() });
                     logger.error(err2.message);
@@ -107,11 +108,19 @@ function addCompositionToPlaylist(req, res) {
                                 res.status(500).json({ 'message': err3.toString() });
                                 logger.error(err3.message);
                             } else {
-                                res.status(200).json({
-                                    playlistId: playlistId,
-                                    compositionId: compositionId,
-                                    position: nextPos
-                                });
+                                db.get(`SELECT pc.playlist_id as playlistId, c.id as compositionId, pc.position, c.name as compositionName, co.firstname as composerFirstname, co.surname as composerSurname
+                                        FROM playlist_composition pc
+                                        JOIN composition c ON pc.composition_id = c.id
+                                        JOIN composer co ON c.composer_id = co.id
+                                        WHERE pc.playlist_id = ? AND pc.composition_id = ?;`,
+                                    [playlistId, compositionId], (err4, row4) => {
+                                        if (err4) {
+                                            res.status(500).json({ 'message': err4.toString() });
+                                            logger.error(err4.message);
+                                        } else {
+                                            res.status(200).json(row4);
+                                        }
+                                    });
                             }
                         });
                 }

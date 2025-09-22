@@ -74,6 +74,9 @@ describe('controllers', function () {
             res.body.should.have.property('playlistId', playlistId);
             res.body.should.have.property('compositionId', compositionId);
             res.body.should.have.property('position').which.is.a.Number();
+            res.body.should.have.property('compositionName').which.is.a.String();
+            res.body.should.have.property('composerFirstname').which.is.a.String();
+            res.body.should.have.property('composerSurname').which.is.a.String();
             res.body.position.should.be.greaterThanOrEqual(0);
             done();
           });
@@ -90,6 +93,15 @@ describe('controllers', function () {
           .end(function (err, res) {
             should.not.exist(err);
             res.body.should.be.an.Array();
+            if (res.body.length > 0) {
+              const comp = res.body[0];
+              comp.should.have.property('playlistId', playlistId);
+              comp.should.have.property('compositionId').which.is.a.Number();
+              comp.should.have.property('position').which.is.a.Number();
+              comp.should.have.property('compositionName').which.is.a.String();
+              comp.should.have.property('composerFirstname').which.is.a.String();
+              comp.should.have.property('composerSurname').which.is.a.String();
+            }
             done();
           });
       });

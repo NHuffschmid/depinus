@@ -34,7 +34,11 @@ const PlaylistContent: React.FC = () => {
                                         {compositions.map(composition => (
                                             <li
                                                 className="composition-listitem"
-                                                key={composition.id}>{composition.name}
+                                                key={composition.compositionId}
+                                            >
+                                                <span>{composition.composerSurname}</span>
+                                                {" - "}
+                                                <span>{composition.compositionName}</span>
                                             </li>
                                         ))}
                                     </ul>

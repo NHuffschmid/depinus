@@ -460,7 +460,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: "#/definitions/CompositionResponse"
+              $ref: "#/definitions/PlaylistCompositionResponse"
         "404":
           description: Playlist not found
           schema:
@@ -687,7 +687,7 @@ definitions:
         example: "My Playlist"
   PlaylistCompositionResponse:
     type: object
-    required: [playlistId, compositionId, position]
+    required: [playlistId, compositionId, position, compositionName, composerFirstname, composerSurname]
     properties:
       playlistId:
         type: integer
@@ -698,6 +698,15 @@ definitions:
       position:
         type: integer
         example: 0
+      compositionName:
+        type: string
+        example: "Für Elise"
+      composerFirstname:
+        type: string
+        example: "Ludwig van"
+      composerSurname:
+        type: string
+        example: "Beethoven"
   ErrorResponse:
     required:
       - message
