@@ -4,6 +4,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from './PlaylistContext';
+import CompositionMenu from './CompositionMenu';
 import { backendUrl } from '../../config';
 
 const PlaylistContent: React.FC = () => {
@@ -11,6 +12,8 @@ const PlaylistContent: React.FC = () => {
     const { playlists, selected } = usePlaylistContext();
     const selectedPlaylist = playlists.find(pl => pl.id === selected);
     const [compositions, setCompositions] = useState<any[] | null>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [selectedComposition, setSelectedComposition] = useState<{ id: string; name: string } | null>(null);
 
     useEffect(() => {
         if (selectedPlaylist) {
@@ -97,9 +100,20 @@ const PlaylistContent: React.FC = () => {
                                             <ul className="composition-list" style={{ padding: 0, listStyle: 'none', minHeight: 40 }}>
                                                 {compositions.map(composition => (
                                                     <SortableItem key={composition.compositionId} id={composition.compositionId}>
-                                                        {composition.composerSurname}
-                                                        {": "}
-                                                        {composition.compositionName}
+                                                        <div
+                                                            style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+                                                            onClick={() => {
+                                                                setSelectedComposition({
+                                                                    id: composition.compositionId,
+                                                                    name: `${composition.compositionName} – ${composition.composerFirstname} ${composition.composerSurname}`
+                                                                });
+                                                                setMenuOpen(true);
+                                                            }}
+                                                        >
+                                                            {composition.composerSurname}
+                                                            {": "}
+                                                            {composition.compositionName}
+                                                        </div>
                                                     </SortableItem>
                                                 ))}
                                             </ul>
@@ -111,6 +125,14 @@ const PlaylistContent: React.FC = () => {
             ) : (
                 <span>{t('No playlist selected')}</span>
             )}
+            <CompositionMenu
+                open={menuOpen}
+                composition={selectedComposition}
+                finished={() => {
+                    setMenuOpen(false);
+                    setSelectedComposition(null);
+                }}
+            />
         </div>
     );
 };
