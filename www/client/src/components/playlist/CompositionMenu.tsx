@@ -1,9 +1,11 @@
 import React from 'react';
 import Modal from 'react-modal';
 import { useTranslation } from "react-i18next";
+import { backendUrl } from '../../config';
 
 interface CompositionMenuProps {
     open: boolean;
+    playlistId?: number;
     composition?: { id: string; name: string } | null;
     finished: () => void;
 }
@@ -17,36 +19,45 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         props.finished();
     };
 
-    const deleteTrack = () => {
-        // Dummy: Delete track
-        alert('Delete track: ' + props.composition?.name);
+    const removeFromPlaylist = async () => {
+        if (!props.composition || !(props as any).playlistId) return props.finished();
+        const playlistId = (props as any).playlistId;
+        await fetch(backendUrl + `/playlist/${playlistId}/compositions/${props.composition.id}`, {
+            method: 'DELETE'
+        });
         props.finished();
     };
 
-    return (
-        <Modal
-            isOpen={props.open}
-            onRequestClose={props.finished}
-            contentLabel={t('Track Menu') as string}
-            ariaHideApp={false}
-            style={{
-                content: {
-                    maxWidth: 320,
-                    margin: 'auto',
-                    padding: 24,
-                    borderRadius: 8,
-                    boxShadow: '0 2px 16px #0002',
-                }
-            }}
-        >
-            <h3 style={{ marginBottom: 16 }}>{props.composition?.name}</h3>
-            <button style={{ width: '100%', marginBottom: 12 }} onClick={playFromHere}>
-                {t('Play from here')}
-            </button>
-            <button style={{ width: '100%' }} onClick={deleteTrack}>
-                {t('Delete')}
-            </button>
-        </Modal>
+    return React.createElement(
+        Modal as any,
+        {
+            isOpen: props.open,
+            ariaHideApp: false,
+            onRequestClose: () => props.finished(),
+            style: {
+                overlay: { zIndex: 1000, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+                content: { left: '10%', right: 'auto', top: '10%', bottom: 'auto' }
+            }
+        },
+        <>
+            <div className='menu'>
+                <div
+                    className='menu-header'>{props.composition ? props.composition.name : null}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={playFromHere}
+                >
+                    {t('Start playlist from here')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={removeFromPlaylist}
+                >
+                    {t('Remove from playlist')}
+                </div>
+            </div>
+        </>
     );
 };
 

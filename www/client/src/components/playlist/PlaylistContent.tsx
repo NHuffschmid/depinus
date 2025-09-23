@@ -4,10 +4,12 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext } from './PlaylistContext';
+import { useCookies } from 'react-cookie';
 import CompositionMenu from './CompositionMenu';
 import { backendUrl } from '../../config';
 
 const PlaylistContent: React.FC = () => {
+    const [cookies] = useCookies(['color']);
     const { t } = useTranslation();
     const { playlists, selected } = usePlaylistContext();
     const selectedPlaylist = playlists.find(pl => pl.id === selected);
@@ -15,7 +17,7 @@ const PlaylistContent: React.FC = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectedComposition, setSelectedComposition] = useState<{ id: string; name: string } | null>(null);
 
-    useEffect(() => {
+    const reloadCompositions = () => {
         if (selectedPlaylist) {
             fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
@@ -26,6 +28,10 @@ const PlaylistContent: React.FC = () => {
         } else {
             setCompositions(null);
         }
+    };
+
+    useEffect(() => {
+        reloadCompositions();
     }, [selectedPlaylist]);
 
     const sensors = useSensors(
@@ -38,16 +44,18 @@ const PlaylistContent: React.FC = () => {
         const style = {
             transform: CSS.Transform.toString(transform),
             transition,
-            background: isDragging ? '#e0e7ff' : undefined,
+            background: selectedComposition && (id === selectedComposition.id) ? cookies.color : 'transparent',
             borderRadius: 4,
             marginBottom: 4,
             boxShadow: isDragging ? '0 2px 8px #8882' : undefined,
             display: 'flex',
-            alignItems: 'center',
-            cursor: 'default'
+            alignItems: 'flex-start',
+            cursor: 'default',
+            textAlign: 'left',
+            whiteSpace: 'normal'
         };
         return (
-            <li ref={setNodeRef} style={style} {...attributes}>
+            <li ref={setNodeRef} style={style as any} {...attributes}>
                 <span
                     {...listeners}
                     style={{ cursor: 'grab', marginRight: 8, fontSize: 18, userSelect: 'none', touchAction: 'none' }}
@@ -105,7 +113,7 @@ const PlaylistContent: React.FC = () => {
                                                             onClick={() => {
                                                                 setSelectedComposition({
                                                                     id: composition.compositionId,
-                                                                    name: `${composition.compositionName} – ${composition.composerFirstname} ${composition.composerSurname}`
+                                                                    name: `${composition.composerFirstname} ${composition.composerSurname}: ${composition.compositionName}`
                                                                 });
                                                                 setMenuOpen(true);
                                                             }}
@@ -127,10 +135,12 @@ const PlaylistContent: React.FC = () => {
             )}
             <CompositionMenu
                 open={menuOpen}
+                playlistId={selectedPlaylist?.id}
                 composition={selectedComposition}
                 finished={() => {
                     setMenuOpen(false);
                     setSelectedComposition(null);
+                    reloadCompositions();
                 }}
             />
         </div>

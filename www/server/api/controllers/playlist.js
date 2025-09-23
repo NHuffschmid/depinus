@@ -148,7 +148,7 @@ function patchComposition(req, res) {
             res.status(400).json({ 'message': `Invalid position: must be between 0 and ${maxPos}` });
             return;
         }
-        // Find current position of the track to be moved
+        // Find current position of the composition to be moved
         const oldIndex = rows.findIndex(r => r.composition_id === compositionId || r.composition_id == compositionId);
         if (oldIndex === -1) {
             res.status(404).json({ 'message': 'Composition not found in playlist' });
