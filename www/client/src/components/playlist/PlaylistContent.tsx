@@ -60,8 +60,14 @@ const PlaylistContent: React.FC = () => {
                     {...listeners}
                     style={{ cursor: 'grab', marginRight: 8, fontSize: 18, userSelect: 'none', touchAction: 'none' }}
                     aria-label='Drag handle'
+                    onClick={e => e.stopPropagation()} // Drag-Handle schluckt Klicks
                 >☰</span>
-                {children}
+                <div
+                    style={{ flex: 1, width: '100%' }}
+                    onClick={React.isValidElement(children) ? children.props.onClick : undefined}
+                >
+                    {React.isValidElement(children) ? children.props.children : children}
+                </div>
             </li>
         );
     }
@@ -109,7 +115,6 @@ const PlaylistContent: React.FC = () => {
                                                 {compositions.map(composition => (
                                                     <SortableItem key={composition.compositionId} id={composition.compositionId}>
                                                         <div
-                                                            style={{ display: 'flex', alignItems: 'center', width: '100%' }}
                                                             onClick={() => {
                                                                 setSelectedComposition({
                                                                     id: composition.compositionId,
@@ -118,9 +123,7 @@ const PlaylistContent: React.FC = () => {
                                                                 setMenuOpen(true);
                                                             }}
                                                         >
-                                                            {composition.composerSurname}
-                                                            {": "}
-                                                            {composition.compositionName}
+                                                            {composition.composerSurname}{": "}{composition.compositionName}
                                                         </div>
                                                     </SortableItem>
                                                 ))}
