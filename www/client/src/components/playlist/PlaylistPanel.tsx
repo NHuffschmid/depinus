@@ -15,7 +15,7 @@ import { useCookies } from 'react-cookie';
 
 const PlaylistPanel: React.FC = () => {
     const { t } = useTranslation();
-    const { playlists, setPlaylists, selected, setSelected, shuffle, setShuffle, repeat, setRepeat } = usePlaylistContext();
+    const { playlists, setPlaylists, selectedPlaylistId, setSelectedPlaylistId, selectedPosition, setSelectedPosition, shuffle, setShuffle, repeat, setRepeat } = usePlaylistContext();
     const [cookies] = useCookies(['color']);
     const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
     const [playlistDialogHeader, setPlaylistDialogHeader] = useState<string | undefined>(undefined);
@@ -34,7 +34,7 @@ const PlaylistPanel: React.FC = () => {
     const handleRename = () => {
         setPlaylistDialogHeader(t('Rename playlist') ?? undefined);
         setAction(() => renamePlaylist);
-        setPlaylistName(playlists.find(pl => pl.id === selected)?.name);
+        setPlaylistName(playlists.find(pl => pl.id === selectedPlaylistId)?.name);
         setPlaylistDialogOpen(true);
     };
 
@@ -45,18 +45,18 @@ const PlaylistPanel: React.FC = () => {
     const deleteConfirmed = (result: boolean) => {
         setConfirmationMessage(undefined);
         if (result == true) {
-            fetch(backendUrl + '/playlist/' + selected, {
+            fetch(backendUrl + '/playlist/' + selectedPlaylistId, {
                 method: 'DELETE'
             })
                 .then(response => {
                     if (response.status === 204) {
-                        const idx = playlists.findIndex(pl => pl.id === selected);
-                        const newPlaylists = playlists.filter(pl => pl.id !== selected);
+                        const idx = playlists.findIndex(pl => pl.id === selectedPlaylistId);
+                        const newPlaylists = playlists.filter(pl => pl.id !== selectedPlaylistId);
                         setPlaylists(newPlaylists);
                         if (newPlaylists.length > 0) {
-                            setSelected(newPlaylists[Math.max(0, idx - (idx === newPlaylists.length ? 1 : 0))].id);
+                            setSelectedPlaylistId(newPlaylists[Math.max(0, idx - (idx === newPlaylists.length ? 1 : 0))].id);
                         } else {
-                            setSelected(null);
+                            setSelectedPlaylistId(null);
                         }
                     } else {
                         response.json().then(data => {
@@ -85,7 +85,7 @@ const PlaylistPanel: React.FC = () => {
                     if (response.status === 200) {
                         response.json().then((data: { id: number, name: string }) => {
                             setPlaylists([...playlists, { id: data.id, name: data.name }]);
-                            setSelected(data.id);
+                            setSelectedPlaylistId(data.id);
                             resolve();
                         });
                     } else {
@@ -106,7 +106,7 @@ const PlaylistPanel: React.FC = () => {
                 reject(new Error(t('Playlist already exists') || 'Playlist already exists'));
                 return;
             }
-            fetch(backendUrl + '/playlist/' + selected, {
+            fetch(backendUrl + '/playlist/' + selectedPlaylistId, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ name })
@@ -114,7 +114,7 @@ const PlaylistPanel: React.FC = () => {
                 .then(response => {
                     if (response.status === 200) {
                         response.json().then((data: { id: number, name: string }) => {
-                            setPlaylists(playlists.map(pl => pl.id === selected ? { ...pl, name: data.name } : pl));
+                            setPlaylists(playlists.map(pl => pl.id === selectedPlaylistId ? { ...pl, name: data.name } : pl));
                             resolve();
                         });
                     } else {
@@ -149,15 +149,15 @@ const PlaylistPanel: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                 <select
                     id="playlist-combobox"
-                    style={{ fontSize: '1.5rem', minWidth: '12rem' }}
-                    value={selected ?? ''}
-                    onChange={e => setSelected(Number(e.target.value))}
+                    style={{ fontSize: '1.2rem', minWidth: '12rem' }}
+                    value={selectedPlaylistId ?? ''}
+                    onChange={e => setSelectedPlaylistId(Number(e.target.value))}
                 >
                     {playlists.map((pl) => (
                         <option key={pl.id} value={pl.id}>{pl.name}</option>
                     ))}
                 </select>
-                {playlists.length > 0 && selected && (
+                {playlists.length > 0 && selectedPlaylistId && (
                     <button
                         style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem 0.5rem' }}
                         onClick={handleRename}
@@ -173,7 +173,7 @@ const PlaylistPanel: React.FC = () => {
                 >
                     <AddIcon fontSize="small" />
                 </button>
-                {playlists.length > 0 && selected && (
+                {playlists.length > 0 && selectedPlaylistId && (
                     <button
                         onClick={showDeleteConfirmationDialog}
                         title={t('Delete playlist') ?? ''}
@@ -227,7 +227,7 @@ const PlaylistPanel: React.FC = () => {
             <ConfirmationDialog
                 open={confirmationMessage !== undefined}
                 setMessage={setConfirmationMessage}
-                header={(playlists.find(pl => pl.id === selected)?.name)}
+                header={(playlists.find(pl => pl.id === selectedPlaylistId)?.name)}
                 message={confirmationMessage}
                 onConfirm={deleteConfirmed}
             />

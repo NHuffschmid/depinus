@@ -1,21 +1,24 @@
 import React from 'react';
 import Modal from 'react-modal';
 import { useTranslation } from "react-i18next";
+import { usePlaylistContext } from './PlaylistContext';
 import { backendUrl } from '../../config';
 
 interface CompositionMenuProps {
     open: boolean;
     playlistId?: number;
-    composition?: { id: string; name: string } | null;
+    composition?: { id: number; name: string } | null;
     finished: () => void;
 }
 
 const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const { t } = useTranslation();
+    const { play } = usePlaylistContext();
 
     const playFromHere = () => {
-        // Dummy: Play from here
-        alert('Play from here: ' + props.composition?.name);
+        if (props.composition) {
+            play(props.composition.id);
+        }
         props.finished();
     };
 

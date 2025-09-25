@@ -11,18 +11,18 @@ import { backendUrl } from '../../config';
 const PlaylistContent: React.FC = () => {
     const [cookies] = useCookies(['color']);
     const { t } = useTranslation();
-    const { playlists, selected } = usePlaylistContext();
-    const selectedPlaylist = playlists.find(pl => pl.id === selected);
+    const { playlists, selectedPlaylistId, setSelectedPosition } = usePlaylistContext();
+    const selectedPlaylist = playlists.find(pl => pl.id === selectedPlaylistId);
     const [compositions, setCompositions] = useState<any[] | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
-    const [selectedComposition, setSelectedComposition] = useState<{ id: string; name: string } | null>(null);
+    const [selectedComposition, setSelectedComposition] = useState<{ id: number; name: string } | null>(null);
 
     const reloadCompositions = () => {
         if (selectedPlaylist) {
             fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
                 .then((compositions: any[]) => setCompositions(
-                    compositions.map(c => ({ ...c, compositionId: c.compositionId.toString() }))
+                    compositions.map(c => ({ ...c, compositionId: c.compositionId }))
                 ))
                 .catch(() => setCompositions(null));
         } else {
@@ -39,7 +39,7 @@ const PlaylistContent: React.FC = () => {
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
     );
 
-    function SortableItem({ id, children }: { id: string, children: React.ReactNode }) {
+    function SortableItem({ id, children }: { id: number, children: React.ReactNode }) {
         const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
         const style = {
             transform: CSS.Transform.toString(transform),
@@ -120,6 +120,7 @@ const PlaylistContent: React.FC = () => {
                                                                     id: composition.compositionId,
                                                                     name: `${composition.composerFirstname} ${composition.composerSurname}: ${composition.compositionName}`
                                                                 });
+                                                                setSelectedPosition(composition.position);
                                                                 setMenuOpen(true);
                                                             }}
                                                         >

@@ -17,7 +17,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
     const { t } = useTranslation();
-    const { selected } = usePlaylistContext();
+    const { selectedPlaylistId } = usePlaylistContext();
 
     const playComposition = () => {
         const requestOptions = {
@@ -80,8 +80,8 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     }
 
     const handleAddToPlaylist = () => {
-        if (!props.composition || !selected) return;
-        fetch(`${backendUrl}/playlist/${selected}/compositions`, {
+        if (!props.composition || !selectedPlaylistId) return;
+        fetch(`${backendUrl}/playlist/${selectedPlaylistId}/compositions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ compositionId: props.composition.id })
@@ -126,7 +126,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
                 </div>
                 <div
                     className='menu-item' onClick={handleAddToPlaylist}
-                    style={{ opacity: selected ? 1 : 0.5, pointerEvents: selected ? 'auto' : 'none' }}
+                    style={{ opacity: selectedPlaylistId ? 1 : 0.5, pointerEvents: selectedPlaylistId ? 'auto' : 'none' }}
                 >
                     {t('Add to playlist')}
                 </div>
