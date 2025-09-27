@@ -1,31 +1,28 @@
 import React from 'react';
 import Modal from 'react-modal';
 import { useTranslation } from "react-i18next";
-import { usePlaylistContext } from './PlaylistContext';
+import { usePlaylistContext, Track } from './PlaylistContext';
 import { backendUrl } from '../../config';
 
 interface CompositionMenuProps {
     open: boolean;
     playlistId?: number;
-    composition?: { id: number; name: string } | null;
+    track: Track;
     finished: () => void;
 }
 
 const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const { t } = useTranslation();
-    const { play } = usePlaylistContext();
+    const { playTrack } = usePlaylistContext();
 
     const playFromHere = () => {
-        if (props.composition) {
-            play(props.composition.id);
-        }
+        playTrack(props.track);
         props.finished();
     };
 
     const removeFromPlaylist = async () => {
-        if (!props.composition || !(props as any).playlistId) return props.finished();
         const playlistId = (props as any).playlistId;
-        await fetch(backendUrl + `/playlist/${playlistId}/compositions/${props.composition.id}`, {
+        await fetch(backendUrl + `/playlist/${playlistId}/compositions/${props.track.compositionId}`, {
             method: 'DELETE'
         });
         props.finished();
@@ -45,7 +42,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         <>
             <div className='menu'>
                 <div
-                    className='menu-header'>{props.composition ? props.composition.name : null}
+                    className='menu-header'>{ props.track.compositionName }
                 </div>
                 <div
                     className='menu-item'

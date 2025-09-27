@@ -3,7 +3,7 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from "react-i18next";
-import { usePlaylistContext } from './PlaylistContext';
+import { usePlaylistContext, Track } from './PlaylistContext';
 import { useCookies } from 'react-cookie';
 import CompositionMenu from './CompositionMenu';
 import { backendUrl } from '../../config';
@@ -11,27 +11,24 @@ import { backendUrl } from '../../config';
 const PlaylistContent: React.FC = () => {
     const [cookies] = useCookies(['color']);
     const { t } = useTranslation();
-    const { playlists, selectedPlaylistId, setSelectedPosition } = usePlaylistContext();
-    const selectedPlaylist = playlists.find(pl => pl.id === selectedPlaylistId);
-    const [compositions, setCompositions] = useState<any[] | null>(null);
+    const { selectedPlaylist, setSelectedPosition } = usePlaylistContext();
+    const [tracks, setTracks] = useState<Track[] | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
-    const [selectedComposition, setSelectedComposition] = useState<{ id: number; name: string } | null>(null);
+    const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
 
-    const reloadCompositions = () => {
+    const reloadTracks = () => {
         if (selectedPlaylist) {
             fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`)
                 .then(res => res.ok ? res.json() : Promise.reject(res))
-                .then((compositions: any[]) => setCompositions(
-                    compositions.map(c => ({ ...c, compositionId: c.compositionId }))
-                ))
-                .catch(() => setCompositions(null));
+                .then((tracks: Track[]) => setTracks(tracks))
+                .catch(() => setTracks(null));
         } else {
-            setCompositions(null);
+            setTracks(null);
         }
     };
 
     useEffect(() => {
-        reloadCompositions();
+        reloadTracks();
     }, [selectedPlaylist]);
 
     const sensors = useSensors(
@@ -44,7 +41,7 @@ const PlaylistContent: React.FC = () => {
         const style = {
             transform: CSS.Transform.toString(transform),
             transition,
-            background: selectedComposition && (id === selectedComposition.id) ? cookies.color : 'transparent',
+            background: selectedTrack && (id === selectedTrack?.compositionId) ? cookies.color : 'transparent',
             borderRadius: 4,
             marginBottom: 4,
             boxShadow: isDragging ? '0 2px 8px #8882' : undefined,
@@ -81,14 +78,14 @@ const PlaylistContent: React.FC = () => {
     }
 
     function handleDragEnd(event: any) {
-        if (!compositions || !selectedPlaylist) return;
+        if (!tracks || !selectedPlaylist) return;
         const { active, over } = event;
         if (!over || active.id === over.id) return;
-        const oldIndex = compositions.findIndex(c => c.compositionId === active.id);
-        const newIndex = compositions.findIndex(c => c.compositionId === over.id);
+        const oldIndex = tracks.findIndex(c => c.compositionId === active.id);
+        const newIndex = tracks.findIndex(c => c.compositionId === over.id);
         if (oldIndex === -1 || newIndex === -1) return;
-        const reordered = arrayMove(compositions, oldIndex, newIndex);
-        setCompositions(reordered);
+        const reordered = arrayMove(tracks, oldIndex, newIndex);
+        setTracks(reordered);
         patchPosition(selectedPlaylist.id, active.id, newIndex);
     }
 
@@ -97,9 +94,9 @@ const PlaylistContent: React.FC = () => {
             {selectedPlaylist ? (
                 <>
                     <div>
-                        {compositions === null
+                        {tracks === null
                             ? 'Loading...'
-                            : compositions.length === 0
+                            : tracks.length === 0
                                 ? t('Please go to archive to fill this playlist')
                                 : (
                                     <DndContext
@@ -108,23 +105,20 @@ const PlaylistContent: React.FC = () => {
                                         onDragEnd={handleDragEnd}
                                     >
                                         <SortableContext
-                                            items={compositions.map(c => c.compositionId)}
+                                            items={tracks.map(c => c.compositionId)}
                                             strategy={verticalListSortingStrategy}
                                         >
                                             <ul className="composition-list" style={{ padding: 0, listStyle: 'none', minHeight: 40 }}>
-                                                {compositions.map(composition => (
-                                                    <SortableItem key={composition.compositionId} id={composition.compositionId}>
+                                                {tracks.map(track => (
+                                                    <SortableItem key={track.compositionId} id={track.compositionId}>
                                                         <div
                                                             onClick={() => {
-                                                                setSelectedComposition({
-                                                                    id: composition.compositionId,
-                                                                    name: `${composition.composerFirstname} ${composition.composerSurname}: ${composition.compositionName}`
-                                                                });
-                                                                setSelectedPosition(composition.position);
+                                                                setSelectedTrack(track);
+                                                                setSelectedPosition(track.position);
                                                                 setMenuOpen(true);
                                                             }}
                                                         >
-                                                            {composition.composerSurname}{": "}{composition.compositionName}
+                                                            {track.composerSurname}{": "}{track.compositionName}
                                                         </div>
                                                     </SortableItem>
                                                 ))}
@@ -137,16 +131,18 @@ const PlaylistContent: React.FC = () => {
             ) : (
                 <span>{t('No playlist selected')}</span>
             )}
-            <CompositionMenu
-                open={menuOpen}
-                playlistId={selectedPlaylist?.id}
-                composition={selectedComposition}
-                finished={() => {
-                    setMenuOpen(false);
-                    setSelectedComposition(null);
-                    reloadCompositions();
-                }}
-            />
+            {selectedTrack && (
+                <CompositionMenu
+                    open={menuOpen}
+                    playlistId={selectedPlaylist?.id}
+                    track={selectedTrack}
+                    finished={() => {
+                        setMenuOpen(false);
+                        setSelectedTrack(null);
+                        reloadTracks();
+                    }}
+                />
+            )}
         </div>
     );
 };

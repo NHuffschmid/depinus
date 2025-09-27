@@ -6,6 +6,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import { usePlaylistContext } from './playlist/PlaylistContext';
 
 interface DashboardProps { }
 
@@ -18,6 +19,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
     const [isForwardable] = useState(false);
+    const { stopPlaylist } = usePlaylistContext();
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
@@ -39,6 +41,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     });
 
     const handleStop = () => {
+        stopPlaylist();
         webSocket.sendStopCommand();
     }
 

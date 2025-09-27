@@ -460,7 +460,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: "#/definitions/PlaylistCompositionResponse"
+              $ref: "#/definitions/PlaylistTrackResponse"
         "404":
           description: Playlist not found
           schema:
@@ -495,7 +495,7 @@ paths:
         "200":
           description: Added
           schema:
-            $ref: "#/definitions/PlaylistCompositionResponse"
+            $ref: "#/definitions/PlaylistTrackResponse"
         "404":
           description: Composition not found
           schema:
@@ -685,7 +685,7 @@ definitions:
       name:
         type: string
         example: "My Playlist"
-  PlaylistCompositionResponse:
+  PlaylistTrackResponse:
     type: object
     required: [playlistId, compositionId, position, compositionName, composerFirstname, composerSurname]
     properties:
