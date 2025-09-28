@@ -83,16 +83,32 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         if (!selectedPlaylist || playingCompositionId == null) {
             return null;
         }
+
         const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
             headers: { 'Accept': 'application/json' }
         });
         const tracks: Track[] = await response.json();
         const idx = tracks.findIndex(t => t.compositionId === playingCompositionId);
-        if (idx === -1) {
+        
+        if (idx === -1 || tracks.length === 0) {
             return null;
         }
+
+        if (repeat === 'composition') {
+            return tracks[idx];
+        }
+
+        if (shuffle) {
+            const otherTracks = tracks.filter((_, i) => i !== idx);
+            if (otherTracks.length === 0) return null;
+            const randomIdx = Math.floor(Math.random() * otherTracks.length);
+            return otherTracks[randomIdx];
+        }
+
         if (idx + 1 < tracks.length) {
             return tracks[idx + 1];
+        } else if (repeat === 'playlist') {
+            return tracks[0];
         } else {
             return null;
         }
