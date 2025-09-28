@@ -75,36 +75,81 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         setBackwardable(false);
     };
 
+    const fetchTracks = async (): Promise<Track[]> => {
+        if (!selectedPlaylist) return [];
+        const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        return await response.json();
+    };
+
+    const getCurrentTrackIndex = (tracks: Track[], compositionId: number | null): number => {
+        return tracks.findIndex(t => t.compositionId === compositionId);
+    };
+
+    const getNextIndex = (idx: number, tracks: Track[]): number | null => {
+        if (idx === -1 || tracks.length === 0) return null;
+        if (idx + 1 < tracks.length) return idx + 1;
+        return null;
+    };
+
+    const getPreviousIndex = (idx: number, tracks: Track[]): number | null => {
+        if (idx === -1 || tracks.length === 0) return null;
+        if (idx - 1 >= 0) return idx - 1;
+        return null;
+    };
+
     const evaluateNextTrack = async (): Promise<Track | null> => {
         if (!selectedPlaylist || playingCompositionId == null) {
             return null;
         }
-
-        const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
-            headers: { 'Accept': 'application/json' }
-        });
-        const tracks: Track[] = await response.json();
-        const idx = tracks.findIndex(t => t.compositionId === playingCompositionId);
-        
+        const tracks = await fetchTracks();
+        const idx = getCurrentTrackIndex(tracks, playingCompositionId);
         if (idx === -1 || tracks.length === 0) {
             return null;
         }
-
         if (repeat === 'composition') {
             return tracks[idx];
         }
-
         if (shuffle) {
             const otherTracks = tracks.filter((_, i) => i !== idx);
             if (otherTracks.length === 0) return null;
             const randomIdx = Math.floor(Math.random() * otherTracks.length);
             return otherTracks[randomIdx];
         }
-
-        if (idx + 1 < tracks.length) {
-            return tracks[idx + 1];
+        const nextIdx = getNextIndex(idx, tracks);
+        if (nextIdx !== null) {
+            return tracks[nextIdx];
         } else if (repeat === 'playlist') {
             return tracks[0];
+        } else {
+            return null;
+        }
+    };
+
+    const evaluatePreviousTrack = async (): Promise<Track | null> => {
+        if (!selectedPlaylist || playingCompositionId == null) {
+            return null;
+        }
+        const tracks = await fetchTracks();
+        const idx = getCurrentTrackIndex(tracks, playingCompositionId);
+        if (idx === -1 || tracks.length === 0) {
+            return null;
+        }
+        if (repeat === 'composition') {
+            return tracks[idx];
+        }
+        if (shuffle) {
+            const otherTracks = tracks.filter((_, i) => i !== idx);
+            if (otherTracks.length === 0) return null;
+            const randomIdx = Math.floor(Math.random() * otherTracks.length);
+            return otherTracks[randomIdx];
+        }
+        const prevIdx = getPreviousIndex(idx, tracks);
+        if (prevIdx !== null) {
+            return tracks[prevIdx];
+        } else if (repeat === 'playlist') {
+            return tracks[tracks.length - 1];
         } else {
             return null;
         }
@@ -113,7 +158,6 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const nextTrack = async (): Promise<void> => {
         const track = await evaluateNextTrack();
         if (track) {
-            console.log("Next track: " + track.compositionName);
             playTrack(track);
         } else {
             stopPlaylist();
@@ -121,8 +165,12 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const previousTrack = async (): Promise<void> => {
-        // TODO: implement previous track functionality
-        await nextTrack(); // for test only
+        const track = await evaluatePreviousTrack();
+        if (track) {
+            playTrack(track);
+        } else {
+            stopPlaylist();
+        }
     };
 
     useEffect(() => {
@@ -149,7 +197,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                     }
                     else {
                         setForwardable(await evaluateNextTrack() !== null);
-                        //setBackwardable(await evaluatePreviousTrack() !== null);
+                        setBackwardable(await evaluatePreviousTrack() !== null);
                     }
                 }
             }
