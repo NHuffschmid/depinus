@@ -75,6 +75,8 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
 
     const stopPlaylist = () => {
         setPlayingCompositionId(null);
+        setForwardable(false);
+        setBackwardable(false);
     };
 
     const evaluateNextTrack = async (): Promise<Track | null> => {
