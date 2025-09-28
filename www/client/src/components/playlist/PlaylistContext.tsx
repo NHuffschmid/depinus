@@ -23,8 +23,6 @@ interface PlaylistContextType {
     setPlaylists: (playlists: Playlist[]) => void;
     selectedPlaylist: Playlist | null;
     setSelectedPlaylist: (selectedPlaylist: Playlist | null) => void;
-    selectedPosition: number | null;
-    setSelectedPosition: (selected: number | null) => void;
     shuffle: boolean;
     setShuffle: (shuffle: boolean) => void;
     repeat: RepeatMode;
@@ -51,7 +49,6 @@ export const usePlaylistContext = () => {
 export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
-    const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
     const [shuffle, setShuffle] = useState<boolean>(false);
     const [repeat, setRepeat] = useState<RepeatMode>('off');
     const [playingCompositionId, setPlayingCompositionId] = useState<number | null>(null);
@@ -59,7 +56,6 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [backwardable, setBackwardable] = useState<boolean>(false);
 
     const playTrack = (track: Track) => {
-        //console.log(`Playing composition with ID ${compositionId} (position: ${selectedPosition})`);
         setPlayingCompositionId(track.compositionId);
         fetch(backendUrl + '/play', {
             method: 'POST',
@@ -163,8 +159,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     return (
         <PlaylistContext.Provider value={{
             playlists, setPlaylists, selectedPlaylist, setSelectedPlaylist,
-            selectedPosition, setSelectedPosition, shuffle, setShuffle, repeat,
-            setRepeat, playingCompositionId, playTrack,
+            shuffle, setShuffle, repeat, setRepeat, playingCompositionId, playTrack,
             stopPlaylist, nextTrack, previousTrack, forwardable, backwardable
         }}>
             {children}

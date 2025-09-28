@@ -11,7 +11,7 @@ import { backendUrl } from '../../config';
 const PlaylistContent: React.FC = () => {
     const [cookies] = useCookies(['color']);
     const { t } = useTranslation();
-    const { selectedPlaylist, setSelectedPosition } = usePlaylistContext();
+    const { selectedPlaylist } = usePlaylistContext();
     const [tracks, setTracks] = useState<Track[] | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -114,7 +114,6 @@ const PlaylistContent: React.FC = () => {
                                                         <div
                                                             onClick={() => {
                                                                 setSelectedTrack(track);
-                                                                setSelectedPosition(track.position);
                                                                 setMenuOpen(true);
                                                             }}
                                                         >
