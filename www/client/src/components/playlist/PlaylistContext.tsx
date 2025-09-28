@@ -30,11 +30,12 @@ interface PlaylistContextType {
     repeat: RepeatMode;
     setRepeat: (repeat: RepeatMode) => void;
     playingCompositionId: number | null;
-    setPlayingCompositionId: (id: number | null) => void;
     playTrack: (track: Track) => void;
     stopPlaylist: () => void;
     nextTrack: () => Promise<void>;
     previousTrack: () => Promise<void>;
+    forwardable: boolean;
+    backwardable: boolean;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(undefined);
@@ -54,6 +55,8 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [shuffle, setShuffle] = useState<boolean>(false);
     const [repeat, setRepeat] = useState<RepeatMode>('off');
     const [playingCompositionId, setPlayingCompositionId] = useState<number | null>(null);
+    const [forwardable, setForwardable] = useState<boolean>(false);
+    const [backwardable, setBackwardable] = useState<boolean>(false);
 
     const playTrack = (track: Track) => {
         //console.log(`Playing composition with ID ${compositionId} (position: ${selectedPosition})`);
@@ -74,10 +77,9 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         setPlayingCompositionId(null);
     };
 
-    const nextTrack = async (): Promise<void> => {
+    const evaluateNextTrack = async (): Promise<Track | null> => {
         if (!selectedPlaylist || playingCompositionId == null) {
-            stopPlaylist();
-            return;
+            return null;
         }
         const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
             headers: { 'Accept': 'application/json' }
@@ -85,17 +87,24 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         const tracks: Track[] = await response.json();
         const idx = tracks.findIndex(t => t.compositionId === playingCompositionId);
         if (idx === -1) {
-            stopPlaylist();
-            return;
+            return null;
         }
         if (idx + 1 < tracks.length) {
-            const track = tracks[idx + 1];
+            return tracks[idx + 1];
+        } else {
+            return null;
+        }
+    };
+
+    const nextTrack = async (): Promise<void> => {
+        const track = await evaluateNextTrack();
+        if (track) {
             console.log("Next track: " + track.compositionName);
             playTrack(track);
         } else {
             stopPlaylist();
         }
-    }
+    };
 
     const previousTrack = async (): Promise<void> => {
         // TODO: implement previous track functionality
@@ -115,14 +124,18 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
             console.log('Info message: ' + JSON.stringify(message));
-            if ('isStoppable' in message) {
-                if (playingCompositionId) { // playlist is active
+            if (playingCompositionId) { // playlist is active
+                if ('isStoppable' in message) {
                     if (!message['isStoppable'] &&
                         message['isPlayable'] &&
                         !message['wasCancelled']) {
                         // piano daemon has finished playing a composition
                         // ==> play next item in playlist
                         await nextTrack();
+                    }
+                    else {
+                        setForwardable(await evaluateNextTrack() !== null);
+                        //setBackwardable(await evaluatePreviousTrack() !== null);
                     }
                 }
             }
@@ -133,8 +146,8 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         <PlaylistContext.Provider value={{
             playlists, setPlaylists, selectedPlaylist, setSelectedPlaylist,
             selectedPosition, setSelectedPosition, shuffle, setShuffle, repeat,
-            setRepeat, playingCompositionId, setPlayingCompositionId, playTrack,
-            stopPlaylist, nextTrack, previousTrack
+            setRepeat, playingCompositionId, playTrack,
+            stopPlaylist, nextTrack, previousTrack, forwardable, backwardable
         }}>
             {children}
         </PlaylistContext.Provider>
