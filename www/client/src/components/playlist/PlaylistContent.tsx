@@ -11,7 +11,7 @@ import { backendUrl } from '../../config';
 const PlaylistContent: React.FC = () => {
     const [cookies] = useCookies(['color']);
     const { t } = useTranslation();
-    const { selectedPlaylist } = usePlaylistContext();
+    const { selectedPlaylist, playingCompositionId } = usePlaylistContext();
     const [tracks, setTracks] = useState<Track[] | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -38,10 +38,13 @@ const PlaylistContent: React.FC = () => {
 
     function SortableItem({ id, children }: { id: number, children: React.ReactNode }) {
         const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+        const isSelected = selectedTrack && (id === selectedTrack?.compositionId);
+        const isPlaying = playingCompositionId === id;
         const style = {
             transform: CSS.Transform.toString(transform),
             transition,
-            background: selectedTrack && (id === selectedTrack?.compositionId) ? cookies.color : 'transparent',
+            background: (isSelected || isPlaying) ? cookies.color : 'transparent',
+            color: (isSelected || isPlaying) ? '#fff' : undefined,
             borderRadius: 4,
             marginBottom: 4,
             boxShadow: isDragging ? '0 2px 8px #8882' : undefined,
