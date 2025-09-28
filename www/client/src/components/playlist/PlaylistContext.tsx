@@ -33,8 +33,8 @@ interface PlaylistContextType {
     setPlayingCompositionId: (id: number | null) => void;
     playTrack: (track: Track) => void;
     stopPlaylist: () => void;
-    nextTrack: () => Promise<Track | null>;
-    previousTrack: () => Promise<Track | null>;
+    nextTrack: () => Promise<void>;
+    previousTrack: () => Promise<void>;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(undefined);
@@ -74,30 +74,32 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         setPlayingCompositionId(null);
     };
 
-    const nextTrack = async (): Promise<Track | null> => {
-        if (!selectedPlaylist || playingCompositionId == null) return null;
-        try {
-            const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!response.ok) return null;
-            const tracks: Track[] = await response.json();
-            const idx = tracks.findIndex(t => t.compositionId === playingCompositionId);
-            if (idx === -1) return null;
-            if (idx + 1 < tracks.length) {
-                return tracks[idx + 1];
-            } else {
-                return null;
-            }
-        } catch (e) {
-            return null;
+    const nextTrack = async (): Promise<void> => {
+        if (!selectedPlaylist || playingCompositionId == null) {
+            stopPlaylist();
+            return;
+        }
+        const response = await fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const tracks: Track[] = await response.json();
+        const idx = tracks.findIndex(t => t.compositionId === playingCompositionId);
+        if (idx === -1) {
+            stopPlaylist();
+            return;
+        }
+        if (idx + 1 < tracks.length) {
+            const track = tracks[idx + 1];
+            console.log("Next track: " + track.compositionName);
+            playTrack(track);
+        } else {
+            stopPlaylist();
         }
     }
 
-    // Removed old sync previousTrack; only async version below
-    const previousTrack = async (): Promise<Track | null> => {
-        //setCurrentlyPlayedPosition(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
-        return null;
+    const previousTrack = async (): Promise<void> => {
+        // TODO: implement previous track functionality
+        await nextTrack(); // for test only
     };
 
     useEffect(() => {
@@ -112,15 +114,15 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     useDepinusWebSocket({
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
+            console.log('Info message: ' + JSON.stringify(message));
             if ('isStoppable' in message) {
                 if (playingCompositionId) { // playlist is active
-                    if (!message['isStoppable'] && message['isPlayable']) {
+                    if (!message['isStoppable'] &&
+                        message['isPlayable'] &&
+                        !message['wasCancelled']) {
                         // piano daemon has finished playing a composition
                         // ==> play next item in playlist
-                        const track = await nextTrack();
-                        console.log("Next track: " + track?.compositionName);
-                        if (track) { playTrack(track); }
-                        else { stopPlaylist(); }
+                        await nextTrack();
                     }
                 }
             }

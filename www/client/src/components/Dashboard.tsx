@@ -12,14 +12,12 @@ interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
     const [cookies] = useCookies(['color']);
-    const [isBackwardable] = useState(false);
     const [isStoppable, setIsStoppable] = useState(false);
     const [composer, setComposer] = useState('');
     const [composition, setComposition] = useState('');
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
-    const [isForwardable] = useState(false);
-    const { stopPlaylist } = usePlaylistContext();
+    const { playingCompositionId, stopPlaylist, previousTrack, nextTrack } = usePlaylistContext();
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
@@ -61,7 +59,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
         >
             <button
                 className="mediaButton"
-                disabled={!isBackwardable}
+                disabled={!playingCompositionId}
+                onClick={previousTrack}
             >
                 <SkipPreviousIcon fontSize="inherit" />
             </button>
@@ -85,7 +84,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
             <button
                 className="mediaButton"
-                disabled={!isForwardable}
+                disabled={!playingCompositionId}
+                onClick={nextTrack}
             >
                 <SkipNextIcon fontSize="inherit" />
             </button>

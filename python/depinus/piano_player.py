@@ -273,7 +273,7 @@ class PianoPlayer:
 
             if (self._current_composition != None): # happens in case of startup jingle
                 for callback in self._play_end_callbacks:
-                    await callback()
+                    await callback(False)
 
         except asyncio.CancelledError:
 
@@ -283,7 +283,7 @@ class PianoPlayer:
                 self._play_time = 0
 
                 for callback in self._play_end_callbacks:
-                    await callback()
+                    await callback(True)
 
             self._midi_output.reset()
             raise

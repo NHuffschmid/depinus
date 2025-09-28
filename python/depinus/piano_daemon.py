@@ -248,7 +248,7 @@ class PianoDaemon:
         await self._websocket_server.send_keyboard_message(mido_message)
 
 
-    async def _on_play_end(self):
+    async def _on_play_end(self, cancelled):
         logger.info('Piano player has stopped playing.')
         await self._websocket_server.send_info_message(
             {
@@ -256,6 +256,7 @@ class PianoDaemon:
                 'isStoppable': False,
                 'isPlayable': True,
                 'isPauseable': False,
+                'wasCancelled': cancelled,
                 'composition': {
                     'name': self._piano_player.current_composition.name, 
                     'composerName': self._piano_player.current_composition.composer, 
