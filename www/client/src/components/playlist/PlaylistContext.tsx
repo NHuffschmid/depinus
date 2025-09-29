@@ -185,7 +185,6 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     useDepinusWebSocket({
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
-            console.log('Info message: ' + JSON.stringify(message));
             if (playingCompositionId) { // playlist is active
                 if ('isStoppable' in message) {
                     if (!message['isStoppable'] &&
