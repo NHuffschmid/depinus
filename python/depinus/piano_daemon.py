@@ -43,6 +43,8 @@ class PianoDaemon:
         self._midi_out_ports_available = []
         self._midi_out_ports_selected = None
 
+        self._playlistId = None
+
 
     async def run(self):
 
@@ -217,23 +219,31 @@ class PianoDaemon:
         await self._websocket_server.send_info_message(info, websocket)
 
 
-    async def _on_play_composition(self, name, composer, duration, mididata):
+    async def _on_play_composition(self, name, compositionId, composer, duration, mididata, playlistId=None):
         logger.info('Going to play: %s...' % name)
         composition = Composition(name, composer, duration, bytes(mididata))
         await self._piano_player.play(composition)
-        await self._websocket_server.send_info_message(
-            {
-                'messageType': 'info',
-                'isStoppable': True,
-                'isPlayable': False,
-                'isPauseable': True,
-                'composition': {
-                    'name': self._piano_player.current_composition.name, 
-                    'composerName': self._piano_player.current_composition.composer, 
-                    'duration': self._piano_player.current_composition.duration,
-                    'playTime': self._piano_player.play_time
-                }
-            })
+        # playlist ID is mirrored back to clients
+        if playlistId is not None:
+            self._playlistId = playlistId
+        else:
+            self._playlistId = None
+        info_msg = {
+            'messageType': 'info',
+            'isStoppable': True,
+            'isPlayable': False,
+            'isPauseable': True,
+            'composition': {
+                'name': self._piano_player.current_composition.name,
+                'compositionId': compositionId,
+                'composerName': self._piano_player.current_composition.composer,
+                'duration': self._piano_player.current_composition.duration,
+                'playTime': self._piano_player.play_time
+            }
+        }
+        if self._playlistId is not None:
+            info_msg['composition']['playlistId'] = self._playlistId
+        await self._websocket_server.send_info_message(info_msg)
 
 
     async def _on_calculate_play_duration(self, mididata):

@@ -614,6 +614,9 @@ paths:
             properties:
               compositionId:
                 type: integer
+              playlistId:
+                type: integer
+                description: Optional playlist ID
       operationId: play
       responses:
         "200":

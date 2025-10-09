@@ -57,12 +57,14 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
 
     const playTrack = (track: Track) => {
         setPlayingCompositionId(track.compositionId);
+        const body: any = { compositionId: track.compositionId };
+        if (selectedPlaylist) {
+            body.playlistId = selectedPlaylist.id;
+        }
         fetch(backendUrl + '/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                compositionId: track.compositionId
-            })
+            body: JSON.stringify(body)
         })
             .catch(error => {
                 console.error('Error sending play request:', error);
@@ -185,6 +187,19 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     useDepinusWebSocket({
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
+
+            if (message.composition && typeof message.composition.playlistId === 'number') {
+                const found = playlists.find(p => p.id === message.composition.playlistId);
+                if (found) {
+                    console.log('Setting selected playlist to', found);
+                    setSelectedPlaylist(found);
+                    setPlayingCompositionId(message.composition.compositionId);
+                }
+            }
+            else {
+                setPlayingCompositionId(null);
+            }
+
             if (playingCompositionId) { // playlist is active
                 if ('isStoppable' in message) {
                     if (!message['isStoppable'] &&
