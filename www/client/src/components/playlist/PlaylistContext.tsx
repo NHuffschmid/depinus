@@ -191,13 +191,15 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
             if (message.composition && typeof message.composition.playlistId === 'number') {
                 const found = playlists.find(p => p.id === message.composition.playlistId);
                 if (found) {
-                    console.log('Setting selected playlist to', found);
+                    //console.log('Setting selected playlist to', found);
                     setSelectedPlaylist(found);
                     setPlayingCompositionId(message.composition.compositionId);
                 }
             }
             else {
-                setPlayingCompositionId(null);
+                if (!message.isStoppable) {
+                    setPlayingCompositionId(null); // not on pause/resume
+                }
             }
 
             if (playingCompositionId) { // playlist is active
