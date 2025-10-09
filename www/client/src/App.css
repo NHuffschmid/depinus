@@ -46,6 +46,7 @@ html, body {
   list-style: none;
   display: flex;
   gap: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .nav a {
@@ -54,13 +55,13 @@ html, body {
   height: 100%;
   display: flex;
   align-items: center;
-  padding: .25rem;
+  padding: 0rem 0.5rem;
 }
 
 .nav li {
   align-items: center;
-  padding-top: 0.5rem;
-  padding-bottom: 1rem;
+  padding-top: 0.3rem;
+  padding-bottom: 0.5rem;
 }
 
 .dashboard {
