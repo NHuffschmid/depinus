@@ -7,6 +7,7 @@
 
 ### Features
 - Added MIDI out port setting
+- beautified button styling
 - Enhanced music archive by:
   - Mussorgski
   - Ravel
