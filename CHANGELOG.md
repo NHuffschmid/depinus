@@ -16,7 +16,7 @@
   - Tschaikovski
 
 ### Bugfixes
-- None
+- https://github.com/NHuffschmid/depinus/issues/1
 
 ### Tech stuff
 - migrated from REACT CRA to Vite
