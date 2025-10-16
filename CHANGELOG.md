@@ -1,9 +1,6 @@
 # CHANGELOG
 
-## [0.8.0] - Pachelbel
-- Going public
-
-## [0.x.y] - Corelli (not released yet)
+## [0.9.0] - Corelli
 
 ### Features
 - Added MIDI out port setting
@@ -24,3 +21,6 @@
 - converted JSX frontend code to TSX
 - avoid GTK error messages in headless mode
 - worked around zero width space issue when storing composition names in DB
+
+## [0.8.0] - Pachelbel
+- Going public
