@@ -1,6 +1,7 @@
 // This script is executed after the Electron app has been packaged.
 // - move the DEPINUS license file from the app directory to the root directory
 // - update copyright owner
+// - rename windows package folder to use "windows" instead of "win32"
 
 const fs = require('fs');
 const path = require('path');
@@ -62,5 +63,23 @@ if (process.platform === 'win32' && fs.existsSync(depinusExe)) {
         execFileSync(rceditPath, [depinusExe, '--set-version-string', 'LegalCopyright', owner], { stdio: 'inherit' });
     } catch (err) {
         logger.warn('rcedit failed: ' + err.message);
+    }
+}
+
+if (process.platform === 'win32') {
+    const packageDir = path.join(__dirname, '../package');
+    const entries = fs.readdirSync(packageDir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (entry.isDirectory() && entry.name.endsWith('-win32-x64')) {
+            const oldPath = path.join(packageDir, entry.name);
+            const newName = entry.name.replace('-win32-x64', '-windows-x64');
+            const newPath = path.join(packageDir, newName);
+            if (!fs.existsSync(newPath)) {
+                fs.renameSync(oldPath, newPath);
+                logger.info(`Renamed package folder to ${newName}`);
+            } else {
+                logger.warn(`Target folder ${newName} already exists, skipping rename.`);
+            }
+        }
     }
 }
