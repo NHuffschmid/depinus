@@ -6,7 +6,6 @@ add appropriate key press technology
 
 Software:
 implement playlists
-add remaining composers of Bernd Krüger in DB
 move billions of style definitions to CSS file(s)
 add additional midi repositories
 - e.g. from http://www.members.tripod.com/~rosemck1/jukebox-classical.html
