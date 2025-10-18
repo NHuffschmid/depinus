@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
 import type { KeyboardRef } from './components/react-piano-keyboard/src/Keyboard';
 import "./App.css";
@@ -90,7 +91,7 @@ function App(): JSX.Element {
     <React.Fragment>
       {isActive ? (
         <div className='App'>
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <header className="App-header">
               <Keyboard
                 ref={keyboardRef}

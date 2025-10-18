@@ -4,7 +4,7 @@
 
 *(C) Norbert Huffschmid - 2025*
 
-This program is for playing piano music on MIDI devices (e-pianos, keyboards, computers, etc.). It can be used for self-teaching purposes or accompaniment. The program includes a comprehensive archive of piano music, which can easily be expanded. Simply download a MIDI file of your choice and add it to your personal music archive. Archives can be exported and imported, allowing easy music exchange between users.  
+DEPINUS is a software for playing piano music on MIDI devices (e-pianos, keyboards, computers, etc.). It is ideal for self-learning, practice, or accompaniment. The program features a large, expandable archive of piano music. You can add your own MIDI files to build a personal music collection. Archives are easy to edit, export, and import, making music sharing between users simple and convenient.
 
 ## Installation
 

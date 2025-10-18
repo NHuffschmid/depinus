@@ -46,6 +46,7 @@ html, body {
   list-style: none;
   display: flex;
   gap: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .nav a {
@@ -54,13 +55,13 @@ html, body {
   height: 100%;
   display: flex;
   align-items: center;
-  padding: .25rem;
+  padding: 0rem 0.5rem;
 }
 
 .nav li {
   align-items: center;
-  padding-top: 0.5rem;
-  padding-bottom: 1rem;
+  padding-top: 0.3rem;
+  padding-bottom: 0.5rem;
 }
 
 .dashboard {
@@ -187,6 +188,24 @@ html, body {
 }
 
 .navButton:active {
+  transform: translateY(4px);
+}
+
+.mediaButton {
+  font-size: 1.5em;
+  padding: 0;
+  line-height: 1;
+  border-radius: 0.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  min-width: unset;
+  width: auto;
+}
+
+.mediaButton:active {
+  background-color: var(--media-active-color, #555);
   transform: translateY(4px);
 }
 

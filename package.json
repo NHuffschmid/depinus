@@ -13,7 +13,7 @@
     "startheadless": "electron . --headless",
     "copy:assets": "node copy-esbuild-assets.js",
     "build:es": "esbuild main.js --bundle --platform=node --outfile=dist/main.js --external:electron && npm --prefix ./www/server run build:es && npm --prefix ./www/client run build:es && npm run copy:assets",
-    "package-win-x64": "npx electron-packager ./dist depinus --platform=win32 --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon.exe --extra-resource=scripts/autostart.bat --out=package --overwrite && npm run postpackage",
+    "package-windows-x64": "npx electron-packager ./dist depinus --platform=win32 --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon.exe --extra-resource=scripts/autostart.bat --out=package --overwrite && npm run postpackage",
     "package-linux-x64": "npx electron-packager ./dist depinus --platform=linux --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
     "package-linux-arm64": "npx electron-packager ./dist depinus --platform=linux --arch=arm64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
     "release": "node scripts/release.js",

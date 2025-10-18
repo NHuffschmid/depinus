@@ -12,8 +12,6 @@ const { parseConfig } = require('./utils');
 
 logger.info('🎵🎵🎵 Starting Depinus... 🎵🎵🎵');
 
-app.commandLine.appendSwitch('disable-gpu');
-
 if (app.isPackaged) {
   logger.debug('We are running in packaged mode');
   process.env.DEPINUS_HOME = path.join(app.getAppPath(), '..');
@@ -52,6 +50,9 @@ Options:
 const headless = args.headless;
 if (headless) {
   logger.info('Started in headless mode');
+  app.commandLine.appendSwitch('headless');
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('no-sandbox');
 }
 else {
   logger.info('Started in graphic display mode');
