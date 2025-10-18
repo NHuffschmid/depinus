@@ -1,9 +1,6 @@
 # CHANGELOG
 
-## [0.8.0] - Pachelbel
-- Going public
-
-## [0.x.y] - Corelli (not released yet)
+## [0.9.0] - Corelli
 
 ### Features
 - Added playlist feature
@@ -25,3 +22,6 @@
 - Converted JSX frontend code to TSX
 - Avoid GTK error messages in headless mode
 - Worked around zero width space issue when storing composition names in DB
+
+## [0.8.0] - Pachelbel
+- Going public
