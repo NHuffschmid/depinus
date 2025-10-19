@@ -197,8 +197,8 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
             else {
-                if (!message.isStoppable) {
-                    setPlayingCompositionId(null); // not on pause/resume
+                if (!message.isStoppable && (message.isPlayable !== message.isPauseable)) {
+                    setPlayingCompositionId(null); // terminate playlist on STOP (not on pause/resume)
                 }
             }
 
