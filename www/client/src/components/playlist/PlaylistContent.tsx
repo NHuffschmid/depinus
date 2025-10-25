@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import { useTranslation } from "react-i18next";
 import { usePlaylistContext, Track } from './PlaylistContext';
 import { useCookies } from 'react-cookie';
-import CompositionMenu from './CompositionMenu';
 import { backendUrl } from '../../config';
+import CompositionMenu from './CompositionMenu';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 const PlaylistContent: React.FC = () => {
     const [cookies] = useCookies(['color']);
@@ -31,48 +30,7 @@ const PlaylistContent: React.FC = () => {
         reloadTracks();
     }, [selectedPlaylist]);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
-    );
-
-    function SortableItem({ id, children }: { id: number, children: React.ReactNode }) {
-        const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-        const isSelected = selectedTrack && (id === selectedTrack?.compositionId);
-        const isPlaying = playingCompositionId === id;
-        const style = {
-            transform: CSS.Transform.toString(transform),
-            transition,
-            background: (isSelected || isPlaying) ? cookies.color : 'transparent',
-            color: (isSelected || isPlaying) ? '#fff' : undefined,
-            borderRadius: 4,
-            marginBottom: 4,
-            boxShadow: isDragging ? '0 2px 8px #8882' : undefined,
-            display: 'flex',
-            alignItems: 'flex-start',
-            cursor: 'default',
-            textAlign: 'left',
-            whiteSpace: 'normal'
-        };
-        return (
-            <li ref={setNodeRef} style={style as any} {...attributes}>
-                <span
-                    {...listeners}
-                    style={{ cursor: 'grab', marginRight: 8, fontSize: 18, userSelect: 'none', touchAction: 'none' }}
-                    aria-label='Drag handle'
-                    onClick={e => e.stopPropagation()} // Drag-Handle schluckt Klicks
-                >☰</span>
-                <div
-                    style={{ flex: 1, width: '100%' }}
-                    onClick={React.isValidElement(children) ? children.props.onClick : undefined}
-                >
-                    {React.isValidElement(children) ? children.props.children : children}
-                </div>
-            </li>
-        );
-    }
-
-    async function patchPosition(playlistId: number, compositionId: string, newPosition: number) {
+    async function patchPosition(playlistId: number, compositionId: number, newPosition: number) {
         await fetch(`${backendUrl}/playlist/${playlistId}/compositions/${compositionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -80,16 +38,15 @@ const PlaylistContent: React.FC = () => {
         });
     }
 
-    function handleDragEnd(event: any) {
+    function handleDragEnd(result: DropResult) {
         if (!tracks || !selectedPlaylist) return;
-        const { active, over } = event;
-        if (!over || active.id === over.id) return;
-        const oldIndex = tracks.findIndex(c => c.compositionId === active.id);
-        const newIndex = tracks.findIndex(c => c.compositionId === over.id);
-        if (oldIndex === -1 || newIndex === -1) return;
-        const reordered = arrayMove(tracks, oldIndex, newIndex);
+        const { source, destination } = result;
+        if (!destination || source.index === destination.index) return;
+        const reordered = Array.from(tracks);
+        const [removed] = reordered.splice(source.index, 1);
+        reordered.splice(destination.index, 0, removed);
         setTracks(reordered);
-        patchPosition(selectedPlaylist.id, active.id, newIndex);
+        patchPosition(selectedPlaylist.id, removed.compositionId, destination.index);
     }
 
     return (
@@ -102,31 +59,75 @@ const PlaylistContent: React.FC = () => {
                             : tracks.length === 0
                                 ? t('Please go to archive to fill this playlist')
                                 : (
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragEnd={handleDragEnd}
-                                    >
-                                        <SortableContext
-                                            items={tracks.map(c => c.compositionId)}
-                                            strategy={verticalListSortingStrategy}
-                                        >
-                                            <ul className="composition-list" style={{ padding: 0, listStyle: 'none', minHeight: 40 }}>
-                                                {tracks.map(track => (
-                                                    <SortableItem key={track.compositionId} id={track.compositionId}>
-                                                        <div
-                                                            onClick={() => {
-                                                                setSelectedTrack(track);
-                                                                setMenuOpen(true);
-                                                            }}
-                                                        >
-                                                            {track.composerSurname}{": "}{track.compositionName}
-                                                        </div>
-                                                    </SortableItem>
-                                                ))}
-                                            </ul>
-                                        </SortableContext>
-                                    </DndContext>
+                                    <DragDropContext onDragEnd={handleDragEnd}>
+                                        <Droppable droppableId="playlist-droppable">
+                                            {(provided: DroppableProvided) => (
+                                                <ul
+                                                    className="composition-list"
+                                                    style={{ padding: 0, listStyle: 'none', minHeight: 40 }}
+                                                    ref={provided.innerRef}
+                                                    {...provided.droppableProps}
+                                                >
+                                                    {tracks.map((track, index) => {
+                                                        const isPlaying = playingCompositionId === track.compositionId;
+                                                        return (
+                                                            <Draggable key={track.compositionId} draggableId={track.compositionId.toString()} index={index}>
+                                                                {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                                                                    <li
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        style={{
+                                                                            ...provided.draggableProps.style,
+                                                                            background: isPlaying ? cookies.color : 'transparent',
+                                                                            color: isPlaying ? '#fff' : undefined,
+                                                                            borderRadius: '0.6rem',
+                                                                            marginBottom: 4,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            textAlign: 'left',
+                                                                            whiteSpace: 'normal',
+                                                                            boxShadow: snapshot.isDragging ? '0 2px 8px #8882' : undefined,
+                                                                        }}
+                                                                    >
+                                                                        <span
+                                                                            {...provided.dragHandleProps}
+                                                                            style={{
+                                                                                marginRight: '0.2rem',
+                                                                                color: 'inherit',
+                                                                                cursor: 'grab',
+                                                                                width: '2rem',
+                                                                                height: '2rem',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                borderRadius: '0.6rem',
+                                                                                background: '#ccc',
+                                                                            }}
+                                                                            tabIndex={0}
+                                                                            onClick={e => e.stopPropagation()}
+                                                                            title={t('Change order') || ''}
+                                                                        >
+                                                                            <DragIndicatorIcon fontSize="medium" />
+                                                                        </span>
+                                                                        <div
+                                                                            style={{ flex: 1, width: '100%' }}
+                                                                            onClick={() => {
+                                                                                setSelectedTrack(track);
+                                                                                setMenuOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            {track.composerSurname}{": "}{track.compositionName}
+                                                                        </div>
+                                                                    </li>
+                                                                )}
+                                                            </Draggable>
+                                                        );
+                                                    })}
+                                                    {provided.placeholder}
+                                                </ul>
+                                            )}
+                                        </Droppable>
+                                    </DragDropContext>
                                 )}
                     </div>
                 </>
