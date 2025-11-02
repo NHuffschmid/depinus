@@ -187,19 +187,21 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     useDepinusWebSocket({
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
-
-            if (message.composition && typeof message.composition.playlistId === 'number') {
-                const found = playlists.find(p => p.id === message.composition.playlistId);
+            if (message.playlist) {
+                const found = playlists.find(p => p.id === message.playlist.id);
                 if (found) {
                     //console.log('Setting selected playlist to', found);
                     setSelectedPlaylist(found);
-                    setPlayingCompositionId(message.composition.compositionId);
                 }
             }
             else {
                 if (!message.isStoppable && (message.isPlayable !== message.isPauseable)) {
                     setPlayingCompositionId(null); // terminate playlist on STOP (not on pause/resume)
                 }
+            }
+
+            if (message.composition && message.composition.compositionId) {
+                setPlayingCompositionId(message.composition.compositionId);
             }
 
             if (playingCompositionId) { // playlist is active

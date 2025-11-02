@@ -241,9 +241,15 @@ class PianoDaemon:
                 'playTime': self._piano_player.play_time
             }
         }
-        if self._playlistId is not None:
-            info_msg['composition']['playlistId'] = self._playlistId
         await self._websocket_server.send_info_message(info_msg)
+        if self._playlistId is not None:
+            info_msg = {
+                'messageType': 'info',
+                'playlist': {
+                    'id': self._playlistId
+                }
+            }
+            await self._websocket_server.send_info_message(info_msg)
 
 
     async def _on_calculate_play_duration(self, mididata):
