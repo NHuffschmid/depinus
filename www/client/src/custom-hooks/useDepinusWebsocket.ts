@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import useWebSocket from 'react-use-websocket';
 import { backendUrl } from '../config';
 
+type RepeatMode = 'off' | 'playlist' | 'composition';
+
 export interface DepinusWebsocketOptions {
 	name: string;
 	onOpen?: () => void;
@@ -13,7 +15,7 @@ export interface DepinusWebsocketOptions {
 }
 
 export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
-		const [webSocketUrl, setWebSocketUrl] = useState<string | null>(null);
+	const [webSocketUrl, setWebSocketUrl] = useState<string | null>(null);
 
 	useEffect(() => {
 		fetch(backendUrl + '/info')
@@ -45,11 +47,19 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		webSocket.sendJsonMessage({ commandType: 'control', command: command, value: value });
 	};
 
+	const sendPlaylistCommand = (value: any) => {
+		webSocket.sendJsonMessage({
+			commandType: 'control',
+			command: 'playlist',
+			value: value
+		});
+	};
+
 	const sendGotoPlayTimeCommand = (value: any) => {
 		webSocket.sendJsonMessage({ commandType: 'control', command: 'gotoPlayTime', value: value });
 	};
 
-		webSocket = useWebSocket(webSocketUrl, {
+	webSocket = useWebSocket(webSocketUrl, {
 		shouldReconnect: (closeEvent: CloseEvent) => true,
 		reconnectInterval: 2000,
 		onOpen: (openEvent: Event) => {
@@ -80,7 +90,7 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 
 	return {
 		sendKeyboardCommand, sendStopCommand,
-		sendPlayCommand, sendPauseCommand, sendSettingsCommand,
+		sendPlayCommand, sendPauseCommand, sendSettingsCommand, sendPlaylistCommand,
 		sendGotoPlayTimeCommand
 	};
 }

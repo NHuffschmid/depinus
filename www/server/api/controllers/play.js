@@ -50,10 +50,6 @@ function play(req, res) {
                 duration: duration,
                 mididata: Array.from(midifile)
               };
-              const playlistId = req.swagger.params.body.value.playlistId;
-              if (playlistId !== undefined) {
-                rpcPayload.playlistId = playlistId;
-              }
               RpcClient.call('PlayComposition', rpcPayload)
                 .then(() => {
                   logger.debug(`RPC call finished successful.`);

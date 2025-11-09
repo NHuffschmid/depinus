@@ -43,7 +43,7 @@ class PianoDaemon:
         self._midi_out_ports_available = []
         self._midi_out_ports_selected = None
 
-        self._playlistId = None
+        self._playlist = None
 
 
     async def run(self):
@@ -166,6 +166,31 @@ class PianoDaemon:
                         'playTime': cmd.value
                     }
                 })
+        elif (cmd.command == 'playlist'):
+            logger.info('Playlist command received: ' + str(cmd.value))
+            if (cmd.value.get('id') == 0):
+                # new client wants to receive the current playlist info (if any)
+                if (self._playlist != None):
+                    info_msg = { 'messageType': 'info', 'playlist': self._playlist }
+                    logger.info('Sending playlist info to client: ' + str(info_msg))
+                    await self._websocket_server.send_info_message(info_msg)
+            else:
+                # a client is updating the playlist info
+                # store and mirrow it to all clients
+                if (self._playlist == None):
+                    self._playlist = { }
+                if ('id' in cmd.value):
+                    self._playlist['id'] = cmd.value['id']
+                if ('shuffle' in cmd.value):
+                    self._playlist['shuffle'] = cmd.value['shuffle']
+                if ('repeatMode' in cmd.value):
+                    self._playlist['repeatMode'] = cmd.value['repeatMode']
+                info_msg = {
+                    'messageType': 'info',
+                    'playlist': cmd.value
+                }
+                await self._websocket_server.send_info_message(info_msg)
+
         elif (cmd.command == 'shutdown'):
             logger.info('shutdown command received.')
             await self._piano_player.stop()
@@ -223,11 +248,6 @@ class PianoDaemon:
         logger.info('Going to play: %s...' % name)
         composition = Composition(name, composer, duration, bytes(mididata))
         await self._piano_player.play(composition)
-        # playlist ID is mirrored back to clients
-        if playlistId is not None:
-            self._playlistId = playlistId
-        else:
-            self._playlistId = None
         info_msg = {
             'messageType': 'info',
             'isStoppable': True,
@@ -242,14 +262,6 @@ class PianoDaemon:
             }
         }
         await self._websocket_server.send_info_message(info_msg)
-        if self._playlistId is not None:
-            info_msg = {
-                'messageType': 'info',
-                'playlist': {
-                    'id': self._playlistId
-                }
-            }
-            await self._websocket_server.send_info_message(info_msg)
 
 
     async def _on_calculate_play_duration(self, mididata):

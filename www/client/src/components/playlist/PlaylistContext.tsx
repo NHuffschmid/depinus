@@ -48,19 +48,45 @@ export const usePlaylistContext = () => {
 
 export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
-    const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
-    const [shuffle, setShuffle] = useState<boolean>(false);
-    const [repeat, setRepeat] = useState<RepeatMode>('off');
+    const [selectedPlaylist, _setSelectedPlaylist] = useState<Playlist | null>(null);
+    const [shuffle, _setShuffle] = useState<boolean>(false);
+    const [repeat, _setRepeat] = useState<RepeatMode>('off');
     const [playingCompositionId, setPlayingCompositionId] = useState<number | null>(null);
     const [forwardable, setForwardable] = useState<boolean>(false);
     const [backwardable, setBackwardable] = useState<boolean>(false);
 
+    const setSelectedPlaylist = (value: Playlist | null) => {
+        _setSelectedPlaylist(prev => {
+            if (prev !== value) {
+                if (value !== null) {
+                    webSocket.sendPlaylistCommand({ id: value.id });
+                }
+            }
+            return value;
+        });
+    };
+
+    const setShuffle = (value: boolean) => {
+        _setShuffle(prev => {
+            if (prev !== value) {
+                webSocket.sendPlaylistCommand({ shuffle: value });
+            }
+            return value;
+        });
+    };
+
+    const setRepeat = (value: RepeatMode) => {
+        _setRepeat(prev => {
+            if (prev !== value) {
+                webSocket.sendPlaylistCommand({ repeatMode: value });
+            }
+            return value;
+        });
+    };
+
     const playTrack = (track: Track) => {
         setPlayingCompositionId(track.compositionId);
         const body: any = { compositionId: track.compositionId };
-        if (selectedPlaylist) {
-            body.playlistId = selectedPlaylist.id;
-        }
         fetch(backendUrl + '/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -69,12 +95,16 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
             .catch(error => {
                 console.error('Error sending play request:', error);
             });
+
+        webSocket.sendPlaylistCommand({
+            id: track.playlistId,
+            shuffle: shuffle,
+            repeatMode: repeat
+        });
     };
 
     const stopPlaylist = () => {
-        setPlayingCompositionId(null);
-        setForwardable(false);
-        setBackwardable(false);
+        webSocket.sendStopCommand();
     };
 
     const fetchTracks = async (): Promise<Track[]> => {
@@ -180,23 +210,37 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
             .then((response) => response.json())
             .then((data) => {
                 setPlaylists(data);
-                if (data.length > 0) setSelectedPlaylist(data[0]);
+                if (selectedPlaylist === null) {
+                    // request to get current playlist from server (if any)
+                    // (in case another client has already set a playlist)
+                    webSocket.sendPlaylistCommand({ id: 0 });
+                }
             });
     }, []);
 
-    useDepinusWebSocket({
+    const webSocket = useDepinusWebSocket({
         name: 'Playlist',
         onInfoMessage: async (message: any) => {
             if (message.playlist) {
-                const found = playlists.find(p => p.id === message.playlist.id);
-                if (found) {
-                    //console.log('Setting selected playlist to', found);
-                    setSelectedPlaylist(found);
+                //console.log('Playlist info message received:', message.playlist);
+                if (message.playlist.id) {
+                    const found = playlists.find(p => p.id === message.playlist.id);
+                    if (found) {
+                        setSelectedPlaylist(found);
+                    }
+                }
+                if (typeof message.playlist.shuffle === 'boolean') {
+                    setShuffle(message.playlist.shuffle);
+                }
+                if (typeof message.playlist.repeatMode === 'string') {
+                    setRepeat(message.playlist.repeatMode);
                 }
             }
             else {
                 if (!message.isStoppable && (message.isPlayable !== message.isPauseable)) {
                     setPlayingCompositionId(null); // terminate playlist on STOP (not on pause/resume)
+                    setForwardable(false);
+                    setBackwardable(false);
                 }
             }
 
