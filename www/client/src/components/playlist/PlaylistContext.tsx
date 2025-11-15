@@ -29,7 +29,6 @@ interface PlaylistContextType {
     setRepeat: (repeat: RepeatMode) => void;
     playingCompositionId: number | null;
     playTrack: (track: Track) => void;
-    stopPlaylist: () => void;
     nextTrack: () => Promise<void>;
     previousTrack: () => Promise<void>;
     forwardable: boolean;
@@ -52,37 +51,44 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     const [shuffle, _setShuffle] = useState<boolean>(false);
     const [repeat, _setRepeat] = useState<RepeatMode>('off');
     const [playingCompositionId, setPlayingCompositionId] = useState<number | null>(null);
-    const [forwardable, setForwardable] = useState<boolean>(false);
-    const [backwardable, setBackwardable] = useState<boolean>(false);
+    const [forwardable, _setForwardable] = useState<boolean>(false);
+    const [backwardable, _setBackwardable] = useState<boolean>(false);
 
-    const setSelectedPlaylist = (value: Playlist | null) => {
-        _setSelectedPlaylist(prev => {
-            if (prev !== value) {
-                if (value !== null) {
-                    webSocket.sendPlaylistCommand({ id: value.id });
+    function setState<T>(
+        setState: React.Dispatch<React.SetStateAction<T>>,
+        sendCommand: (value: T) => void
+    ) {
+        return (value: T) => {
+            setState(prev => {
+                if (prev !== value) {
+                    sendCommand(value);
                 }
-            }
-            return value;
-        });
-    };
+                return value;
+            });
+        };
+    }
 
-    const setShuffle = (value: boolean) => {
-        _setShuffle(prev => {
-            if (prev !== value) {
-                webSocket.sendPlaylistCommand({ shuffle: value });
-            }
-            return value;
-        });
-    };
+    const setSelectedPlaylist = setState(_setSelectedPlaylist, (value) => {
+        if (value !== null) {
+            webSocket.sendPlaylistCommand({ id: value.id });
+        }
+    });
 
-    const setRepeat = (value: RepeatMode) => {
-        _setRepeat(prev => {
-            if (prev !== value) {
-                webSocket.sendPlaylistCommand({ repeatMode: value });
-            }
-            return value;
-        });
-    };
+    const setShuffle = setState(_setShuffle, (value) => {
+        webSocket.sendPlaylistCommand({ shuffle: value });
+    });
+
+    const setRepeat = setState(_setRepeat, (value) => {
+        webSocket.sendPlaylistCommand({ repeatMode: value });
+    });
+
+    const setForwardable = setState(_setForwardable, (value) => {
+        webSocket.sendPlaylistCommand({ forwardable: value });
+    });
+
+    const setBackwardable = setState(_setBackwardable, (value) => {
+        webSocket.sendPlaylistCommand({ backwardable: value });
+    });
 
     const playTrack = (track: Track) => {
         setPlayingCompositionId(track.compositionId);
@@ -97,9 +103,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
             });
 
         webSocket.sendPlaylistCommand({
-            id: track.playlistId,
-            shuffle: shuffle,
-            repeatMode: repeat
+            id: track.playlistId
         });
     };
 
@@ -235,12 +239,21 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                 if (typeof message.playlist.repeatMode === 'string') {
                     setRepeat(message.playlist.repeatMode);
                 }
+                if (typeof message.playlist.forwardable === 'boolean') {
+                    setForwardable(message.playlist.forwardable);
+                }
+                if (typeof message.playlist.backwardable === 'boolean') {
+                    setBackwardable(message.playlist.backwardable);
+                }
             }
             else {
-                if (!message.isStoppable && (message.isPlayable !== message.isPauseable)) {
+                if (!message.composition &&
+                    !message.isStoppable &&
+                    (message.isPlayable !== message.isPauseable)) {
                     setPlayingCompositionId(null); // terminate playlist on STOP (not on pause/resume)
                     setForwardable(false);
                     setBackwardable(false);
+                    return;
                 }
             }
 
@@ -249,10 +262,9 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
             }
 
             if (playingCompositionId) { // playlist is active
-                if ('isStoppable' in message) {
+                if ('isStoppable' in message && !message['wasCancelled']) {
                     if (!message['isStoppable'] &&
-                        message['isPlayable'] &&
-                        !message['wasCancelled']) {
+                        message['isPlayable']) {
                         // piano daemon has finished playing a composition
                         // ==> play next item in playlist
                         await nextTrack();
@@ -270,7 +282,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
         <PlaylistContext.Provider value={{
             playlists, setPlaylists, selectedPlaylist, setSelectedPlaylist,
             shuffle, setShuffle, repeat, setRepeat, playingCompositionId, playTrack,
-            stopPlaylist, nextTrack, previousTrack, forwardable, backwardable
+            nextTrack, previousTrack, forwardable, backwardable
         }}>
             {children}
         </PlaylistContext.Provider>

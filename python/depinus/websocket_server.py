@@ -105,7 +105,7 @@ class WebsocketServer:
 
 
         except (ConnectionClosedOK, ConnectionClosedError) as exc:
-            logger.info('ConnectionClosed connection detected!!!')
+            logger.debug('ConnectionClosed connection detected!!!')
             pass
 
 

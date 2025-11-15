@@ -17,7 +17,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [composition, setComposition] = useState('');
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
-    const { forwardable, backwardable, stopPlaylist, previousTrack, nextTrack } = usePlaylistContext();
+    const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
@@ -39,7 +39,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
     });
 
     const handleStop = () => {
-        stopPlaylist();
         webSocket.sendStopCommand();
     }
 

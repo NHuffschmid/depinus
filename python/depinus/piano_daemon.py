@@ -185,6 +185,10 @@ class PianoDaemon:
                     self._playlist['shuffle'] = cmd.value['shuffle']
                 if ('repeatMode' in cmd.value):
                     self._playlist['repeatMode'] = cmd.value['repeatMode']
+                if ('forwardable' in cmd.value):
+                    self._playlist['forwardable'] = cmd.value['forwardable']
+                if ('backwardable' in cmd.value):
+                    self._playlist['backwardable'] = cmd.value['backwardable']
                 info_msg = {
                     'messageType': 'info',
                     'playlist': cmd.value
