@@ -220,7 +220,7 @@ class PianoPlayer:
                             if (msg.type == 'copyright'):
                                 logger.info('Copyright: %s' % msg.text)
                             elif (msg.type == 'text'):
-                                logger.info(msg.text.strip())
+                                logger.debug(msg.text.strip())
 
             # play it
 
@@ -240,7 +240,7 @@ class PianoPlayer:
                     self._midi_output.reset()  # reset active keys
                     self._transposition_pending = False
 
-                logger.debug('Midifile message:  %s' % str(message))
+                #logger.debug('Midifile message:  %s' % str(message))
 
                 while ((self._pausing == True) and not self._positioning_pending):
                     await asyncio.sleep(0.5)

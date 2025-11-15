@@ -167,7 +167,7 @@ class PianoDaemon:
                     }
                 })
         elif (cmd.command == 'playlist'):
-            logger.info('Playlist command received: ' + str(cmd.value))
+            logger.debug('Playlist command received: ' + str(cmd.value))
             if (cmd.value.get('id') == 0):
                 # new client wants to receive the current playlist info (if any)
                 if (self._playlist != None):

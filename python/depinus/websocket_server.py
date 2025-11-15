@@ -94,7 +94,7 @@ class WebsocketServer:
                         'note': mido_message.note,
                         'velocity': velocity
                     })
-                    logger.debug('JSON Message: ' + ws_message)
+                    #logger.debug('JSON Message: ' + ws_message)
                     await websocket.send(ws_message)
 
                 if (mido_message.type == 'control_change'):
