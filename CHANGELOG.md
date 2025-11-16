@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [0.9.1] - Skrjabin
+
+### Features
+- Added Skrjabin mode
+
 ## [0.9.0] - Corelli
 
 ### Features
