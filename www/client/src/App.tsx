@@ -19,7 +19,7 @@ import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
 import { backendUrl } from './config';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
@@ -97,7 +97,7 @@ function App(): JSX.Element {
                 ref={keyboardRef}
                 from={21}
                 to={108}
-                pressedColor={cookies.color}
+                pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                 onKeyDown={handleKeyDown}
                 onKeyUp={handleKeyUp}
               />
