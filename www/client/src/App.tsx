@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
+import { getSkrjabinColor, hexToRgb, rgbToHex, computeAvgSkrjabinColor } from "./utils/skrjabin";
 import type { KeyboardRef } from './components/react-piano-keyboard/src/Keyboard';
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -26,6 +27,8 @@ function App(): JSX.Element {
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
+  const [bgColor, setBgColor] = useState<string>("#333");
+  const pressedNotesRef = React.useRef<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
 
@@ -60,8 +63,18 @@ function App(): JSX.Element {
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
         keyboardRef.current?.setKeyPressed(note, velocity);
+        if (cookies.skrjabinMode === 'true') {
+          if (velocity > 0) {
+            pressedNotesRef.current.add(note);
+          } else {
+            pressedNotesRef.current.delete(note);
+          }
+          setBgColor(computeAvgSkrjabinColor(pressedNotesRef.current));
+        }
       } else {
         keyboardRef.current?.reset();
+        pressedNotesRef.current.clear();
+        setBgColor("#333");
       }
     },
     onClose: (): void => {
@@ -90,7 +103,7 @@ function App(): JSX.Element {
   return (
     <React.Fragment>
       {isActive ? (
-        <div className='App'>
+        <div className='App' style={cookies.skrjabinMode === 'true' && bgColor ? { background: bgColor, transition: 'background 0.5s' } : {}}>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <header className="App-header">
               <Keyboard
