@@ -54,7 +54,7 @@ const ColorSelector: React.FC = () => {
 							checked={skrjabinMode}
 							onChange={handleSkrjabinModeChange}
 						/>
-						<label htmlFor="skrjabin-mode">{t('Skrjabin Mode')}</label>
+						<label htmlFor="skrjabin-mode">{t('Skrjabin mode')}</label>
 					</div>
 				</div>
 				: null}

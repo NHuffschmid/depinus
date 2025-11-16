@@ -36,7 +36,7 @@ const resources = {
             "Save": "Save",
             "Select composer": "Select composer",
             "Settings": "Settings",
-            "Skrjabin Mode": "Skrjabin Mode",
+            "Skrjabin mode": "Scriabin mode", // Skrjabin is german spelling 
             "Surname": "Surname",
             "Shutdown": "Shutdown",
             "Tempo": "Tempo",
@@ -80,7 +80,7 @@ const resources = {
             "Save": "Speichern",
             "Select composer": "Wähle Komponisten",
             "Settings": "Einstellungen",
-            "Skrjabin Mode": "Skrjabin Modus",
+            "Skrjabin mode": "Skrjabin Modus",
             "Surname": "Familienname",
             "Shutdown": "Herunterfahren",
             "Tempo": "Tempo",
