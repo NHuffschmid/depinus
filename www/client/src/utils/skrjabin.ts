@@ -1,31 +1,9 @@
 // Skrjabin color utilities
 
-/**
- * Skrjabin's synesthetic color scale (Wikipedia)
- * Index: MIDI note % 12
- */
-export const skrjabinColors: string[] = [
-  '#ff0000', // C
-  '#ce9aff', // C#
-  '#ffff00', // D
-  '#656599', // D#
-  '#e3fbff', // E
-  '#ac1c02', // F
-  '#00ccff', // F#
-  '#ff6501', // G
-  '#ff00ff', // G#
-  '#33cc33', // A
-  '#8c8a8c', // A#
-  '#0000fe'  // B/H
-];
+import { getSkrjabinColor } from '../components/react-piano-keyboard/src/Keyboard';
 
-/**
- * Returns the Skrjabin color for a given MIDI note.
- */
-export function getSkrjabinColor(note: number): string {
-  const noteInOctave = note % 12;
-  return skrjabinColors[noteInOctave] || '#888888';
-}
+// Re-export Skrjabin color scale and color function from Keyboard component
+export { skrjabinColors, getSkrjabinColor } from '../components/react-piano-keyboard/src/Keyboard';
 
 /**
  * Converts a hex color string to an [r,g,b] tuple.
