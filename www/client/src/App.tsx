@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
 import { getSkrjabinColor, hexToRgb, rgbToHex, computeAvgSkrjabinColor } from "./utils/skrjabin";
@@ -27,7 +27,7 @@ function App(): JSX.Element {
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
-  const [bgColor, setBgColor] = useState<string>("#333");
+  const [bgColor, setBgColor] = useState<string>("#444");
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
@@ -74,7 +74,7 @@ function App(): JSX.Element {
       } else {
         keyboardRef.current?.reset();
         pressedNotesRef.current.clear();
-        setBgColor("#333");
+        setBgColor("#444");
       }
     },
     onClose: (): void => {
@@ -100,10 +100,21 @@ function App(): JSX.Element {
     webSocket.sendKeyboardCommand(note, false);
   };
 
+  // Set Skrjabin background color on body for full-page coverage
+  useEffect(() => {
+    if (cookies.skrjabinMode === 'true' && bgColor) {
+      document.body.style.background = bgColor;
+      document.body.style.transition = 'background 0.3s';
+    } else {
+      document.body.style.background = '';
+      document.body.style.transition = '';
+    }
+  }, [bgColor, cookies.skrjabinMode]);
+
   return (
     <React.Fragment>
       {isActive ? (
-        <div className='App' style={cookies.skrjabinMode === 'true' && bgColor ? { background: bgColor, transition: 'background 0.5s' } : {}}>
+        <div className='App'>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <header className="App-header">
               <Keyboard
