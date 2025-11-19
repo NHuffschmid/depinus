@@ -48,7 +48,7 @@ const ProgressBar: React.FC = () => {
                 message['selectedMidiOutPort'] ||
                 message['dynamics'] ||
                 message['tempo'] ||
-                message['transposition'] ||
+                ('transposition' in message) ||
                 message['isStoppable'] ||
                 message['isPlayable'] ||
                 message['isPauseable']) {
