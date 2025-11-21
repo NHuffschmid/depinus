@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
-import { getSkrjabinColor, hexToRgb, rgbToHex, computeAvgSkrjabinColor } from "./utils/skrjabin";
+import { computeAvgSkrjabinColor } from "./utils/skrjabin";
 import type { KeyboardRef } from './components/react-piano-keyboard/src/Keyboard';
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
