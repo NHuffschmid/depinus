@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.9.1] - Skrjabin
+
+### Features
+- Added Skrjabin mode
+
+### Bugfixes
+- https://github.com/NHuffschmid/depinus/issues/2
+
+
 ## [0.9.0] - Corelli
 
 ### Features
@@ -21,6 +30,7 @@
 - converted JSX frontend code to TSX
 - avoid GTK error messages in headless mode
 - worked around zero width space issue when storing composition names in DB
+
 
 ## [0.8.0] - Pachelbel
 - Going public
