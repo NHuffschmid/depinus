@@ -1,6 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import './i18n';
 import Keyboard from "./components/react-piano-keyboard/src/Keyboard";
+import { computeAvgSkrjabinColor } from "./utils/skrjabin";
 import type { KeyboardRef } from './components/react-piano-keyboard/src/Keyboard';
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -19,13 +20,15 @@ import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
 import { backendUrl } from './config';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
+  const [bgColor, setBgColor] = useState<string>("#444");
+  const pressedNotesRef = React.useRef<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
 
@@ -60,8 +63,18 @@ function App(): JSX.Element {
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
         keyboardRef.current?.setKeyPressed(note, velocity);
+        if (cookies.skrjabinMode === 'true') {
+          if (velocity > 0) {
+            pressedNotesRef.current.add(note);
+          } else {
+            pressedNotesRef.current.delete(note);
+          }
+          setBgColor(computeAvgSkrjabinColor(pressedNotesRef.current));
+        }
       } else {
         keyboardRef.current?.reset();
+        pressedNotesRef.current.clear();
+        setBgColor("#444");
       }
     },
     onClose: (): void => {
@@ -87,6 +100,17 @@ function App(): JSX.Element {
     webSocket.sendKeyboardCommand(note, false);
   };
 
+  // Set Skrjabin background color on body for full-page coverage
+  useEffect(() => {
+    if (cookies.skrjabinMode === 'true' && bgColor) {
+      document.body.style.background = bgColor;
+      document.body.style.transition = 'background 0.3s';
+    } else {
+      document.body.style.background = '';
+      document.body.style.transition = '';
+    }
+  }, [bgColor, cookies.skrjabinMode]);
+
   return (
     <React.Fragment>
       {isActive ? (
@@ -97,7 +121,7 @@ function App(): JSX.Element {
                 ref={keyboardRef}
                 from={21}
                 to={108}
-                pressedColor={cookies.color}
+                pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                 onKeyDown={handleKeyDown}
                 onKeyUp={handleKeyUp}
               />

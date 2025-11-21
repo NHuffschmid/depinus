@@ -122,6 +122,10 @@ class PianoDaemon:
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'transposition' : cmd.value }
             )
+            # release all keyboard keys
+            await self._websocket_server.send_keyboard_message(
+                mido.Message('note_on', note=0, velocity=0)
+            )
         elif (cmd.command == 'selectedMidiOutPort'):
             logger.info('selectedMidiOutPort command received: ' + cmd.value)
             self._midi_out_ports_selected = cmd.value
