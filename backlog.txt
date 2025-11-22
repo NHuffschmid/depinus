@@ -19,6 +19,5 @@ Bugs:
 - Kaiserwalzer crashes DurationCalculation
 - Duration of Ecossaises is calculated much too long
 - analyse "Task exception was never retrieved" errors from piano_daemon log
-- Swagger GUI not working any more
 - remove --strip switch from PyInstaller (Windows) script
 - show better error message when user tries to add an already existing composition to the playlist
