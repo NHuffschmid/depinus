@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.0.0] - Bach
+
+### Features
+- Added playlists
+
+
 ## [0.9.1] - Skrjabin
 
 ### Features
