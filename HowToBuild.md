@@ -59,7 +59,10 @@ After the packaging is done you can find the Depinus executable and all required
 In case you want to compress the created package with the command
 > npm run release
 
-You can automate packaging by creating a tasks.json file in your local VSCode like this:
+### Automated package creation
+
+You can automate packaging by creating a tasks.json file in your local Visual Studio Code environment like this:
+
 ```
 {
     "version": "2.0.0",
