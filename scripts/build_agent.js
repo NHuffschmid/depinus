@@ -2,7 +2,7 @@ const hosts = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
 const target = process.argv[2]; // e.g. 'linux-x64'
 const branch = process.argv[3];
 const { user, host, path } = hosts[target];
-const sshCmd = `ssh ${user}@${host} 'cd ${path} && git fetch && git checkout ${branch} && git pull && node scripts/build_release_package.js'`;
+const sshCmd = `ssh ${user}@${host} "cd ${path} && git fetch && git checkout ${branch} && git pull && node scripts/build_release_package.js"`;
 
 const consoleRedColor = '\x1b[31m';
 const consoleResetColor = '\x1b[0m';
