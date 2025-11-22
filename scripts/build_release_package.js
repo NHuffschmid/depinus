@@ -6,7 +6,9 @@ const path = require('path');
 const scriptDir = __dirname;
 const projectDir = path.resolve(scriptDir, '..');
 
-console.log(`Running clean in ${projectDir} ...`);
+const consoleColor = '\x1b[33m%s\x1b[0m'; // Yellow color
+
+console.log(consoleColor, `Running clean in ${projectDir} ...`);
 execSync('npm run clean', { stdio: 'inherit', cwd: projectDir });
 
 // more to come
