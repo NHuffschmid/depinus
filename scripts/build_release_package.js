@@ -6,9 +6,22 @@ const path = require('path');
 const scriptDir = __dirname;
 const projectDir = path.resolve(scriptDir, '..');
 
-const consoleColor = '\x1b[33m%s\x1b[0m'; // Yellow color
+const consoleYellowColor = '\x1b[33m%s\x1b[0m';
+const consoleGreenColor = '\x1b[32m%s\x1b[0m';
+const consoleRedColor = '\x1b[31m%s\x1b[0m';
 
-console.log(consoleColor, `Running clean in ${projectDir} ...`);
-execSync('npm run clean', { stdio: 'inherit', cwd: projectDir });
+const isWindows = process.platform === 'win32';
 
-// more to come
+try {
+  console.log(consoleYellowColor, `Running clean script...`);
+  execSync('npm run clean', { stdio: 'inherit', cwd: projectDir });
+
+  console.log(consoleYellowColor, 'Activating virtual Python environment and running build...');
+  if (isWindows) {
+    execSync('.\\venv\\Scripts\\activate && npm run build', { stdio: 'inherit', cwd: projectDir, shell: true });
+  } else {
+    execSync('source ./venv/bin/activate && npm run build', { stdio: 'inherit', cwd: projectDir, shell: '/bin/bash' });
+  }
+} catch (error) {
+  console.log(consoleRedColor, error.message || error);
+}
