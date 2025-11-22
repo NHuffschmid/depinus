@@ -53,3 +53,6 @@ dist
 
 # Electron package
 package
+
+# Local DEV tasks
+.vscode/tasks.json

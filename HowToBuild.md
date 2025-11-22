@@ -59,5 +59,34 @@ After the packaging is done you can find the Depinus executable and all required
 In case you want to compress the created package with the command
 > npm run release
 
-In case the compression fails due to memory shortage or whatever, you
-have to do this step manually.
+You can automate packaging by creating a tasks.json file in your local VSCode like this:
+```
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build release packages: All",
+            "dependsOn": [
+                "Build release package: Windows local",
+                "Build release package: Remote <user>@<host>"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build release package: Windows local",
+            "type": "shell",
+            "command": "node scripts/build_release_package.js .",
+            "windows": {
+                "command": "node scripts/build_release_package.js"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Build release package: Remote <user>@<host>",
+            "type": "shell",
+            "command": "ssh <user>@<host> 'node ~/path/to/depinus/scripts/build_release_package.js'",
+            "group": "build"
+        }
+    ]
+}
+```
