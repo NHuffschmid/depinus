@@ -1,24 +1,22 @@
-const hosts = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
-const target = process.argv[2]; // e.g. 'linux-x64'
-const branch = process.argv[3];
-const { user, host, path } = hosts[target];
-const sshCmd = `ssh ${user}@${host} "cd ${path} && git fetch && git checkout ${branch} && git pull && node scripts/build_release_package.js"`;
+const { execSync } = require('child_process');
 
-const consoleRedColor = '\x1b[31m';
-const consoleResetColor = '\x1b[0m';
+const buildAgents = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
+const platform = process.argv[2];
+const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+const buildCmd = 'node scripts/build_release_package.js';
 
-try {
-	require('child_process').execSync(sshCmd, { stdio: 'inherit' });
-} catch (error) {
-	console.error(consoleRedColor + 'Error: Command failed:' + consoleResetColor);
-	console.error(error.message);
-	if (error.stdout) {
-		console.error(consoleRedColor + 'Remote stdout:' + consoleResetColor);
-		console.error(error.stdout.toString());
+console.log(`Building release package on branch ${branch} for platform ${platform}...`);
+
+const localPlatform = process.platform + '-' + process.arch;
+if (platform === localPlatform) {
+	console.log(`Build package locally for platform ${localPlatform} ...`);
+	execSync(buildCmd, { stdio: 'inherit' });
+} else {
+	if (!buildAgents[platform]) {
+		console.error(`\x1b[31mError: Platform '${platform}' is not defined in DEPINUS_BUILD_AGENTS.\x1b[0m`);
+		process.exit(1);
 	}
-	if (error.stderr) {
-		console.error(consoleRedColor + 'Remote stderr:' + consoleResetColor);
-		console.error(error.stderr.toString());
-	}
-	process.exit(1);
+	const { user, path } = buildAgents[platform];
+	const sshCmd = `ssh ${user} "cd ${path} && git fetch && git checkout ${branch} && git pull && ${buildCmd}"`;
+	execSync(sshCmd, { stdio: 'inherit' });
 }
