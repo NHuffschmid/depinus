@@ -61,35 +61,10 @@ In case you want to compress the created package with the command
 
 ### Automated package creation
 
-You can automate packaging by creating a tasks.json file in your local Visual Studio Code environment like this:
+You can automate the packaging workflow in your local Visual Studio Code environment by running the "Build Depinus release package" task. Therefore you have to define an environment variable like this:
+```
+DEPINUS_BUILD_AGENTS={"yourPLatform-yourArchitecture":{"user":"yourUser@yourHost","path":"/path/to/your/depinus/workspace"}, "linux-arm64":{"user":"pi@depinus","path":"~/depinus"}}
+```
+Then run the "Build Depinus release package" task and enter the platform you want to create the package for. VSCode will create a SSH connection with the data you have provided in DEPINUS_BUILD_AGENTS and start the packaging process.
 
-```
-{
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Build release packages: All",
-            "dependsOn": [
-                "Build release package: Windows local",
-                "Build release package: Remote <user>@<host>"
-            ],
-            "group": "build"
-        },
-        {
-            "label": "Build release package: Windows local",
-            "type": "shell",
-            "command": "node scripts/build_release_package.js .",
-            "windows": {
-                "command": "node scripts/build_release_package.js"
-            },
-            "group": "build"
-        },
-        {
-            "label": "Build release package: Remote <user>@<host>",
-            "type": "shell",
-            "command": "ssh <user>@<host> 'node ~/path/to/depinus/scripts/build_release_package.js'",
-            "group": "build"
-        }
-    ]
-}
-```
+Be aware that your build environment has to prepared as described above! It would be a good idea to run the package creation manually before trying to run the automation task.

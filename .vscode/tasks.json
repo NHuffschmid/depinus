@@ -4,7 +4,7 @@
         {
             "id": "package",
             "type": "promptString",
-            "description": "Please emter platform: (windows-x64, linux-x64, linux-arm64, ...):"
+            "description": "Please emter platform: (win32-x64, linux-x64, linux-arm64, ...):"
         }
     ],
     "tasks": [
