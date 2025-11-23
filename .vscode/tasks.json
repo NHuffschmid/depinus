@@ -2,16 +2,16 @@
     "version": "2.0.0",
     "inputs": [
         {
-            "id": "package",
+            "id": "target",
             "type": "promptString",
-            "description": "Please emter platform: (win32-x64, linux-x64, linux-arm64, ...):"
+            "description": "Please enter platform/architecture: (win32-x64, linux-x64, linux-arm64, ...):"
         }
     ],
     "tasks": [
         {
             "label": "Build Depinus release package",
             "type": "shell",
-            "command": "node scripts/build_agent.js ${input:package}",
+            "command": "node scripts/build_agent.js ${input:target}",
             "group": "build"
         }
     ]
