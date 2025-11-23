@@ -1,3 +1,9 @@
+// This script builds a release package for the Depinus project.
+// It determines the current git branch and target platform.
+// If the target platform matches the local system, the build runs locally.
+// Otherwise, it runs the build remotely via SSH using configuration from
+//            the DEPINUS_BUILD_AGENTS environment variable.
+
 const { execSync } = require('child_process');
 
 const buildAgents = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
@@ -13,7 +19,7 @@ if (platform === localPlatform) {
 	execSync(buildCmd, { stdio: 'inherit' });
 } else {
 	if (!buildAgents[platform]) {
-		console.error(`\x1b[31mError: Platform '${platform}' is not defined in DEPINUS_BUILD_AGENTS.\x1b[0m`);
+		console.error(`Error: Platform '${platform}' is not defined in DEPINUS_BUILD_AGENTS.`);
 		process.exit(1);
 	}
 	const { user, path } = buildAgents[platform];
