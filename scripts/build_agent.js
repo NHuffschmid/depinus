@@ -6,7 +6,18 @@
 
 const { execSync } = require('child_process');
 
-const buildAgents = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
+let buildAgents;
+try {
+    if (!process.env.DEPINUS_BUILD_AGENTS) {
+        console.error("Error: DEPINUS_BUILD_AGENTS environment variable is not set.");
+        process.exit(1);
+    }
+    buildAgents = JSON.parse(process.env.DEPINUS_BUILD_AGENTS);
+} catch (err) {
+    console.error("Error: Failed to parse DEPINUS_BUILD_AGENTS environment variable as JSON.");
+    console.error(err.message);
+    process.exit(1);
+}
 const platform = process.argv[2];
 const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
 const buildCmd = 'node scripts/build_release_package.js';
