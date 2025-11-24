@@ -31,4 +31,5 @@ try {
 }
 catch (error) {
   console.log(consoleRedColor, error.message || error);
+  process.exit(1);
 }

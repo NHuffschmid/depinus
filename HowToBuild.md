@@ -63,8 +63,8 @@ In case you want to compress the created package with the command
 
 You can automate the packaging workflow in your local Visual Studio Code environment by running the "Build Depinus release package" task. Therefore you have to define an environment variable like this:
 ```
-DEPINUS_BUILD_AGENTS={"yourPLatform-yourArchitecture":{"user":"yourUser@yourHost","path":"/path/to/your/depinus/workspace"}, "linux-arm64":{"user":"pi@depinus","path":"~/depinus"}}
+DEPINUS_BUILD_AGENTS={"yourPlatform-yourArchitecture":{"user":"yourUser@yourHost","path":"/path/to/your/depinus/workspace"}, "linux-arm64":{"user":"pi@depinus","path":"~/depinus"}}
 ```
 Then run the "Build Depinus release package" task and enter the platform you want to create the package for. VSCode will create a SSH connection with the data you have provided in DEPINUS_BUILD_AGENTS and start the packaging process.
 
-Be aware that your build environment has to prepared as described above! It would be a good idea to run the package creation manually before trying to run the automation task.
+Be aware that your build environment has to be prepared as described above! It would be a good idea to run the package creation manually before trying to run the automation task.
