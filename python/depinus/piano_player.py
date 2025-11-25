@@ -266,6 +266,16 @@ class PianoPlayer:
                             self._midi_output.send(message)
                             for callback in self._midi_messages_callbacks:
                                 await callback(message)
+                    else:
+                        if (message.type == 'control_change'):
+                            if ((message.control == 64) or # sustain pedal
+                                (message.control == 66) or # sostenuto pedal
+                                (message.control == 67)):  # soft pedal
+                                # pass pedal messages to the output
+                                if (self._midi_output is not None):
+                                    self._midi_output.send(message)
+                                    for callback in self._midi_messages_callbacks:
+                                        await callback(message)
 
             logger.info('End of midifile reached.')
 

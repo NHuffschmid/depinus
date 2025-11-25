@@ -2,6 +2,9 @@
 
 ## [1.0.0] - Bach
 
+### Features
+- Propagate pedal commands to MIDI interface
+
 
 ## [0.9.1] - Skrjabin
 
