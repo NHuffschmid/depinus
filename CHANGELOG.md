@@ -1,9 +1,9 @@
 # CHANGELOG
-
 ## [1.0.0] - Bach
 
 ### Features
 - Added playlists
+- Propagate pedal commands to MIDI interface
 
 
 ## [0.9.1] - Skrjabin
