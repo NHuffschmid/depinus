@@ -21,7 +21,7 @@ const resources = {
             "Delete composer (and associated midi files) from archive permanently?": "Delete composer (and associated MIDI files) from archive permanently?",
             "Delete from archive permanently?": "Delete from archive permanently?",
             "Delete playlist": "Delete playlist",
-            "Delete playlist permanently?": "Delete playlist permanently?",            "Demo": "Demo",
+            "Delete playlist permanently?": "Delete playlist permanently?",
             "Demo": "Demo",
             "Dynamics": "Dynamics",
             "Edit": "Edit",

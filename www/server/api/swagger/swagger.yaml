@@ -389,7 +389,7 @@ paths:
         - name: "name"
           in: "formData"
           description: "Name of the playlist"
-          required: false
+          required: true
           type: "string"
       responses:
         "200":
@@ -505,6 +505,7 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
   /playlist/{id}/compositions/{compositionId}:
+    x-swagger-router-controller: playlist
     patch:
       description: Updates the position of a composition in a playlist.
       operationId: patchComposition
@@ -546,7 +547,6 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-    x-swagger-router-controller: playlist
     delete:
       description: Removes a composition from a playlist.
       operationId: removeCompositionFromPlaylist

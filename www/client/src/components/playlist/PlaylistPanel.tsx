@@ -44,7 +44,7 @@ const PlaylistPanel: React.FC = () => {
 
     const deleteConfirmed = (result: boolean) => {
         setConfirmationMessage(undefined);
-        if (result == true && selectedPlaylist) {
+        if (result === true && selectedPlaylist) {
             fetch(backendUrl + '/playlist/' + selectedPlaylist.id, {
                 method: 'DELETE'
             })

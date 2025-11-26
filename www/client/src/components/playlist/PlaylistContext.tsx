@@ -136,7 +136,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const evaluateNextTrack = async (): Promise<Track | null> => {
-        if (!selectedPlaylist || playingCompositionId == null) {
+        if (!selectedPlaylist || playingCompositionId === null) {
             return null;
         }
         const tracks = await fetchTracks();

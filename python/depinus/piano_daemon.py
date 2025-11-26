@@ -181,7 +181,7 @@ class PianoDaemon:
             else:
                 # a client is updating the playlist info
                 # store and mirrow it to all clients
-                if (self._playlist == None):
+                if (self._playlist is None):
                     self._playlist = { }
                 if ('id' in cmd.value):
                     self._playlist['id'] = cmd.value['id']
