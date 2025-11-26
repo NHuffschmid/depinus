@@ -159,10 +159,11 @@ const PlaylistPanel: React.FC = () => {
                         color: playingCompositionId ? '#fff' : undefined,
                         backgroundColor: playingCompositionId ? cookies.color : undefined
                     }}
-                    value={selectedPlaylist ? selectedPlaylist.id : ''}
+                    value={selectedPlaylist ? selectedPlaylist.id : 'DEFAULT'}
                     onChange={e => setSelectedPlaylist(playlists.find(pl => pl.id === Number(e.target.value)) ?? null)}
                     disabled={playingCompositionId !== null}
                 >
+                    <option value='DEFAULT' disabled>-- {t('Select playlist')} --</option>
                     {playlists.map((pl) => (
                         <option key={pl.id} value={pl.id}>{pl.name}</option>
                     ))}

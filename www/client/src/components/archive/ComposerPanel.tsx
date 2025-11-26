@@ -117,7 +117,10 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
             backgroundColor: 'gray',
             padding: '0.2rem'
         }}>
-            <select id='composers' style={{ fontSize: '1.2rem' }} defaultValue={'DEFAULT'}
+            <select
+                id='composers'
+                style={{ fontSize: '1.2rem' }}
+                defaultValue={'DEFAULT'}
                 onChange={(e) => {
                     fetch(backendUrl + '/archive/compositions?composerId=' + e.target.value)
                         .then((response) => response.json())

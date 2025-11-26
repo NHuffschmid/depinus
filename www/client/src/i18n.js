@@ -46,6 +46,7 @@ const resources = {
             "Repeat": "Repeat",
             "Save": "Save",
             "Select composer": "Select composer",
+            "Select playlist": "Select playlist",
             "Settings": "Settings",
             "Shuffle": "Shuffle",
             "Skrjabin mode": "Scriabin mode", // Skrjabin is german spelling 
@@ -103,6 +104,7 @@ const resources = {
             "Repeat": "Wiederholen",
             "Save": "Speichern",
             "Select composer": "Wähle Komponisten",
+            "Select playlist": "Wähle Wiedergabeliste",
             "Settings": "Einstellungen",
             "Shuffle": "Zufällige Wiedergabe",
             "Skrjabin mode": "Skrjabin Modus",

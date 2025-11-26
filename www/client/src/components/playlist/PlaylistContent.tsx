@@ -131,9 +131,7 @@ const PlaylistContent: React.FC = () => {
                                 )}
                     </div>
                 </>
-            ) : (
-                <span>{t('No playlist selected')}</span>
-            )}
+            ) : null}
             {selectedTrack && (
                 <CompositionMenu
                     open={menuOpen}
