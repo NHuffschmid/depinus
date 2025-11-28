@@ -95,7 +95,7 @@ const ExportArchiveDialog: React.FC<ExportArchiveDialogProps> = (props) => {
     return (
         <Dialog {...props}
             left='5%' right='5%' top='5%' bottom='5%'
-            header={t('ExportArchive')}
+            header={t('Export Archive')}
             content={
                 <div>
                     {isExporting ? (

@@ -115,7 +115,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
             <MessageDialog
                 open={errorMessage !== undefined}
                 setMessage={setErrorMessage}
-                header={t('UploadFailed')}
+                header={t('Upload failed')}
                 message={errorMessage}
             />
         </>

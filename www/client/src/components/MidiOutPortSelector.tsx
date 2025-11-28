@@ -26,7 +26,7 @@ const MidiOutPortSelector: React.FC = () => {
 
 	return (
 		<div>
-			{t('MidiOut')}:&nbsp;
+			{t('MIDI Out')}:&nbsp;
 			<select
 				value={selectedPort}
 				onChange={handleChange}

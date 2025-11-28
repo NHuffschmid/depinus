@@ -22,8 +22,8 @@ const Home: React.FC = () => {
         <div style={{ background: 'transparent', flex: '1 1 auto', position: 'relative' }}>
             <DemoButton angle={angle} radius={0}>{t('Demo')}</DemoButton>
             <ShutdownButton angle={angle + Math.PI * 0.667} radius={1}>{t('Shutdown')}</ShutdownButton>
-            <ExportArchiveButton angle={angle + Math.PI * 1.33} radius={1}>{t('ExportArchive')}</ExportArchiveButton>
-            <ImportArchiveButton angle={angle + Math.PI * 2} radius={1}>{t('ImportArchive')}</ImportArchiveButton>
+            <ExportArchiveButton angle={angle + Math.PI * 1.33} radius={1}>{t('Export Archive')}</ExportArchiveButton>
+            <ImportArchiveButton angle={angle + Math.PI * 2} radius={1}>{t('Import archive')}</ImportArchiveButton>
         </div>
     )
 }
