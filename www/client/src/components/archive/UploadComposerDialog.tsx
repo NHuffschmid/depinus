@@ -43,7 +43,7 @@ const UploadComposerDialog: React.FC<UploadComposerDialogProps> = (props) => {
         <div className='dialog'>
             <div className='menu-header'>{props.header}</div>
             <div className='dialog-form'>
-                <label>{t('FirstName')}:</label>
+                <label>{t('First name')}:</label>
                 <input
                     type='text'
                     id="firstname"
