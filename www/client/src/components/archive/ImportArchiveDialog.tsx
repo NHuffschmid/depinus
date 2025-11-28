@@ -75,7 +75,7 @@ const ImportArchiveDialog: React.FC<ImportArchiveDialogProps> = (props) => {
     return (
         <Dialog {...props}
             left='5%' right='5%' top='5%' bottom='5%'
-            header={t('ImportArchive')}
+            header={t('Import archive')}
             content={
                 <div>
                     <div>

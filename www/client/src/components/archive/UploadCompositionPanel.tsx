@@ -62,7 +62,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
             <MessageDialog
                 open={errorMessage !== undefined}
                 setMessage={setErrorMessage}
-                header={t('UploadFailed')}
+                header={t('Upload failed')}
                 message={errorMessage}
             />
         </div>
