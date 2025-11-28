@@ -19,6 +19,7 @@ const LanguageSelector: React.FC = () => {
 				<option value="fr">Français</option>
 				<option value="es">Español</option>
 				<option value="it">Italiano</option>
+				<option value="pt">Português</option>
 			</select>
 		</div>
 	);

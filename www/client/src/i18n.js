@@ -8,6 +8,7 @@ import deTranslations from './locales/de.json';
 import frTranslations from './locales/fr.json';
 import esTranslations from './locales/es.json';
 import itTranslations from './locales/it.json';
+import ptTranslations from './locales/pt.json';
 
 const resources = {
     en: {
@@ -24,6 +25,9 @@ const resources = {
     },
     it: {
         translation: itTranslations
+    },
+    pt: {
+        translation: ptTranslations
     }
 };
 
