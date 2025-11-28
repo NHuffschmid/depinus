@@ -4,6 +4,7 @@
 
 ### Features
 - Propagate pedal commands to MIDI interface
+- Added french, spanish, italian and portuguese language support
 
 
 ## [0.9.1] - Skrjabin
