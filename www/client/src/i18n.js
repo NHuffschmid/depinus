@@ -2,90 +2,16 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+// Import translation files
+import enTranslations from './locales/en.json';
+import deTranslations from './locales/de.json';
+
 const resources = {
     en: {
-        translation: {
-            "About": "About",
-            "Add new composer to archive": "Add new composer to archive",
-            "Add midifile to archive": "Add MIDI file to archive",
-            "Add to playlist": "Add to playlist",
-            "Archive": "Archive",
-            "Are you sure?": "Are you sure?",
-            "Cancel": "Cancel",
-            "Close": "Close",
-            "Color": "Color",
-            "Delete": "Delete",
-            "Delete composer": "Delete composer",
-            "Delete composer (and associated midi files) from archive permanently?": "Delete composer (and associated MIDI files) from archive permanently?",
-            "Delete from archive permanently?": "Delete from archive permanently?",
-            "Demo": "Demo",
-            "Dynamics": "Dynamics",
-            "Edit": "Edit",
-            "Edit composer": "Edit composer",
-            "Export": "Export",
-            "Export Archive": "Export archive",
-            "First name": "First name",
-            "Import archive": "Import archive",
-            "Language": "Language",
-            "MIDI Out": "MIDI Out",
-            "No": "No",
-            "Out of service": "Out of service",
-            "Play": "Play",
-            "Remote control": "Remote control",
-            "Save": "Save",
-            "Select composer": "Select composer",
-            "Settings": "Settings",
-            "Skrjabin mode": "Scriabin mode", // Skrjabin is german spelling 
-            "Surname": "Surname",
-            "Shutdown": "Shutdown",
-            "Tempo": "Tempo",
-            "Title": "Title",
-            "Transposition": "Transposition",
-            "Upload failed": "Upload failed",
-            "Yes": "Yes"
-        }
+        translation: enTranslations
     },
     de: {
-        translation: {
-            "About": "Über",
-            "Add new composer to archive": "Neuen Komponisten zum Archiv hinzufügen",
-            "Add midifile to archive": "MIDI-Datei zum Archiv hinzufügen",
-            "Add to playlist": "Zur Playlist hinzufügen",
-            "Archive": "Archiv",
-            "Are you sure?": "Sind sie sicher?",
-            "Cancel": "Abbrechen",
-            "Close": "Schließen",
-            "Color": "Farbe",
-            "Delete": "Löschen",
-            "Delete composer": "Komponisten löschen",
-            "Delete composer (and associated midi files) from archive permanently?": "Komponist (und zugehörige MIDI Dateien) dauerhaft aus dem Archiv löschen?",
-            "Delete from archive permanently?": "Dauerhaft aus dem Archiv löschen?",
-            "Demo": "Demo",
-            "Dynamics": "Dynamik",
-            "Edit": "Bearbeiten",
-            "Edit composer": "Komponisten bearbeiten",
-            "Export": "Exportieren",
-            "Export Archive": "Archiv exportieren",
-            "First name": "Vorname",
-            "Import archive": "Archiv importieren",
-            "Language": "Sprache",
-            "MIDI Out": "MIDI Ausgang",
-            "No": "Nein",
-            "Out of service": "Außer Betrieb",
-            "Play": "Spielen",
-            "Remote control": "Fernsteuerung",
-            "Save": "Speichern",
-            "Select composer": "Wähle Komponisten",
-            "Settings": "Einstellungen",
-            "Skrjabin mode": "Skrjabin Modus",
-            "Surname": "Familienname",
-            "Shutdown": "Herunterfahren",
-            "Tempo": "Tempo",
-            "Title": "Titel",
-            "Transposition": "Transposition",
-            "Upload failed": "Hochladen fehlgeschlagen",
-            "Yes": "Ja"
-        }
+        translation: deTranslations
     }
 };
 
