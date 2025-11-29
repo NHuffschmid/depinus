@@ -6,6 +6,9 @@
 - Propagate pedal commands to MIDI interface
 - Added french, spanish, italian and portuguese language support
 
+### Bugfixes
+- https://github.com/NHuffschmid/depinus/issues/6
+
 
 ## [0.9.1] - Skrjabin
 
