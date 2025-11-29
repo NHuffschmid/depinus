@@ -88,11 +88,30 @@ describe('controllers', function () {
 
     describe('PATCH /archive/composition', function () {
 
-      it('should update the added composition in the database', function (done) {
+      it('should update the name of the added composition in the database', function (done) {
 
         request(BACKEND_URL)
           .patch('/archive/composition/' + compositionId)
           .field('name', 'Updated Composition Name')
+          .set('Accept', 'application/json')
+          .expect(204)
+          .end(function (err, res) {
+            should.not.exist(err);
+            done();
+          });
+      });
+
+      it('should update both name and midifile of the composition', function (done) {
+
+        this.slow(5000);
+
+        const newMidiFilePath = path.resolve(__dirname,
+          '../../../../../midi_archive/BerndKrueger/Bach/bach_846.mid');
+
+        request(BACKEND_URL)
+          .patch('/archive/composition/' + compositionId)
+          .field('name', 'Composition with New MIDI File')
+          .attach('midifile', newMidiFilePath)
           .set('Accept', 'application/json')
           .expect(204)
           .end(function (err, res) {

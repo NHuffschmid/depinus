@@ -19,7 +19,7 @@ function calculateMidifileDuration(data) {
         resolve(duration);
       })
       .catch((err) => {
-        reject('RPC error: ' + err);
+        reject(err);
       });
   });
   return promise;
@@ -99,36 +99,45 @@ function deleteComposition(req, res) {
 
 function patchComposition(req, res) {
 
-  if (req.swagger.params.name) {
-    // TODO: deal with midifile update as well
-    // TODO: clarify where zero width spaces are coming from
+  const compositionId = req.swagger.params.id.value;
+  const hasName = req.swagger.params.name && req.swagger.params.name.value;
+  const hasMidifile = req.swagger.params.midifile && req.swagger.params.midifile.value;
+
+  if (hasName && hasMidifile) {
+    // update both name and midifile
     const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
-    db.run(`UPDATE composition SET name=(?) WHERE id=${req.swagger.params.id.value};`,
-      [compositionName], (err) => {
-        if (err) {
-          res.status(500).json({ 'message': err.toString() });
-        }
-        else {
-          res.status(204).send();
-        }
+    
+    calculateMidifileDuration(req.swagger.params.midifile.value.buffer)
+      .then((duration) => {
+        db.run(`UPDATE composition SET name=(?), midifile=(?), duration=(?) WHERE id=(?);`,
+          [compositionName, req.swagger.params.midifile.value.buffer, duration, compositionId], (err) => {
+            if (err) {
+              logger.error("Cannot update composition in DB: " + err.toString());
+              res.status(500).json({ 'message': err.toString() });
+            } else {
+              logger.debug("Patch command successful (name + midifile). Sending 204...");
+              res.status(204).send();
+            }
+          });
+      })
+      .catch((error) => {
+        logger.error("Cannot calculate midifile duration: " + error.toString());
+        res.status(500).json({ 'message': error.toString() });
       });
   }
   else {
-    if (req.swagger.params.midifile && req.swagger.params.midifile.value) {
-      updateMidifile(db, req.swagger.params.id.value, req.swagger.params.midifile.value)
-        .then(() => {
-          logger.debug("Patch command successful. Sending 204...");
+    // update only name
+    const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
+    db.run(`UPDATE composition SET name=(?) WHERE id=(?);`,
+      [compositionName, compositionId], (err) => {
+        if (err) {
+          logger.error("Cannot update composition name in DB: " + err.toString());
+          res.status(500).json({ 'message': err.toString() });
+        } else {
+          logger.debug("Patch command successful (name only). Sending 204...");
           res.status(204).send();
-        })
-        .catch((error) => {
-          logger.error("Cannot update midifile in DB: " + error.message);
-          res.status(500).json({ 'message': error.message });
-        })
-    }
-    else {
-      logger.debug("Patch command successful. Sending 204...");
-      res.status(204).send();
-    }
+        }
+      });
   }
 }
 
