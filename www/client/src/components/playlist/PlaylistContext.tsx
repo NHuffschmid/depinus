@@ -245,6 +245,9 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                 if (typeof message.playlist.backwardable === 'boolean') {
                     setBackwardable(message.playlist.backwardable);
                 }
+                if (typeof message.playlist.compositionId === 'number') {
+                    setPlayingCompositionId(message.playlist.compositionId);
+                }
             }
             else {
                 if (!message.composition &&

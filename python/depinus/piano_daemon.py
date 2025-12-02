@@ -103,6 +103,7 @@ class PianoDaemon:
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False }
             )
+            self._playlist = None
         elif (cmd.command == 'tempo'):
             logger.info('tempo command received: ' + str(cmd.value))
             self._piano_player.tempo = cmd.value
@@ -270,6 +271,8 @@ class PianoDaemon:
             }
         }
         await self._websocket_server.send_info_message(info_msg)
+        if (self._playlist is not None):
+            self._playlist['compositionId'] = compositionId
 
 
     async def _on_calculate_play_duration(self, mididata):
