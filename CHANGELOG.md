@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [1.0.0] - Bach
+## [0.9.2] - Telemann
 
 ### Features
 - Propagate pedal commands to MIDI interface
