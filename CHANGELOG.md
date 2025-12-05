@@ -9,6 +9,9 @@
 ### Bugfixes
 - https://github.com/NHuffschmid/depinus/issues/6
 
+### Tech stuff
+- Improved MIDI time handling
+
 
 ## [0.9.1] - Skrjabin
 

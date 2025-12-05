@@ -3,6 +3,7 @@
 import asyncio
 import mido
 import os
+import time
 
 from depinus import logger
 from pathlib import Path
@@ -225,16 +226,40 @@ class PianoPlayer:
             # play it
 
             self._play_time = 0
+            last_tempo = self.tempo
+            midi_time_base = 0  # MIDI time at the start of the current tempo period
+            start_timestamp = time.perf_counter()
+            real_time_base = start_timestamp  # base time for current tempo period
 
             for message in mido_file:
 
                 if (message.time > 0):
+                    if (self._play_time == 0):
+                        # let's re-init at first received time value
+                        # otherwise, we would eventually wait too long for the first note at the beginning
+                        start_timestamp = time.perf_counter()
+                        real_time_base = start_timestamp  # base time for current tempo period
                     self._play_time += message.time
                     if (not self._positioning_pending):
-                        await asyncio.sleep(message.time / self.tempo)
+                        if self.tempo != last_tempo:
+                            # tempo has changed => adjust time bases
+                            current_time = time.perf_counter()
+                            real_time_base = current_time
+                            midi_time_base = self._play_time - message.time
+                            last_tempo = self.tempo
+                        
+                        midi_time_since_base = self._play_time - midi_time_base
+                        expected_time = real_time_base + (midi_time_since_base / self.tempo)
+                        current_time = time.perf_counter()
+                        
+                        sleep_duration = max(0, expected_time - current_time)
+                        await asyncio.sleep(sleep_duration)
 
                 if (self._positioning_pending and (self._play_time > position)):
                     self._positioning_pending = False
+                    real_time_base = time.perf_counter()
+                    midi_time_base = self._play_time
+                    last_tempo = self.tempo
 
                 if (self._transposition_pending):
                     self._midi_output.reset()  # reset active keys
