@@ -12,6 +12,7 @@ add "assign composition to other composer" feature
 add "remove" button for composer image
 add MacOS support
 add more GUI languages
+import/export playlists
 
 Bugs:
 =====
