@@ -4,7 +4,9 @@
   "description": "Splash screen for Depinus",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/index.tsx --bundle --outfile=dist/splash.js --minify --loader:.tsx=tsx --jsx=automatic --loader:.css=css --external:electron"
+    "prebuild": "node copy-components.js",
+    "build": "esbuild src/index.tsx --bundle --outfile=dist/splash.js --minify --loader:.tsx=tsx --jsx=automatic --loader:.css=css --external:electron",
+    "clean": "if (Test-Path 'src/components/react-piano-keyboard') { Remove-Item -Path 'src/components/react-piano-keyboard' -Recurse -Force }"
   },
   "dependencies": {
     "react": "^18.2.0",

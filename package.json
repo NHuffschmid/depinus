@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "node scripts/clean.js",
     "build-piano_daemon": "cd python/depinus && pyinstaller --onefile --strip --clean --hidden-import mido.backends.rtmidi --log-level=WARN piano_daemon.py",
-    "build-splash": "cd splash && npm install && npm run build",
+    "build-splash": "cd splash && npm install && npm run clean && npm run build",
     "build": "npm install && npm run build-piano_daemon && npm run build-splash && npm run build:es",
     "prepackage": "npm run build-piano_daemon && npm install && node scripts/prepackage.js",
     "postpackage": "node scripts/postpackage.js",
