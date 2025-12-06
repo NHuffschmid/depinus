@@ -20,7 +20,7 @@ If you want to run Depinus on hardware, where no precompiled package is availabl
 ## Software requirements
 - Windows, Linux or MacOS operating system
 - Python 3.11 or higher
-- Node.js V18 or higher
+- Node.js V22.18.0 or higher
 
 ## Installation steps
 

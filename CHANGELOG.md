@@ -1,5 +1,6 @@
 # CHANGELOG
-## [1.0.0] - Bach
+
+## [0.9.2] - Telemann
 
 ### Features
 - Added playlists
@@ -8,6 +9,9 @@
 
 ### Bugfixes
 - https://github.com/NHuffschmid/depinus/issues/6
+
+### Tech stuff
+- Improved MIDI time handling
 
 
 ## [0.9.1] - Skrjabin
