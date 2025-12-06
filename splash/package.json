@@ -1,0 +1,19 @@
+{
+  "name": "depinus-splash",
+  "version": "1.0.0",
+  "description": "Splash screen for Depinus",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --outfile=dist/splash.js --minify --loader:.tsx=tsx --jsx=automatic --loader:.css=css --external:electron"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.0.0"
+  }
+}

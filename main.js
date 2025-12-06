@@ -264,6 +264,12 @@ function show_userinfo(info) {
   }
 }
 
+function update_progress(progress) {
+  if (!headless && splashScreen && !splashScreen.isDestroyed()) {
+    splashScreen.webContents.send('update-progress', progress);
+  }
+}
+
 function shutdown(shutdownBackendServer=false) {
 
   logger.info('Shutdown piano daemon...');
@@ -315,10 +321,15 @@ app.on('ready', async () => {
     splashScreen.webContents.send('update-logo', logoPath);
     const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
     splashScreen.webContents.send('update-title', title);
+    
+    // Initialize progress
+    update_progress(0);
   }
 
   startPianoDaemon()
     .then(async () => {
+      // Step 1 completed: Piano daemon started (25%)
+      update_progress(25);
 
       const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
       await waitForWebsocketServer(pianoDaemonWebsocketPort);
@@ -327,10 +338,18 @@ app.on('ready', async () => {
 
       startBackend()
         .then(async () => {
+          // Step 2 completed: Backend started (50%)
+          update_progress(50);
+          
           configureFrontend()
             .then(() => {
+              // Step 3 completed: Frontend configured (75%)
+              update_progress(75);
+              
               startFrontend()
                 .then(() => {
+                  // Step 4 completed: Frontend started (100%)
+                  update_progress(100);
 
                   if (!headless) {
 
