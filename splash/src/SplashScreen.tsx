@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import PianoProgressBar from './components/PianoProgressBar';
+import { KeyboardProgressBar } from './components/react-piano-keyboard';
 
 interface SplashScreenProps {}
 
@@ -53,13 +53,16 @@ const SplashScreen: React.FC<SplashScreenProps> = () => {
         
         <div className="progress-section">
           <div className="progress-bar-container">
-            <PianoProgressBar
+            <KeyboardProgressBar
               value={progress}
               max={100}
+              from={48}
+              to={72}
               color="#4CAF50"
               showPercentage={true}
               style={{
                 width: '400px',
+                height: '60px',
               }}
             />
           </div>

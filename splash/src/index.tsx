@@ -4,7 +4,6 @@ import SplashScreen from './SplashScreen';
 
 // Import CSS files
 import './SplashScreen.css';
-import './components/PianoProgressBar.css';
 
 // Declare global to avoid TypeScript errors
 declare global {
