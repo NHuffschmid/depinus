@@ -8,8 +8,8 @@
   margin: 0;
   padding: 20px;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: white;
+  color: #333;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
@@ -33,7 +33,6 @@
   width: 150px;
   height: 150px;
   border-radius: 75px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
 }
 
@@ -49,7 +48,6 @@
   margin: 0;
   font-size: 24px;
   font-weight: 300;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: 1px;
 }
 
@@ -62,20 +60,19 @@
 }
 
 .progress-bar-container {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   padding: 15px;
   border-radius: 10px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .status {
   margin: 0;
   font-size: 14px;
   font-weight: 400;
-  opacity: 0.9;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  opacity: 0.8;
   min-height: 20px;
 }
 
