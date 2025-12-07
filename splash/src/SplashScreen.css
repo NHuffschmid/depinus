@@ -47,7 +47,7 @@
 .title {
   margin: 0;
   font-size: 24px;
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: 1px;
 }
 
@@ -60,12 +60,12 @@
 }
 
 .progress-bar-container {
-  background: rgba(0, 0, 0, 0.05);
+  background: transparent;
   padding: 15px;
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0;
+  backdrop-filter: none;
+  box-shadow: none;
+  border: none;
 }
 
 .status {

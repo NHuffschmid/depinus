@@ -307,8 +307,8 @@ app.on('ready', async () => {
     });
 
     splashScreen = new BrowserWindow({
-      width: 600,
-      height: 500,
+      width: 500,
+      height: 400,
       frame: false,
       alwaysOnTop: true,
       webPreferences: {
