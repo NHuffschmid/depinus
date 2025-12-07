@@ -119,6 +119,7 @@ const waitForWebsocketServer = (port, timeout = 10000) => {
 const startPianoDaemon = () => {
   return new Promise(async (resolve, reject) => {
 
+    update_progress(0);
     show_userinfo('Starting the piano daemon...');
     logger.info('Starting the piano daemon...');
 
@@ -149,6 +150,7 @@ const startPianoDaemon = () => {
 
 const startBackend = () => {
   return new Promise(async (resolve, reject) => {
+    update_progress(10);
     const backendServerBundle = path.join(__dirname, 'www/server/dist/server.js');
     logger.info('Starting the backend server...');
     show_userinfo('Starting the backend server...');
@@ -171,6 +173,7 @@ const startBackend = () => {
 
 const configureFrontend = () => {
   return new Promise((resolve, reject) => {
+    update_progress(30);
     const configPath = path.join(__dirname, 'www/client/dist/config.js');
     const backendUrl = 'http://' + os.hostname() + ':' + config.Network.backend_rest_api_port;
 
@@ -190,8 +193,10 @@ const configureFrontend = () => {
 
 const startFrontend = () => {
   return new Promise((resolve, reject) => {
+    update_progress(70);
     const buildDir = path.join(__dirname, 'node_modules/client/build');
     logger.info('Starting the frontend server...');
+    show_userinfo('Starting the frontend server...');
     logger.debug(`Serving files from: ${buildDir}`);
 
     try {
@@ -331,17 +336,14 @@ app.on('ready', async () => {
       const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
       splashScreen.webContents.send('update-title', title);
 
-      // Initialize progress
-      update_progress(0);
-
       // Start the actual startup process
       startApplicationSequence();
     });
-  } function startApplicationSequence() {
+  }
+
+  function startApplicationSequence() {
     startPianoDaemon()
       .then(async () => {
-
-        update_progress(10);
 
         const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
         await waitForWebsocketServer(pianoDaemonWebsocketPort);
@@ -351,14 +353,9 @@ app.on('ready', async () => {
         startBackend()
           .then(async () => {
 
-            update_progress(30);
-
             configureFrontend()
               .then(() => {
 
-                update_progress(70);
-
-                // Small delay to make 80% visible before starting frontend
                 setTimeout(() => {
                   startFrontend()
                     .then(() => {
@@ -368,7 +365,7 @@ app.on('ready', async () => {
                       const targetProgress = 100;
                       const stepSize = 2; // Progress increment per step
                       const stepDuration = 50; // 50ms between steps
-                      
+
                       const animateProgress = () => {
                         if (currentProgress < targetProgress) {
                           currentProgress += stepSize;
@@ -377,7 +374,7 @@ app.on('ready', async () => {
                           setTimeout(animateProgress, stepDuration);
                         } else {
                           update_progress(targetProgress);
-                          
+
                           // Animation completed, now show main window
                           if (!headless) {
                             const url = `http://localhost:${frontend_server_port}`;
@@ -387,7 +384,7 @@ app.on('ready', async () => {
 
                             // remove standard menu
                             Menu.setApplicationMenu(null);
-                            
+
                             // Wait a bit before showing main window
                             setTimeout(() => {
                               splashScreen.destroy();
@@ -399,7 +396,7 @@ app.on('ready', async () => {
                           pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
                         }
                       };
-                      
+
                       animateProgress();
                     })
                     .catch((error) => {
