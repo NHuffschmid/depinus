@@ -307,8 +307,8 @@ app.on('ready', async () => {
     });
 
     splashScreen = new BrowserWindow({
-      width: 500,
-      height: 350,
+      width: 600,
+      height: 500,
       frame: false,
       alwaysOnTop: true,
       webPreferences: {
@@ -318,23 +318,32 @@ app.on('ready', async () => {
     });
 
     splashScreen.loadFile('splash.html');
-    const logoPath = path.join(__dirname, 'www/client/dist/images/depinus-logo.png');
-    splashScreen.webContents.send('update-logo', logoPath);
-    const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
-    splashScreen.webContents.send('update-title', title);
-
-    // Wait for splash screen to be ready before starting the app
+    
+    // Wait for splash screen to be ready before sending updates
     ipcMain.once('splash-ready', () => {
       logger.info('Splash screen ready, starting app initialization...');
+      
+      // Send logo and title after renderer is ready
+      const logoPath = path.join(process.env.DEPINUS_APP_PATH, '..', 'www/client/public/images/depinus-logo.png');
+      try {
+        const logoBuffer = fs.readFileSync(logoPath);
+        const logoBase64 = logoBuffer.toString('base64');
+        const logoDataUrl = `data:image/png;base64,${logoBase64}`;
+        splashScreen.webContents.send('update-logo', logoDataUrl);
+      } catch (error) {
+        logger.error('Could not load logo:', error);
+        logger.error('Tried path:', logoPath);
+      }
+      const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
+      splashScreen.webContents.send('update-title', title);
+      
       // Initialize progress
       update_progress(0);
-
+      
       // Start the actual startup process
       startApplicationSequence();
     });
-  }
-
-  function startApplicationSequence() {
+  }  function startApplicationSequence() {
     startPianoDaemon()
       .then(async () => {
 
@@ -386,7 +395,7 @@ app.on('ready', async () => {
                       shutdown();
                     }, 3000);
                   });
-                }, 100);  // 100ms delay to make 80% visible
+                }, 1000); 
               })
               .catch((error) => {
                 show_userinfo(`ERROR: Cannot build the frontend server.`);
