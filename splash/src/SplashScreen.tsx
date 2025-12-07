@@ -59,14 +59,8 @@ const SplashScreen: React.FC<SplashScreenProps> = () => {
             <KeyboardProgressBar
               value={progress}
               max={100}
-              from={48}
-              to={72}
-              color="#4CAF50"
-              showPercentage={true}
-              style={{
-                width: '400px',
-                height: '60px',
-              }}
+              color='#DC143C'
+              style={{ width: '200px', height: '30px' }}
             />
           </div>
           <p className="status">{status}</p>
