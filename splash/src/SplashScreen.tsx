@@ -30,6 +30,9 @@ const SplashScreen: React.FC<SplashScreenProps> = () => {
         setProgress(progressValue);
       });
 
+      // Signal to main process that the renderer is ready
+      ipcRenderer.send('splash-ready');
+
       // Cleanup
       return () => {
         ipcRenderer.removeAllListeners('update-logo');

@@ -6,7 +6,7 @@
   "scripts": {
     "prebuild": "node copy-components.js",
     "build": "esbuild src/index.tsx --bundle --outfile=dist/splash.js --minify --loader:.tsx=tsx --jsx=automatic --loader:.css=css --external:electron",
-    "clean": "if (Test-Path 'src/components/react-piano-keyboard') { Remove-Item -Path 'src/components/react-piano-keyboard' -Recurse -Force }"
+    "clean": "node -e \"const fs = require('fs'); const path = 'src/components/react-piano-keyboard'; if (fs.existsSync(path)) fs.rmSync(path, {recursive: true, force: true});\""
   },
   "dependencies": {
     "react": "^18.2.0",

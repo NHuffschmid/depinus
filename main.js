@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -266,11 +266,12 @@ function show_userinfo(info) {
 
 function update_progress(progress) {
   if (!headless && splashScreen && !splashScreen.isDestroyed()) {
+    logger.info(`Updating progress to ${progress}%`);
     splashScreen.webContents.send('update-progress', progress);
   }
 }
 
-function shutdown(shutdownBackendServer=false) {
+function shutdown(shutdownBackendServer = false) {
 
   logger.info('Shutdown piano daemon...');
   pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'shutdown' }));
@@ -321,89 +322,102 @@ app.on('ready', async () => {
     splashScreen.webContents.send('update-logo', logoPath);
     const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
     splashScreen.webContents.send('update-title', title);
-    
-    // Initialize progress
-    update_progress(0);
+
+    // Wait for splash screen to be ready before starting the app
+    ipcMain.once('splash-ready', () => {
+      logger.info('Splash screen ready, starting app initialization...');
+      // Initialize progress
+      update_progress(0);
+
+      // Start the actual startup process
+      startApplicationSequence();
+    });
   }
 
-  startPianoDaemon()
-    .then(async () => {
-      // Step 1 completed: Piano daemon started (25%)
-      update_progress(25);
+  function startApplicationSequence() {
+    startPianoDaemon()
+      .then(async () => {
 
-      const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
-      await waitForWebsocketServer(pianoDaemonWebsocketPort);
-      logger.info(`Register on piano daemon websocket on port ${pianoDaemonWebsocketPort}`);
-      pianoDaemonWebsocket = new WebSocket(`ws://localhost:${pianoDaemonWebsocketPort}`);
+        update_progress(10);
 
-      startBackend()
-        .then(async () => {
-          // Step 2 completed: Backend started (50%)
-          update_progress(50);
-          
-          configureFrontend()
-            .then(() => {
-              // Step 3 completed: Frontend configured (75%)
-              update_progress(75);
-              
-              startFrontend()
-                .then(() => {
-                  // Step 4 completed: Frontend started (100%)
-                  update_progress(100);
+        const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
+        await waitForWebsocketServer(pianoDaemonWebsocketPort);
+        logger.info(`Register on piano daemon websocket on port ${pianoDaemonWebsocketPort}`);
+        pianoDaemonWebsocket = new WebSocket(`ws://localhost:${pianoDaemonWebsocketPort}`);
 
-                  if (!headless) {
+        startBackend()
+          .then(async () => {
 
-                    //mainWindow.webContents.openDevTools();
-                    const url = `http://localhost:${frontend_server_port}`;
+            update_progress(30);
 
-                    logger.info(`Loading URL ${url}...`);
-                    splashScreen.webContents.send('update-status', `Loading URL ${url}...`);
-                    mainWindow.loadURL(url);
+            configureFrontend()
+              .then(() => {
 
-                    // remove standard menu
-                    Menu.setApplicationMenu(null);
-                  }
+                update_progress(80);
 
-                  logger.info('Play startup jingle...');
-                  pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
-                })
-                .catch((error) => {
-                  show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
-                  logger.error('Error while starting frontend server: ' + error);
-                  setTimeout(() => {
-                    shutdown();
-                  }, 3000);
-                });
-            })
-            .catch((error) => {
-              show_userinfo(`ERROR: Cannot build the frontend server.`);
-              logger.error('Error while building frontend server: ' + error);
-              setTimeout(() => {
-                shutdown();
-              }, 3000);
-            });
-        })
-        .catch((error) => {
-          show_userinfo(`ERROR: Cannot start the backend server.`);
-          logger.error('Error while starting backend server: ' + error);
-          setTimeout(() => {
-            shutdown();
-          }, 3000);
-        });
-    })
-    .catch((error) => {
-      show_userinfo(`ERROR: Cannot start the piano daemon.`);
-      logger.error('Error while starting piano daemon: ' + error);
-      setTimeout(() => {
-        shutdown();
-      }, 3000);
-      setTimeout(() => {
-        shutdown();
-      }, 3000);
-    });
+                // Small delay to make 80% visible before starting frontend
+                setTimeout(() => {
+                  startFrontend()
+                    .then(() => {
+                    // Step 4 completed: Frontend started (100%)
+                    logger.info('Frontend started, updating progress to 100%');
+                    update_progress(100);
+
+                    if (!headless) {
+
+                      //mainWindow.webContents.openDevTools();
+                      const url = `http://localhost:${frontend_server_port}`;
+
+                      logger.info(`Loading URL ${url}...`);
+                      splashScreen.webContents.send('update-status', `Loading URL ${url}...`);
+                      mainWindow.loadURL(url);
+
+                      // remove standard menu
+                      Menu.setApplicationMenu(null);
+                    }
+
+                    logger.info('Play startup jingle...');
+                    pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
+                  })
+                  .catch((error) => {
+                    show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
+                    logger.error('Error while starting frontend server: ' + error);
+                    setTimeout(() => {
+                      shutdown();
+                    }, 3000);
+                  });
+                }, 100);  // 100ms delay to make 80% visible
+              })
+              .catch((error) => {
+                show_userinfo(`ERROR: Cannot build the frontend server.`);
+                logger.error('Error while building frontend server: ' + error);
+                setTimeout(() => {
+                  shutdown();
+                }, 3000);
+              });
+          })
+          .catch((error) => {
+            show_userinfo(`ERROR: Cannot start the backend server.`);
+            logger.error('Error while starting backend server: ' + error);
+            setTimeout(() => {
+              shutdown();
+            }, 3000);
+          });
+      })
+      .catch((error) => {
+        show_userinfo(`ERROR: Cannot start the piano daemon.`);
+        logger.error('Error while starting piano daemon: ' + error);
+        setTimeout(() => {
+          shutdown();
+        }, 3000);
+        setTimeout(() => {
+          shutdown();
+        }, 3000);
+      });
+  }  // End of startApplicationSequence function
 });
 
 app.on('window-all-closed', () => {
   logger.debug('window-all-closed event received.');
-  shutdown(shutdownBackendServer=true);
+  shutdown(shutdownBackendServer = true);
 });
