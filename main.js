@@ -266,7 +266,6 @@ function show_userinfo(info) {
 
 function update_progress(progress) {
   if (!headless && splashScreen && !splashScreen.isDestroyed()) {
-    logger.info(`Updating progress to ${progress}%`);
     splashScreen.webContents.send('update-progress', progress);
   }
 }
@@ -301,11 +300,6 @@ app.on('ready', async () => {
       show: false,
     });
 
-    mainWindow.once('ready-to-show', () => {
-      splashScreen.destroy();
-      mainWindow.show();
-    });
-
     splashScreen = new BrowserWindow({
       width: 500,
       height: 400,
@@ -318,11 +312,11 @@ app.on('ready', async () => {
     });
 
     splashScreen.loadFile('splash.html');
-    
+
     // Wait for splash screen to be ready before sending updates
     ipcMain.once('splash-ready', () => {
       logger.info('Splash screen ready, starting app initialization...');
-      
+
       // Send logo and title after renderer is ready
       const logoPath = path.join(process.env.DEPINUS_APP_PATH, '..', 'www/client/public/images/depinus-logo.png');
       try {
@@ -336,14 +330,14 @@ app.on('ready', async () => {
       }
       const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
       splashScreen.webContents.send('update-title', title);
-      
+
       // Initialize progress
       update_progress(0);
-      
+
       // Start the actual startup process
       startApplicationSequence();
     });
-  }  function startApplicationSequence() {
+  } function startApplicationSequence() {
     startPianoDaemon()
       .then(async () => {
 
@@ -362,40 +356,60 @@ app.on('ready', async () => {
             configureFrontend()
               .then(() => {
 
-                update_progress(80);
+                update_progress(70);
 
                 // Small delay to make 80% visible before starting frontend
                 setTimeout(() => {
                   startFrontend()
                     .then(() => {
-                    // Step 4 completed: Frontend started (100%)
-                    logger.info('Frontend started, updating progress to 100%');
-                    update_progress(100);
 
-                    if (!headless) {
+                      // Animate progress
+                      let currentProgress = 70;
+                      const targetProgress = 100;
+                      const stepSize = 2; // Progress increment per step
+                      const stepDuration = 50; // 50ms between steps
+                      
+                      const animateProgress = () => {
+                        if (currentProgress < targetProgress) {
+                          currentProgress += stepSize;
+                          const progressValue = Math.min(currentProgress, targetProgress);
+                          update_progress(progressValue);
+                          setTimeout(animateProgress, stepDuration);
+                        } else {
+                          update_progress(targetProgress);
+                          
+                          // Animation completed, now show main window
+                          if (!headless) {
+                            const url = `http://localhost:${frontend_server_port}`;
+                            logger.info(`Loading URL ${url}...`);
+                            splashScreen.webContents.send('update-status', `Loading URL ${url}...`);
+                            mainWindow.loadURL(url);
 
-                      //mainWindow.webContents.openDevTools();
-                      const url = `http://localhost:${frontend_server_port}`;
+                            // remove standard menu
+                            Menu.setApplicationMenu(null);
+                            
+                            // Wait a bit before showing main window
+                            setTimeout(() => {
+                              splashScreen.destroy();
+                              mainWindow.show();
+                            }, 500);
+                          }
 
-                      logger.info(`Loading URL ${url}...`);
-                      splashScreen.webContents.send('update-status', `Loading URL ${url}...`);
-                      mainWindow.loadURL(url);
-
-                      // remove standard menu
-                      Menu.setApplicationMenu(null);
-                    }
-
-                    logger.info('Play startup jingle...');
-                    pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
-                  })
-                  .catch((error) => {
-                    show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
-                    logger.error('Error while starting frontend server: ' + error);
-                    setTimeout(() => {
-                      shutdown();
-                    }, 3000);
-                  });
-                }, 1000); 
+                          logger.info('Play startup jingle...');
+                          pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
+                        }
+                      };
+                      
+                      animateProgress();
+                    })
+                    .catch((error) => {
+                      show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
+                      logger.error('Error while starting frontend server: ' + error);
+                      setTimeout(() => {
+                        shutdown();
+                      }, 3000);
+                    });
+                }, 1000);
               })
               .catch((error) => {
                 show_userinfo(`ERROR: Cannot build the frontend server.`);
