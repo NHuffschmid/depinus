@@ -25,26 +25,11 @@
             width: 100vw;
             height: 100vh;
         }
-
-        /* Fallback styles while React loads */
-        .loading-fallback {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 18px;
-        }
     </style>
 </head>
 
 <body>
-    <div id="root">
-        <div class="loading-fallback">Loading Depinus...</div>
-    </div>
-
-    <!-- Load the bundled splash React app -->
+    <div id="root" />
     <script src="splash/dist/splash.js"></script>
 </body>
 
