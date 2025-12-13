@@ -11,7 +11,8 @@
 
 ### Tech stuff
 - Improved MIDI time handling
-- Show progress bar in splash screen
+- Show simple progress bar in splash screen
+- Pinned react-piano-keyboard v0.9.3
 
 
 ## [0.9.1] - Skrjabin
