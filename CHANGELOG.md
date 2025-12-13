@@ -11,6 +11,7 @@
 
 ### Tech stuff
 - Improved MIDI time handling
+- Show progress bar in splash screen
 
 
 ## [0.9.1] - Skrjabin
