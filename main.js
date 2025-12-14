@@ -124,7 +124,6 @@ const startPianoDaemon = () => {
       splashScreen.webContents.send('update-progress', 10);
     }
     show_userinfo('Starting the piano daemon...');
-    logger.info('Starting the piano daemon...');
 
     let pianoDaemonExecutable;
     if (os.platform() === 'win32') {
@@ -154,7 +153,6 @@ const startPianoDaemon = () => {
 const startBackend = () => {
   return new Promise(async (resolve, reject) => {
     const backendServerBundle = path.join(__dirname, 'www/server/dist/server.js');
-    logger.info('Starting the backend server...');
     show_userinfo('Starting the backend server...');
     if (splashScreen && !splashScreen.isDestroyed()) {
       splashScreen.webContents.send('update-status', 'Starting the backend server...');
@@ -182,7 +180,6 @@ const configureFrontend = () => {
     const configPath = path.join(__dirname, 'www/client/dist/config.js');
     const backendUrl = 'http://' + os.hostname() + ':' + config.Network.backend_rest_api_port;
 
-    logger.info(`Configuring the frontend for backend url ${backendUrl} in ${configPath}...`);
     show_userinfo('Configuring the frontend...');
     if (splashScreen && !splashScreen.isDestroyed()) {
       splashScreen.webContents.send('update-status', 'Configuring the frontend...');
@@ -267,11 +264,15 @@ const startFrontend = () => {
   });
 };
 
-function show_userinfo(info) {
-  if (headless) {
-    logger.info(`Headless mode: ${info}`);
+function show_userinfo(info, isError=false) {
+  if (isError) {
+    logger.error(info);
   }
   else {
+    logger.info(info);
+  }
+
+  if (!headless) {
     splashScreen.webContents.send('update-status', info);
   }
 }
@@ -336,32 +337,28 @@ function startAppInitialization() {
                   pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
                 })
                 .catch((error) => {
-                  show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
-                  logger.error('Error while starting frontend server: ' + error);
+                  show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`, true);
                   setTimeout(() => {
                     shutdown();
                   }, 3000);
                 });
             })
             .catch((error) => {
-              show_userinfo(`ERROR: Cannot build the frontend server.`);
-              logger.error('Error while building frontend server: ' + error);
+              show_userinfo(`ERROR: Cannot build the frontend server: ${error}`, true);
               setTimeout(() => {
                 shutdown();
               }, 3000);
             });
         })
         .catch((error) => {
-          show_userinfo(`ERROR: Cannot start the backend server.`);
-          logger.error('Error while starting backend server: ' + error);
+          show_userinfo(`ERROR: Cannot start the backend server: ${error}`, true);
           setTimeout(() => {
             shutdown();
           }, 3000);
         });
     })
     .catch((error) => {
-      show_userinfo(`ERROR: Cannot start the piano daemon.`);
-      logger.error('Error while starting piano daemon: ' + error);
+      show_userinfo(`ERROR: Cannot start the piano daemon: ${error}`);
       setTimeout(() => {
         shutdown();
       }, 3000);
