@@ -19,4 +19,3 @@ Bugs:
 
 - Kaiserwalzer crashes DurationCalculation
 - analyse "Task exception was never retrieved" errors from piano_daemon log
-- remove --strip switch from PyInstaller (Windows) script
