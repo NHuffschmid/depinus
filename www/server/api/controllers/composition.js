@@ -106,7 +106,6 @@ function patchComposition(req, res) {
   if (hasName && hasMidifile) {
     // update both name and midifile
     const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
-    
     calculateMidifileDuration(req.swagger.params.midifile.value.buffer)
       .then((duration) => {
         db.run(`UPDATE composition SET name=(?), midifile=(?), duration=(?) WHERE id=(?);`,

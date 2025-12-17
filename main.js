@@ -358,7 +358,7 @@ function startAppInitialization() {
         });
     })
     .catch((error) => {
-      show_userinfo(`ERROR: Cannot start the piano daemon: ${error}`);
+      show_userinfo(`ERROR: Cannot start the piano daemon: ${error}`, true);
       setTimeout(() => {
         shutdown();
       }, 3000);
