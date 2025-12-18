@@ -18,6 +18,4 @@ Bugs:
 =====
 
 - Kaiserwalzer crashes DurationCalculation
-- Duration of Ecossaises is calculated much too long
 - analyse "Task exception was never retrieved" errors from piano_daemon log
-- remove --strip switch from PyInstaller (Windows) script

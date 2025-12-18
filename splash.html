@@ -8,49 +8,168 @@
         body {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            padding: 16px;
+            padding: 20px;
             box-sizing: border-box;
-            background: transparent;
+            background: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
         }
 
-        h1, p {
-            margin: 0;
+        .splash-container {
             text-align: center;
+            max-width: 500px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
         img {
             width: 200px;
             height: 200px;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.2em;
+            margin: 0;
+            font-weight: 300;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Simple Progress Bar */
+        .progress-container {
+            width: 100%;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background-size: 200% 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .status {
+            font-size: 1.1em;
+            margin-top: 10px;
+            opacity: 0.9;
         }
     </style>
 </head>
 
 <body>
-    <img id="logo" src="logo.png" alt="Logo">
-    <h1 id="title">Title...</h1>
-    <p id="status">Loading...</p>
+    <div class="splash-container">
+        <div id="logo-container">
+            <img id="logo" src="" alt="Depinus" style="display: none;">
+            <div id="logo-fallback" style="
+                width: 200px; 
+                height: 200px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 4em;
+                font-weight: bold;
+                color: white;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            ">D</div>
+        </div>
+        <h1 id="title">Depinus</h1>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+        </div>
+
+        <p id="status" class="status">Initializing...</p>
+    </div>
 
     <script>
         const { ipcRenderer } = require('electron');
+        let currentProgress = 0;
 
+        // Progress bar update
+        function updateProgress(value) {
+            currentProgress = Math.max(0, Math.min(100, value));
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = currentProgress + '%';
+        }
+
+        // IPC Event Listeners
         ipcRenderer.on('update-logo', (event, imagePath) => {
             const logo = document.getElementById('logo');
+            const logoFallback = document.getElementById('logo-fallback');
+
+            // Check if image exists and is accessible
+            logo.onload = function () {
+                logo.style.display = 'block';
+                logoFallback.style.display = 'none';
+            };
+            logo.onerror = function () {
+                logo.style.display = 'none';
+                logoFallback.style.display = 'flex';
+            };
+
             logo.src = imagePath;
         });
 
         ipcRenderer.on('update-title', (event, message) => {
-            const dynamicText = document.getElementById('title');
-            dynamicText.textContent = message;
+            const title = document.getElementById('title');
+            title.textContent = message;
         });
 
         ipcRenderer.on('update-status', (event, message) => {
-            const dynamicText = document.getElementById('status');
-            dynamicText.textContent = message;
+            const status = document.getElementById('status');
+            status.textContent = message;
         });
+
+        ipcRenderer.on('update-progress', (event, value) => {
+            updateProgress(value);
+        });
+
+        // Signal ready to main process
+        ipcRenderer.send('splash-ready');
     </script>
 </body>
 

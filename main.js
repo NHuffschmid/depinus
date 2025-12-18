@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -119,8 +119,11 @@ const waitForWebsocketServer = (port, timeout = 10000) => {
 const startPianoDaemon = () => {
   return new Promise(async (resolve, reject) => {
 
+    if (splashScreen && !splashScreen.isDestroyed()) {
+      splashScreen.webContents.send('update-status', 'Starting the piano daemon...');
+      splashScreen.webContents.send('update-progress', 10);
+    }
     show_userinfo('Starting the piano daemon...');
-    logger.info('Starting the piano daemon...');
 
     let pianoDaemonExecutable;
     if (os.platform() === 'win32') {
@@ -150,8 +153,11 @@ const startPianoDaemon = () => {
 const startBackend = () => {
   return new Promise(async (resolve, reject) => {
     const backendServerBundle = path.join(__dirname, 'www/server/dist/server.js');
-    logger.info('Starting the backend server...');
     show_userinfo('Starting the backend server...');
+    if (splashScreen && !splashScreen.isDestroyed()) {
+      splashScreen.webContents.send('update-status', 'Starting the backend server...');
+      splashScreen.webContents.send('update-progress', 40);
+    }
 
     backendServer = require(backendServerBundle);
     backendServer.onExit(shutdown);
@@ -174,8 +180,11 @@ const configureFrontend = () => {
     const configPath = path.join(__dirname, 'www/client/dist/config.js');
     const backendUrl = 'http://' + os.hostname() + ':' + config.Network.backend_rest_api_port;
 
-    logger.info(`Configuring the frontend for backend url ${backendUrl} in ${configPath}...`);
     show_userinfo('Configuring the frontend...');
+    if (splashScreen && !splashScreen.isDestroyed()) {
+      splashScreen.webContents.send('update-status', 'Configuring the frontend...');
+      splashScreen.webContents.send('update-progress', 80);
+    }
 
     const configContent = `window._env_ = { VITE_BACKEND_URL: "${backendUrl}" };`;
     fs.writeFileSync(configPath, configContent);
@@ -255,16 +264,20 @@ const startFrontend = () => {
   });
 };
 
-function show_userinfo(info) {
-  if (headless) {
-    logger.info(`Headless mode: ${info}`);
+function show_userinfo(info, isError=false) {
+  if (isError) {
+    logger.error(info);
   }
   else {
+    logger.info(info);
+  }
+
+  if (!headless) {
     splashScreen.webContents.send('update-status', info);
   }
 }
 
-function shutdown(shutdownBackendServer=false) {
+function shutdown(shutdownBackendServer = false) {
 
   logger.info('Shutdown piano daemon...');
   pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'shutdown' }));
@@ -278,6 +291,78 @@ function shutdown(shutdownBackendServer=false) {
     logger.info('🎵🎵🎵 Depinus terminated. 🎵🎵🎵');
     app.quit();
   }, 1000);
+}
+
+// Application initialization sequence
+function startAppInitialization() {
+  startPianoDaemon()
+    .then(async () => {
+
+      const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
+      await waitForWebsocketServer(pianoDaemonWebsocketPort);
+      logger.info(`Register on piano daemon websocket on port ${pianoDaemonWebsocketPort}`);
+      pianoDaemonWebsocket = new WebSocket(`ws://localhost:${pianoDaemonWebsocketPort}`);
+
+      startBackend()
+        .then(async () => {
+          configureFrontend()
+            .then(() => {
+              startFrontend()
+                .then(() => {
+
+                  if (!headless) {
+
+                    const url = `http://localhost:${frontend_server_port}`;
+
+                    logger.info(`Loading URL ${url}...`);
+                    if (splashScreen && !splashScreen.isDestroyed()) {
+                      splashScreen.webContents.send('update-status', `Loading application...`);
+                      splashScreen.webContents.send('update-progress', 100);
+                    }
+
+                    // Show splash for just a moment to see 100% completion
+                    setTimeout(() => {
+                      mainWindow.loadURL(url);
+                      if (splashScreen && !splashScreen.isDestroyed()) {
+                        splashScreen.destroy();
+                      }
+                      mainWindow.show();
+                    }, 1500);
+
+                    // remove standard menu
+                    Menu.setApplicationMenu(null);
+                  }
+
+                  logger.info('Play startup jingle...');
+                  pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
+                })
+                .catch((error) => {
+                  show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`, true);
+                  setTimeout(() => {
+                    shutdown();
+                  }, 3000);
+                });
+            })
+            .catch((error) => {
+              show_userinfo(`ERROR: Cannot build the frontend server: ${error}`, true);
+              setTimeout(() => {
+                shutdown();
+              }, 3000);
+            });
+        })
+        .catch((error) => {
+          show_userinfo(`ERROR: Cannot start the backend server: ${error}`, true);
+          setTimeout(() => {
+            shutdown();
+          }, 3000);
+        });
+    })
+    .catch((error) => {
+      show_userinfo(`ERROR: Cannot start the piano daemon: ${error}`, true);
+      setTimeout(() => {
+        shutdown();
+      }, 3000);
+    });
 }
 
 app.on('ready', async () => {
@@ -300,8 +385,8 @@ app.on('ready', async () => {
     });
 
     splashScreen = new BrowserWindow({
-      width: 500,
-      height: 350,
+      width: 600,
+      height: 500,
       frame: false,
       alwaysOnTop: true,
       webPreferences: {
@@ -311,80 +396,27 @@ app.on('ready', async () => {
     });
 
     splashScreen.loadFile('splash.html');
-    const logoPath = path.join(__dirname, 'www/client/dist/images/depinus-logo.png');
-    splashScreen.webContents.send('update-logo', logoPath);
-    const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
-    splashScreen.webContents.send('update-title', title);
+
+    // Wait for splash screen to be ready
+    ipcMain.once('splash-ready', () => {
+      logger.info('Splash screen ready, starting app initialization...');
+
+      // Send initial data to splash screen
+      const logoPath = path.join(__dirname, 'www/client/dist/images/depinus-logo.png');
+      if (fs.existsSync(logoPath)) {
+        splashScreen.webContents.send('update-logo', logoPath);
+      }
+      const title = 'Depinus - Opus ' + config.Default.version + ' - ' + config.Default.edition;
+      splashScreen.webContents.send('update-title', title);
+      splashScreen.webContents.send('update-progress', 0);
+    });
   }
 
-  startPianoDaemon()
-    .then(async () => {
-
-      const pianoDaemonWebsocketPort = config.Network.piano_daemon_websocket_port;
-      await waitForWebsocketServer(pianoDaemonWebsocketPort);
-      logger.info(`Register on piano daemon websocket on port ${pianoDaemonWebsocketPort}`);
-      pianoDaemonWebsocket = new WebSocket(`ws://localhost:${pianoDaemonWebsocketPort}`);
-
-      startBackend()
-        .then(async () => {
-          configureFrontend()
-            .then(() => {
-              startFrontend()
-                .then(() => {
-
-                  if (!headless) {
-
-                    //mainWindow.webContents.openDevTools();
-                    const url = `http://localhost:${frontend_server_port}`;
-
-                    logger.info(`Loading URL ${url}...`);
-                    splashScreen.webContents.send('update-status', `Loading URL ${url}...`);
-                    mainWindow.loadURL(url);
-
-                    // remove standard menu
-                    Menu.setApplicationMenu(null);
-                  }
-
-                  logger.info('Play startup jingle...');
-                  pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
-                })
-                .catch((error) => {
-                  show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`);
-                  logger.error('Error while starting frontend server: ' + error);
-                  setTimeout(() => {
-                    shutdown();
-                  }, 3000);
-                });
-            })
-            .catch((error) => {
-              show_userinfo(`ERROR: Cannot build the frontend server.`);
-              logger.error('Error while building frontend server: ' + error);
-              setTimeout(() => {
-                shutdown();
-              }, 3000);
-            });
-        })
-        .catch((error) => {
-          show_userinfo(`ERROR: Cannot start the backend server.`);
-          logger.error('Error while starting backend server: ' + error);
-          setTimeout(() => {
-            shutdown();
-          }, 3000);
-        });
-    })
-    .catch((error) => {
-      show_userinfo(`ERROR: Cannot start the piano daemon.`);
-      logger.error('Error while starting piano daemon: ' + error);
-      setTimeout(() => {
-        shutdown();
-      }, 3000);
-      setTimeout(() => {
-        shutdown();
-      }, 3000);
-    });
+  // Start the application initialization sequence AFTER splash is ready
+  startAppInitialization();
 });
 
 app.on('window-all-closed', () => {
   logger.debug('window-all-closed event received.');
-  shutdown(shutdownBackendServer=true);
+  shutdown(shutdownBackendServer = true);
 });

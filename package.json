@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "clean": "node scripts/clean.js",
-    "build-piano_daemon": "cd python/depinus && pyinstaller --onefile --strip --clean --hidden-import mido.backends.rtmidi --log-level=WARN piano_daemon.py",
+    "build-piano_daemon": "cd python/depinus && pyinstaller --onefile --clean --hidden-import mido.backends.rtmidi --log-level=ERROR piano_daemon.py",
     "build": "npm install && npm run build-piano_daemon && npm run build:es",
     "prepackage": "npm run build-piano_daemon && npm install && node scripts/prepackage.js",
     "postpackage": "node scripts/postpackage.js",
@@ -13,7 +13,7 @@
     "startheadless": "electron . --headless",
     "copy:assets": "node copy-esbuild-assets.js",
     "build:es": "esbuild main.js --bundle --platform=node --outfile=dist/main.js --external:electron && npm --prefix ./www/server run build:es && npm --prefix ./www/client run build:es && npm run copy:assets",
-    "package-windows-x64": "npx electron-packager ./dist depinus --platform=win32 --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon.exe --extra-resource=scripts/autostart.bat --out=package --overwrite && npm run postpackage",
+    "package-win32-x64": "npx electron-packager ./dist depinus --platform=win32 --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon.exe --extra-resource=scripts/autostart.bat --out=package --overwrite && npm run postpackage",
     "package-linux-x64": "npx electron-packager ./dist depinus --platform=linux --arch=x64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
     "package-linux-arm64": "npx electron-packager ./dist depinus --platform=linux --arch=arm64 --extra-resource=depinus.conf --extra-resource=depinus.db --extra-resource=dist/piano_daemon --extra-resource=scripts/autostart --out=package --overwrite && npm run postpackage",
     "release": "node scripts/release.js",

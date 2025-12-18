@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [0.9.2] - Telemann
+
+### Features
+- Propagate pedal commands to MIDI interface
+- Added french, spanish, italian and portuguese language support
+
+### Bugfixes
+- https://github.com/NHuffschmid/depinus/issues/6
+
+### Tech stuff
+- Improved MIDI time handling
+- Show simple progress bar in splash screen
+- Pinned react-piano-keyboard v0.9.3
+
+
 ## [0.9.1] - Skrjabin
 
 ### Features
