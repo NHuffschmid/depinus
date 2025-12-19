@@ -267,8 +267,14 @@ class PianoPlayer:
 
                 logger.debug('Midifile message:  %s' % str(message))
 
+                was_paused = self._pausing
                 while ((self._pausing == True) and not self._positioning_pending):
                     await asyncio.sleep(0.5)
+                
+                # After resume from pause, reset time base
+                if was_paused and not self._pausing and not self._positioning_pending:
+                    real_time_base = time.perf_counter()
+                    midi_time_base = self._play_time
 
                 if (not self._positioning_pending):
                     # some message types (like program_change) seem to block the send command
