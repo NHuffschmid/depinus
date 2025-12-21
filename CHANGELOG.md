@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.9.3] - Vivaldi
+
+### Features
+- Added playlists
+
+### Bugfixes
+- https://github.com/NHuffschmid/depinus/issues/19
+
+
 ## [0.9.2] - Telemann
 
 ### Features
