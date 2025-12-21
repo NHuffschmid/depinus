@@ -12,7 +12,6 @@
 ## [0.9.2] - Telemann
 
 ### Features
-- Added playlists
 - Propagate pedal commands to MIDI interface
 - Added french, spanish, italian and portuguese language support
 
