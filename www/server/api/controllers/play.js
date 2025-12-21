@@ -43,12 +43,14 @@ function play(req, res) {
               // send websocket rpc to play composition
               const composer = row['firstname'] + ' ' + row['surname']
               logger.debug(`Sending RPC request to play ${compositionName}...`);
-              RpcClient.call('PlayComposition', {
+              const rpcPayload = {
                 name: compositionName,
+                compositionId: compositionId,
                 composer: composer,
                 duration: duration,
                 mididata: Array.from(midifile)
-              })
+              };
+              RpcClient.call('PlayComposition', rpcPayload)
                 .then(() => {
                   logger.debug(`RPC call finished successful.`);
                   res.json({

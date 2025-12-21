@@ -106,7 +106,8 @@ html, body {
 .dialog .dialog-form {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 1.5rem
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .partiture {
@@ -189,6 +190,20 @@ html, body {
 
 .navButton:active {
   transform: translateY(4px);
+}
+
+.composition-list {
+  list-style: none;
+  padding: 0.5rem;
+  margin: 0;
+  border: 1px solid #333;
+  border-radius: 12px;
+}
+
+.composition-listitem {
+  margin: 0rem;
+  padding: 0rem;
+  text-align: left;
 }
 
 .mediaButton {

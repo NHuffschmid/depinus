@@ -3,6 +3,7 @@
 ## [0.9.2] - Telemann
 
 ### Features
+- Added playlists
 - Propagate pedal commands to MIDI interface
 - Added french, spanish, italian and portuguese language support
 
@@ -27,8 +28,9 @@
 ## [0.9.0] - Corelli
 
 ### Features
+- Added playlist feature
 - Added MIDI out port setting
-- beautified button styling
+- Beautified button styling
 - Enhanced music archive by:
   - Mussorgski
   - Ravel
@@ -40,11 +42,11 @@
 - https://github.com/NHuffschmid/depinus/issues/1
 
 ### Tech stuff
-- migrated from REACT CRA to Vite
-- use snake_case instead of CamelCase in Python code
-- converted JSX frontend code to TSX
-- avoid GTK error messages in headless mode
-- worked around zero width space issue when storing composition names in DB
+- Migrated from REACT CRA to Vite
+- Use snake_case instead of CamelCase in Python code
+- Converted JSX frontend code to TSX
+- Avoid GTK error messages in headless mode
+- Worked around zero width space issue when storing composition names in DB
 
 
 ## [0.8.0] - Pachelbel

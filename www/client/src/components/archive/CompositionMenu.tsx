@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
+import { usePlaylistContext } from '../playlist/PlaylistContext';
 import { useTranslation } from "react-i18next";
 import { MessageDialog, ConfirmationDialog } from "../MessageBox";
 import UploadCompositionDialog from "./UploadCompositionDialog";
@@ -16,8 +17,8 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
     const { t } = useTranslation();
+    const { selectedPlaylist } = usePlaylistContext();
 
-    //console.log('Uploading composition data');
     const playComposition = () => {
         const requestOptions = {
             method: 'POST',
@@ -78,6 +79,23 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         }
     }
 
+    const handleAddToPlaylist = () => {
+        if (!props.composition || !selectedPlaylist) return;
+        fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ compositionId: props.composition.id })
+        })
+            .then(res => {
+                if (res.status === 200) {
+                    props.finished();
+                } else {
+                    res.json().then(data => setErrorMessage(data.message || 'Error at adding to playlist'));
+                }
+            })
+            .catch(err => setErrorMessage(err.toString()));
+    };
+
     return React.createElement(
         Modal as any,
         {
@@ -91,11 +109,31 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         },
         <>
             <div className='menu'>
-                <div className='menu-header'>{props.composition ? props.composition.name : null}</div>
-                <div className='menu-item' onClick={playComposition}>{t('Play')}</div>
-                <div className='menu-item' onClick={showDeleteConfirmationDialog}>{t('Delete')}</div>
-                <div className='menu-item'>{t('Add to playlist')}</div>
-                <div className='menu-item' onClick={() => { setUploadDialogIsOpen(true) }}>{t('Edit')}</div>
+                <div
+                    className='menu-header'>{props.composition ? props.composition.name : null}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={playComposition}
+                >
+                    {t('Play')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={showDeleteConfirmationDialog}
+                >
+                    {t('Delete')}
+                </div>
+                <div
+                    className='menu-item' onClick={handleAddToPlaylist}
+                    style={{ opacity: selectedPlaylist ? 1 : 0.5, pointerEvents: selectedPlaylist ? 'auto' : 'none' }}
+                >
+                    {t('Add to playlist')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={() => { setUploadDialogIsOpen(true) }}>{t('Edit')}
+                </div>
             </div>
             <ConfirmationDialog
                 open={confirmationMessage !== undefined}

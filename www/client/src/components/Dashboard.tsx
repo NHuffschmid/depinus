@@ -6,18 +6,18 @@ import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import { usePlaylistContext } from './playlist/PlaylistContext';
 
 interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
     const [cookies] = useCookies(['color']);
-    const [isBackwardable] = useState(false);
     const [isStoppable, setIsStoppable] = useState(false);
     const [composer, setComposer] = useState('');
     const [composition, setComposition] = useState('');
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
-    const [isForwardable] = useState(false);
+    const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
@@ -58,7 +58,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
         >
             <button
                 className="mediaButton"
-                disabled={!isBackwardable}
+                disabled={!backwardable}
+                onClick={previousTrack}
             >
                 <SkipPreviousIcon fontSize="inherit" />
             </button>
@@ -82,7 +83,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
             <button
                 className="mediaButton"
-                disabled={!isForwardable}
+                disabled={!forwardable}
+                onClick={nextTrack}
             >
                 <SkipNextIcon fontSize="inherit" />
             </button>
