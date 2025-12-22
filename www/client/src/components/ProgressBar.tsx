@@ -41,7 +41,7 @@ const ProgressBar: React.FC = () => {
                 }
             }
 
-            // TODO: rework this strange waiting indication handling
+            // TODO: rework this very strange waiting indication handling
 
             if (
                 (totalTime === 0) ||
@@ -51,7 +51,8 @@ const ProgressBar: React.FC = () => {
                 ('transposition' in message) ||
                 message['isStoppable'] ||
                 message['isPlayable'] ||
-                message['isPauseable']) {
+                message['isPauseable'] ||
+                message['playlist']) {
                 setIsWaiting(false);
             }
             else {

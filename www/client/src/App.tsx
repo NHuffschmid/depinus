@@ -6,6 +6,7 @@ import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Home from "./Pages/Home";
 import Archive from "./Pages/Archive";
+import Playlist from "./Pages/Playlist";
 import Settings from "./Pages/Settings";
 import About from "./Pages/About";
 import Navbar from "./components/Navbar";
@@ -17,6 +18,7 @@ import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next";
 import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
 import { backendUrl } from './config';
+import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
   const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
@@ -111,46 +113,49 @@ function App(): JSX.Element {
   }, [bgColor, cookies.skrjabinMode]);
 
   return (
-    <React.Fragment>
-      {isActive ? (
-        <div className='App'>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <header className="App-header">
-              <Keyboard
-                ref={keyboardRef}
-                from={21}
-                to={108}
-                pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
-                onKeyDown={handleKeyDown}
-                onKeyUp={handleKeyUp}
-              />
-            </header>
-            <Navbar />
-            <Dashboard />
-            <ProgressBar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/Archive" element={<Archive />} />
-              <Route path="/Settings" element={<Settings />} />
-              <Route path="/About" element={<About />} />
-            </Routes>
-          </BrowserRouter>
-          <Overlay />
-          <img src='../../images/shutdown.png' alt='for cache only' height='0px' />
-        </div>
-      ) : (
-        <div className='shutdown'>
-          <img src='../../images/shutdown.png' title={t('Out of service') as string} alt={t('Out of service') as string} height='300px' />
-          {isWaiting && (
-            <div style={{ display: 'block' }}>
-              <div style={{ display: 'inline-block' }}>
-                <WaitingIndicator width='4rem' height='2rem' />
+    <PlaylistProvider>
+      <React.Fragment>
+        {isActive ? (
+          <div className='App'>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <header className="App-header">
+                <Keyboard
+                  ref={keyboardRef}
+                  from={21}
+                  to={108}
+                  pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
+                  onKeyDown={handleKeyDown}
+                  onKeyUp={handleKeyUp}
+                />
+              </header>
+              <Navbar />
+              <Dashboard />
+              <ProgressBar />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/Archive" element={<Archive />} />
+                <Route path="/Playlist" element={<Playlist />} />
+                <Route path="/Settings" element={<Settings />} />
+                <Route path="/About" element={<About />} />
+              </Routes>
+            </BrowserRouter>
+            <Overlay />
+            <img src='../../images/shutdown.png' alt='for cache only' height='0px' />
+          </div>
+        ) : (
+          <div className='shutdown'>
+            <img src='../../images/shutdown.png' title={t('Out of service') as string} alt={t('Out of service') as string} height='300px' />
+            {isWaiting && (
+              <div style={{ display: 'block' }}>
+                <div style={{ display: 'inline-block' }}>
+                  <WaitingIndicator width='4rem' height='2rem' />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-    </React.Fragment>
+            )}
+          </div>
+        )}
+      </React.Fragment>
+    </PlaylistProvider>
   );
 }
 

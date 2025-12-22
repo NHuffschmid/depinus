@@ -41,23 +41,15 @@ const ArchiveView: React.FC = () => {
         <React.Fragment>
             <ComposerPanel updateComposer={updateComposer} />
             <div style={{ marginTop: '1rem' }}>
-                <ul style={{
-                    visibility: compositions ? 'visible' : 'hidden',
-                    listStyleType: 'none',
-                    padding: '0.5rem',
-                    margin: '0',
-                    border: '1px solid #333',
-                    borderRadius: '12px',
-                }}>
+                <ul
+                    className="composition-list"
+                    style={{ visibility: compositions ? 'visible' : 'hidden' }}
+                >
                     {compositions ? compositions.map((composition, i) => (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto' }} key={i}>
                             <li
-                                style={{
-                                    margin: '0rem',
-                                    padding: '0rem',
-                                    textAlign: 'left',
-                                    background: selectedComposition && (composition.id === parseInt(selectedComposition.id)) ? cookies.color : 'transparent'
-                                }}
+                                className="composition-listitem"
+                                style={{ background: selectedComposition && (composition.id === parseInt(selectedComposition.id)) ? cookies.color : 'transparent' }}
                                 key={composition.id}
                                 data-id={composition.id}
                                 onClick={(e) => {

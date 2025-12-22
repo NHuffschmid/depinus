@@ -13,6 +13,7 @@ const Navbar: React.FC = () => {
             <ul>
                 <CustomLink to="/">Depinus</CustomLink>
                 <CustomLink to="/archive">{t('Archive')}</CustomLink>
+                <CustomLink to="/playlist">{t('Playlist')}</CustomLink>
                 <CustomLink to="/settings">{t('Settings')}</CustomLink>
                 <CustomLink to="/about">{t('About')}</CustomLink>
             </ul>

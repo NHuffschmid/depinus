@@ -221,7 +221,7 @@ class PianoPlayer:
                             if (msg.type == 'copyright'):
                                 logger.info('Copyright: %s' % msg.text)
                             elif (msg.type == 'text'):
-                                logger.info(msg.text.strip())
+                                logger.debug(msg.text.strip())
 
             # play it
 
@@ -265,10 +265,16 @@ class PianoPlayer:
                     self._midi_output.reset()  # reset active keys
                     self._transposition_pending = False
 
-                logger.debug('Midifile message:  %s' % str(message))
+                #logger.debug('Midifile message:  %s' % str(message))
 
+                was_paused = self._pausing
                 while ((self._pausing == True) and not self._positioning_pending):
                     await asyncio.sleep(0.5)
+                
+                # After resume from pause, reset time base
+                if was_paused and not self._pausing and not self._positioning_pending:
+                    real_time_base = time.perf_counter()
+                    midi_time_base = self._play_time
 
                 if (not self._positioning_pending):
                     # some message types (like program_change) seem to block the send command
@@ -308,7 +314,7 @@ class PianoPlayer:
 
             if (self._current_composition != None): # happens in case of startup jingle
                 for callback in self._play_end_callbacks:
-                    await callback()
+                    await callback(False)
 
         except asyncio.CancelledError:
 
@@ -318,7 +324,7 @@ class PianoPlayer:
                 self._play_time = 0
 
                 for callback in self._play_end_callbacks:
-                    await callback()
+                    await callback(True)
 
             self._midi_output.reset()
             raise
