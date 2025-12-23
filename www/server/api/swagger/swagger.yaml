@@ -207,6 +207,32 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /archive/composition/{id}/export:
+    x-swagger-router-controller: composition
+    get:
+      description: Exports a composition as MIDI file
+      operationId: exportCompositionMidi
+      produces:
+        - audio/midi
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the composition to export
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: file
+        "404":
+          description: Composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /archive/composition:
     x-swagger-router-controller: composition
     post:
