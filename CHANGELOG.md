@@ -3,7 +3,7 @@
 ## [0.9.4] - Salieri
 
 ### Features
-- Added export of midifiles
+- Added export of MIDI files
 
 
 ## [0.9.3] - Vivaldi
