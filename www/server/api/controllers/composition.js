@@ -173,15 +173,20 @@ function postComposition(req, res) {
 function exportCompositionMidi(req, res) {
   const compositionId = req.swagger.params.id.value;
   
-  db.get('SELECT name, midifile FROM composition WHERE id=?;',
+  db.get(`SELECT composition.name, composition.midifile, composer.surname 
+          FROM composition 
+          LEFT JOIN composer ON composition.composer_id = composer.id 
+          WHERE composition.id=?;`,
     [compositionId], (err, row) => {
       if (err) {
         res.status(500).json({ 'message': err.toString() });
       }
       else {
         if (row && row.midifile) {
-          // Create a safe filename from the composition name
-          const safeFilename = row.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.mid';
+          // Create a safe filename from composer surname and composition name
+          const composerPart = row.surname ? row.surname.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' : '';
+          const compositionPart = row.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          const safeFilename = composerPart + compositionPart + '.mid';
           
           res.setHeader('Content-Type', 'audio/midi');
           res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
