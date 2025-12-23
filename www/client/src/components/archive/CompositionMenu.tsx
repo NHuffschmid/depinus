@@ -96,6 +96,14 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
             .catch(err => setErrorMessage(err.toString()));
     };
 
+    const handleExportMidi = () => {
+        if (!props.composition) return;
+        
+        const url = `${backendUrl}/archive/composition/${props.composition.id}/export`;
+        window.open(url, '_blank');
+        props.finished();
+    };
+
     return React.createElement(
         Modal as any,
         {
@@ -133,6 +141,10 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
                 <div
                     className='menu-item'
                     onClick={() => { setUploadDialogIsOpen(true) }}>{t('Edit')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={handleExportMidi}>{t('Export as MIDI file')}
                 </div>
             </div>
             <ConfirmationDialog
