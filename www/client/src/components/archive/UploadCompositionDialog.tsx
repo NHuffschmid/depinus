@@ -45,13 +45,14 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
         },
         <div className='dialog'>
             <div className='menu-header'>{props.header}</div>
-            <div className='dialog-form'>
+            <div className='dialog-form' style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.5rem', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <label>{t('Title')}:</label>
                 <input
                     type='text'
                     name="title"
                     defaultValue={title}
                     onChange={(event) => { setTitle(event.target.value); }}
+                    style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
                 {props.composers && (
                     <>
@@ -59,6 +60,7 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                         <select
                             value={composerId || ''}
                             onChange={(event) => { setComposerId(event.target.value ? parseInt(event.target.value) : undefined); }}
+                            style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                         >
                             {props.composers.map((composer) => (
                                 <option key={composer.id} value={composer.id}>
@@ -69,7 +71,7 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                     </>
                 )}
                 <input
-                    style={{ gridColumn: '1 / 3' }}
+                    style={{ gridColumn: '1 / 3', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                     type='file'
                     name="midifile"
                     accept=".mid,.midi"
