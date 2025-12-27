@@ -27,6 +27,12 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
     const [uploading, setUploading] = useState(false);
     const { t } = useTranslation();
 
+    const hasChanges = () => {
+        return title !== props.title || 
+               composerId !== props.composerId || 
+               midifile !== undefined;
+    };
+
     return React.createElement(
         Modal as any,
         {
@@ -72,7 +78,7 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
             </div>
             <div>
                 <button
-                    disabled={(title === '') || (!midifile && props.midifileIsMandatory) || uploading}
+                    disabled={(title === '') || (!midifile && props.midifileIsMandatory) || uploading || !hasChanges()}
                     onClick={() => {
                         setUploading(true); // start waiting indication
                         props.upload(title, midifile, composerId)
