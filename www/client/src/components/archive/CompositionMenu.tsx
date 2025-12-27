@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import { usePlaylistContext } from '../playlist/PlaylistContext';
 import { useTranslation } from "react-i18next";
@@ -6,9 +6,15 @@ import { MessageDialog, ConfirmationDialog } from "../MessageBox";
 import UploadCompositionDialog from "./UploadCompositionDialog";
 import { backendUrl } from '../../config';
 
+interface Composer {
+    id: number;
+    firstname: string;
+    surname: string;
+}
+
 interface CompositionMenuProps {
     open: boolean;
-    composition?: { id: number; name: string } | null;
+    composition?: { id: number; name: string; composer_id?: number } | null;
     finished: () => void;
 }
 
@@ -16,8 +22,17 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
+    const [composers, setComposers] = useState<Composer[]>();
     const { t } = useTranslation();
     const { selectedPlaylist } = usePlaylistContext();
+
+    useEffect(() => {
+        fetch(backendUrl + '/archive/composers')
+            .then((response) => response.json())
+            .then((data: Composer[]) => {
+                setComposers(data);
+            });
+    }, []);
 
     const playComposition = () => {
         const requestOptions = {
@@ -44,12 +59,15 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         props.finished();
     }
 
-    const uploadComposition = (title: string, midifile: File) => {
+    const uploadComposition = (title: string, midifile: File | undefined, composerId?: number) => {
         return new Promise<void>((resolve, reject) => {
             const formData = new FormData();
             formData.append('name', title);
             if (midifile) {
                 formData.append('midifile', midifile);
+            }
+            if (composerId !== undefined) {
+                formData.append('composerId', String(composerId));
             }
             fetch(backendUrl + '/archive/composition/' + props.composition?.id, {
                 method: 'PATCH',
@@ -158,6 +176,8 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
                 open={uploadDialogIsOpen}
                 header={t('Edit')}
                 title={props.composition ? props.composition.name ?? '' : ''}
+                composerId={props.composition?.composer_id}
+                composers={composers}
                 midifileIsMandatory={false}
                 upload={uploadComposition}
                 finished={uploadFinished}
