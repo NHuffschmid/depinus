@@ -15,8 +15,12 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
     const { t } = useTranslation();
 
     //console.log('Uploading composition data');
-    const uploadComposition = (title: string, midifile: File) => {
+    const uploadComposition = (title: string, midifile: File | undefined, composerId?: number) => {
         return new Promise<void>((resolve, reject) => {
+            if (!midifile) {
+                reject(new Error('Midifile is required'));
+                return;
+            }
             const formData = new FormData();
             formData.append('name', title);
             formData.append('composerId', String(props.composerId));

@@ -110,6 +110,13 @@ html, body {
   margin-bottom: 1.5rem;
 }
 
+.dialog-form input,
+.dialog-form select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .partiture {
   font-family: "Times New Roman", Times, serif;
   font-weight: bold;
