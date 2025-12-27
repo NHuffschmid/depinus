@@ -8,7 +8,6 @@ Software:
 move billions of style definitions to CSS file(s)
 add additional midi repositories
 - e.g. from http://www.members.tripod.com/~rosemck1/jukebox-classical.html
-add "assign composition to other composer" feature
 add "remove" button for composer image
 add MacOS support
 add more GUI languages

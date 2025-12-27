@@ -3,18 +3,27 @@ import { useTranslation } from "react-i18next";
 import WaitingIndicator from '../WaitingIndicator';
 import Modal from 'react-modal';
 
+interface Composer {
+    id: number;
+    firstname: string;
+    surname: string;
+}
+
 interface UploadCompositionDialogProps {
     open: boolean;
     header: React.ReactNode;
     title: string;
+    composerId?: number;
+    composers?: Composer[];
     midifileIsMandatory: boolean;
-    upload: (title: string, midifile: File) => Promise<void>;
+    upload: (title: string, midifile: File | undefined, composerId?: number) => Promise<void>;
     finished: (error?: any) => void;
 }
 
 const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) => {
     const [title, setTitle] = useState(props.title);
     const [midifile, setMidifile] = useState<File | undefined>();
+    const [composerId, setComposerId] = useState<number | undefined>(props.composerId);
     const [uploading, setUploading] = useState(false);
     const { t } = useTranslation();
 
@@ -38,6 +47,21 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                     defaultValue={title}
                     onChange={(event) => { setTitle(event.target.value); }}
                 />
+                {props.composers && (
+                    <>
+                        <label>{t('Composer')}:</label>
+                        <select
+                            value={composerId || ''}
+                            onChange={(event) => { setComposerId(event.target.value ? parseInt(event.target.value) : undefined); }}
+                        >
+                            {props.composers.map((composer) => (
+                                <option key={composer.id} value={composer.id}>
+                                    {composer.firstname} {composer.surname}
+                                </option>
+                            ))}
+                        </select>
+                    </>
+                )}
                 <input
                     style={{ gridColumn: '1 / 3' }}
                     type='file'
@@ -51,7 +75,7 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                     disabled={(title === '') || (!midifile && props.midifileIsMandatory) || uploading}
                     onClick={() => {
                         setUploading(true); // start waiting indication
-                        props.upload(title, midifile as File)
+                        props.upload(title, midifile, composerId)
                             .then(() => {
                                 setUploading(false); // stop waiting indication
                                 props.finished();
@@ -63,6 +87,7 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                             .finally(() => {
                                 setTitle(props.title);
                                 setMidifile(undefined);
+                                setComposerId(props.composerId);
                             });
                     }}
                 >

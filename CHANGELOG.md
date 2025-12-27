@@ -4,6 +4,7 @@
 
 ### Features
 - Added export of MIDI files
+- Added support to move a composition to another composer
 
 
 ## [0.9.3] - Vivaldi
