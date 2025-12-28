@@ -5,6 +5,8 @@
 import asyncio
 import mido
 import io
+import subprocess
+import json
 
 from depinus import logger
 from depinus.websocket_server import WebsocketServer
@@ -14,7 +16,9 @@ from depinus.piano_recorder import PianoRecorder
 from depinus.midi_interface_observer import MidiInterfaceObserver
 from depinus.config_utils import read_config, persist_config_setting
 from datetime import datetime
-import aiohttp
+import requests
+import subprocess
+import json
 
 class PianoDaemon:
     '''Creates and wires up the main components'''
@@ -338,71 +342,100 @@ class PianoDaemon:
         if midi_data is None:
             logger.warning('No MIDI data recorded')
             return
-
-        logger.info('Saving recording via REST API...')
         
-        # Generate composition name from timestamp
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        logger.info('Recording ended.')
+        
+        # Generate composition name from timestamp (replace spaces and colons for safer filename)
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         composition_name = timestamp
         composer_name = 'Depinus'
         
         try:
             # Get backend URL from config
             config = read_config()
-            backend_port = config['Network']['backend_server_port']
+            backend_port = config['Network']['backend_rest_api_port']
             backend_url = f'http://localhost:{backend_port}'
             
             # Calculate duration
             midi_stream = io.BytesIO(midi_data)
             duration = int(mido.MidiFile(file=midi_stream).length)
             
-            async with aiohttp.ClientSession() as session:
-                # Check if "Depinus" composer exists, otherwise create it
-                async with session.get(f'{backend_url}/archive/composers') as response:
-                    composers = await response.json()
-                    depinus_composer = next((c for c in composers if c['surname'] == composer_name), None)
+            # Check if "Depinus" composer exists, otherwise create it using curl
+            result = subprocess.run(
+                ['curl', '-s', f'{backend_url}/archive/composers'],
+                capture_output=True,
+                text=True
+            )
+            composers = json.loads(result.stdout)
+            depinus_composer = next((c for c in composers if c['surname'] == composer_name), None)
+            
+            if depinus_composer:
+                composer_id = depinus_composer['id']
+            else:
+                result = subprocess.run(
+                    ['curl', '-s', '-X', 'POST',
+                     '-F', f'surname={composer_name}',
+                     '-F', 'firstname=',
+                     f'{backend_url}/archive/composer'],
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0 and result.stdout:
+                    composer_response = json.loads(result.stdout)
+                    composer_id = composer_response['id']
+                else:
+                    logger.error(f'Failed to create composer: {result.stderr}')
+                    return
+            
+            # Write MIDI data to temporary file for curl
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.mid', delete=False) as tmp_file:
+                tmp_file.write(midi_data)
+                tmp_filename = tmp_file.name
+            
+            try:
+                # Convert Windows path to forward slashes for curl
+                curl_path = tmp_filename.replace('\\', '/')
+                
+                curl_cmd = [
+                    'curl', '-s', '-X', 'POST',
+                    '-F', f'name={composition_name}',
+                    '-F', f'composerId={composer_id}',
+                    '-F', f'midifile=@{curl_path}',
+                    f'{backend_url}/archive/composition'
+                ]
+                
+                try:
+                    # Use asyncio subprocess instead of blocking subprocess.run
+                    process = await asyncio.create_subprocess_exec(
+                        *curl_cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
                     
-                    if depinus_composer:
-                        composer_id = depinus_composer['id']
-                        logger.info(f'Found existing composer "Depinus" with ID {composer_id}')
-                    else:
-                        # Create "Depinus" composer
-                        form_data = aiohttp.FormData()
-                        form_data.add_field('surname', composer_name)
-                        form_data.add_field('firstname', '')
+                    try:
+                        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=5.0)
+                    except asyncio.TimeoutError:
+                        process.kill()
+                        logger.warning('Upload timed out, but composition should be saved')
                         
-                        async with session.post(f'{backend_url}/archive/composer', data=form_data) as response:
-                            if response.status == 200:
-                                composer_response = await response.json()
-                                composer_id = composer_response['id']
-                                logger.info(f'Created composer "Depinus" with ID {composer_id}')
-                            else:
-                                logger.error(f'Failed to create composer: {response.status}')
-                                return
+                except Exception as e:
+                    logger.error(f'Curl execution error: {e}')
+
+                logger.info(f'Recording saved: {composer_name}: {composition_name}')
                 
-                # Save composition via API
-                form_data = aiohttp.FormData()
-                form_data.add_field('name', composition_name)
-                form_data.add_field('composerId', str(composer_id))
-                form_data.add_field('midifile', midi_data, filename='recording.mid', content_type='audio/midi')
-                
-                async with session.post(f'{backend_url}/archive/composition', data=form_data) as response:
-                    if response.status == 200:
-                        composition_response = await response.json()
-                        composition_id = composition_response['id']
-                        logger.info(f'Recording saved: {composer_name} - {composition_name} (ID: {composition_id}, Duration: {duration}s)')
-                        
-                        # Notify clients about the new composition
-                        await self._websocket_server.send_info_message({
-                            'messageType': 'recordingSaved',
-                            'compositionId': composition_id,
-                            'composer': composer_name,
-                            'name': composition_name,
-                            'duration': duration
-                        })
-                    else:
-                        error_text = await response.text()
-                        logger.error(f'Failed to save composition: {response.status} - {error_text}')
+                # Notify clients about the new composition
+                await self._websocket_server.send_info_message({
+                    'messageType': 'recordingSaved',
+                    'composer': composer_name,
+                    'name': composition_name,
+                    'duration': duration
+                })
+            finally:
+                # Clean up temporary file
+                if os.path.exists(tmp_filename):
+                    os.unlink(tmp_filename)
             
         except Exception as e:
             logger.error(f'Failed to save recording: {e}')

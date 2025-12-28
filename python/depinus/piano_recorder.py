@@ -159,5 +159,4 @@ class PianoRecorder:
         mid.save(file=buffer)
         midi_data = buffer.getvalue()
 
-        logger.info(f'Created MIDI file with {len(self._recorded_messages)} messages')
         return midi_data
