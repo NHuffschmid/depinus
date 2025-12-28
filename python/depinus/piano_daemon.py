@@ -5,9 +5,11 @@
 import asyncio
 import mido
 import io
+import json
+import os
 import requests
 import subprocess
-import json
+import tempfile
 
 from depinus import logger
 from depinus.websocket_server import WebsocketServer
@@ -347,7 +349,7 @@ class PianoDaemon:
         logger.info('Recording ended.')
         
         # Generate composition name from timestamp (replace spaces and colons for safer filename)
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
         composition_name = timestamp
         composer_name = 'Depinus'
         
@@ -361,36 +363,33 @@ class PianoDaemon:
             midi_stream = io.BytesIO(midi_data)
             duration = int(mido.MidiFile(file=midi_stream).length)
             
-            # Check if "Depinus" composer exists, otherwise create it using curl
-            result = subprocess.run(
-                ['curl', '-s', f'{backend_url}/archive/composers'],
-                capture_output=True,
-                text=True
-            )
-            composers = json.loads(result.stdout)
+            # Check if "Depinus" composer exists, otherwise create it
+            def get_composers():
+                response = requests.get(f'{backend_url}/archive/composers', timeout=5)
+                return response.json()
+            
+            composers = await asyncio.to_thread(get_composers)
             depinus_composer = next((c for c in composers if c['surname'] == composer_name), None)
             
             if depinus_composer:
                 composer_id = depinus_composer['id']
             else:
-                result = subprocess.run(
-                    ['curl', '-s', '-X', 'POST',
-                     '-F', f'surname={composer_name}',
-                     '-F', 'firstname=',
-                     f'{backend_url}/archive/composer'],
-                    capture_output=True,
-                    text=True
-                )
-                if result.returncode == 0 and result.stdout:
-                    composer_response = json.loads(result.stdout)
+                def create_composer():
+                    files = {
+                        'surname': (None, composer_name),
+                        'firstname': (None, '')
+                    }
+                    response = requests.post(f'{backend_url}/archive/composer', files=files, timeout=5)
+                    return response
+                
+                response = await asyncio.to_thread(create_composer)
+                if response.status_code == 200:
+                    composer_response = response.json()
                     composer_id = composer_response['id']
                 else:
-                    logger.error(f'Failed to create composer: {result.stderr}')
+                    logger.error(f'Failed to create composer: {response.status_code}')
                     return
             
-            # Write MIDI data to temporary file for curl
-            import tempfile
-            import os
             with tempfile.NamedTemporaryFile(mode='wb', suffix='.mid', delete=False) as tmp_file:
                 tmp_file.write(midi_data)
                 tmp_filename = tmp_file.name
