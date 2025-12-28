@@ -19,4 +19,5 @@ Bugs:
 - Kaiserwalzer crashes DurationCalculation
 - analyse "Task exception was never retrieved" errors from piano_daemon log
 - default image for new composer is missing in packaged image
+- newly added composer is not provided in composition edit dialog
 - show better error message when user tries to add an already existing composition to the playlist
