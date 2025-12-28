@@ -123,7 +123,7 @@ describe('controllers', function () {
           .end(function (err, res) {
             should.not.exist(err);
             res.body.should.be.Array();
-            res.body.length.should.eql(0); // This will fail until bug is fixed
+            res.body.length.should.eql(0);
             done();
           });
       });
@@ -131,7 +131,7 @@ describe('controllers', function () {
       it('should verify composition 1 is deleted from database', function (done) {
         request(BACKEND_URL)
           .get('/archive/composition/' + compositionId1)
-          .expect(404) // This will fail until bug is fixed - currently returns 200
+          .expect(404)
           .end(function (err, res) {
             should.not.exist(err);
             done();
@@ -141,7 +141,7 @@ describe('controllers', function () {
       it('should verify composition 2 is deleted from database', function (done) {
         request(BACKEND_URL)
           .get('/archive/composition/' + compositionId2)
-          .expect(404) // This will fail until bug is fixed - currently returns 200
+          .expect(404)
           .end(function (err, res) {
             should.not.exist(err);
             done();
