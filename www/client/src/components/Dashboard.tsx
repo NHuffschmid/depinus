@@ -4,6 +4,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { usePlaylistContext } from './playlist/PlaylistContext';
@@ -17,6 +18,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [composition, setComposition] = useState('');
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [blink, setBlink] = useState(false);
     const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
 
     const webSocket = useDepinusWebSocket({
@@ -51,6 +54,21 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }
     }
 
+    const handleRecording = () => {
+        setIsRecording((prev) => !prev);
+        // here comes the record handling
+    }
+
+    React.useEffect(() => {
+        let interval: NodeJS.Timeout | undefined;
+        if (isRecording) {
+            interval = setInterval(() => setBlink(b => !b), 500);
+        } else {
+            setBlink(false);
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [isRecording]);
+
     return (
         <div
             className='dashboard'
@@ -58,7 +76,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         >
             <button
                 className="mediaButton"
-                disabled={!backwardable}
+                style={{ display: backwardable ? "inline-block" : "none" }}
                 onClick={previousTrack}
             >
                 <SkipPreviousIcon fontSize="inherit" />
@@ -69,6 +87,13 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 onClick={handleStop}
             >
                 <StopIcon fontSize="inherit" />
+            </button>
+            <button
+                className="mediaButton"
+                style={{ color: isRecording ? (blink ? cookies.color : '#fff') : cookies.color, transition: 'color 0.2s' }}
+                onClick={handleRecording}
+            >
+                <FiberManualRecordIcon fontSize="inherit" />
             </button>
             <div>
                 <h1>&#8203;{composer}</h1>
@@ -83,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
             <button
                 className="mediaButton"
-                disabled={!forwardable}
+                style={{ display: forwardable ? "inline-block" : "none" }}
                 onClick={nextTrack}
             >
                 <SkipNextIcon fontSize="inherit" />
