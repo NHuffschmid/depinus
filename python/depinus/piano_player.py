@@ -41,17 +41,17 @@ class PianoPlayer:
     @property
     def is_stoppable(self):
         '''True if the piano player can receive a stop command.'''
-        return not self._play_task.done()
+        return self._play_task is not None and not self._play_task.done()
 
     @property
     def is_playable(self):
         '''True if the piano player can start playing.'''
-        return self._pausing or self._play_task.done()
+        return self._pausing or (self._play_task is not None and self._play_task.done())
 
     @property
     def is_pauseable(self):
         '''True if the piano player can make a pause.'''
-        return (not self._pausing) and (not self._play_task.done())
+        return (not self._pausing) and (self._play_task is not None and not self._play_task.done())
 
     @property
     def transposition(self):
