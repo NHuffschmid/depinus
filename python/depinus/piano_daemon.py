@@ -341,7 +341,6 @@ class PianoDaemon:
     async def _on_recording_end(self, midi_data):
         '''Callback when recording ends - save the recording to database via REST API.'''
         if midi_data is None:
-            logger.warning('No MIDI data recorded')
             return
         
         logger.info('Recording ended.')

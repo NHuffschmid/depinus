@@ -125,7 +125,7 @@ class PianoRecorder:
     def _create_midi_file(self):
         '''Creates a MIDI file from the recorded messages.'''
         if not self._recorded_messages:
-            logger.warning('No MIDI messages recorded')
+            logger.info('No MIDI messages recorded')
             return None
 
         # Create a new MIDI file
