@@ -357,10 +357,6 @@ class PianoDaemon:
             backend_port = config['Network']['backend_rest_api_port']
             backend_url = f'http://localhost:{backend_port}'
             
-            # Calculate duration
-            midi_stream = io.BytesIO(midi_data)
-            duration = int(mido.MidiFile(file=midi_stream).length)
-            
             # Check if "Depinus" composer exists, otherwise create it
             def get_composers():
                 response = requests.get(f'{backend_url}/archive/composers', timeout=5)
@@ -413,14 +409,6 @@ class PianoDaemon:
                     
             except Exception as e:
                 logger.error(f'Upload error: {e}')
-            
-            # Notify clients about the new composition
-            await self._websocket_server.send_info_message({
-                'messageType': 'recordingSaved',
-                'composer': composer_name,
-                'name': composition_name,
-                'duration': duration
-            })
             
         except Exception as e:
             logger.error(f'Failed to save recording: {e}')
