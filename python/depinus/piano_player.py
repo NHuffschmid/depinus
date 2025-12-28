@@ -33,6 +33,11 @@ class PianoPlayer:
         '''Gets the current composition.'''
         return self._current_composition
 
+    @current_composition.setter
+    def current_composition(self, value):
+        '''Sets the current composition.'''
+        self._current_composition = value
+
     @property
     def play_time(self):
         '''Gets the number of seconds the current composition is already played.'''

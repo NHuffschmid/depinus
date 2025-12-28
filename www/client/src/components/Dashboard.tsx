@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -13,6 +14,7 @@ interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
     const [cookies] = useCookies(['color']);
+    const navigate = useNavigate();
     const [isStoppable, setIsStoppable] = useState(false);
     const [composer, setComposer] = useState('');
     const [composition, setComposition] = useState('');
@@ -45,6 +47,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 if (message['isRecordable']) {
                     setRecordingInProgress(false);
                 }
+            }
+            if ('recordingSaved' in message && message.recordingSaved) {
+                // Navigate to Archive view to show the saved recording
+                navigate('/Archive', { state: { selectComposer: 'Depinus' } });
             }
         }
     });

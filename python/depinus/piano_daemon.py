@@ -404,6 +404,32 @@ class PianoDaemon:
                 
                 if response.status_code == 200:
                     logger.info(f'Recording saved: {composer_name}: {composition_name}')
+                    composition_data = response.json()
+                    
+                    # Calculate duration from MIDI data
+                    midi_stream = io.BytesIO(midi_data)
+                    duration = int(mido.MidiFile(file=midi_stream).length)
+                    
+                    # Create Composition object and set it as current composition
+                    # (without playing it, so user can press play if they want)
+                    composition = Composition(composition_name, composer_name, duration, midi_data)
+                    self._piano_player.current_composition = composition
+                    
+                    # Notify all clients about the new composition
+                    await self._websocket_server.send_info_message({
+                        'messageType': 'info',
+                        'isStoppable': False,
+                        'isPlayable': True,
+                        'isPauseable': False,
+                        'isRecordable': True,
+                        'composition': {
+                            'name': composition.name,
+                            'composerName': composition.composer,
+                            'duration': composition.duration,
+                            'playTime': 0
+                        },
+                        'recordingSaved': True  # Signal to trigger archive refresh
+                    })
                 else:
                     logger.warning(f'Upload returned status {response.status_code}')
                     
