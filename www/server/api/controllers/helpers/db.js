@@ -19,10 +19,12 @@ const get = (sql, params, cb) => {
         db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
             if (pragmaErr) {
                 logger.error(pragmaErr.message);
+                db.close();
                 cb(pragmaErr, null);
                 return;
             }
             db.get(sql, params, (err, row) => {
+                db.close();
                 if (err) {
                     logger.error(err.message);
                     cb(err, null);
@@ -48,10 +50,12 @@ const all = (sql, params, cb) => {
         db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
             if (pragmaErr) {
                 logger.error(pragmaErr.message);
+                db.close();
                 cb(pragmaErr, null);
                 return;
             }
             db.all(sql, params, (err, rows) => {
+                db.close();
                 if (err) {
                     logger.error(err.message);
                     cb(err, null);
@@ -78,10 +82,12 @@ const run = (sql, params, cb) => {
         db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
             if (pragmaErr) {
                 logger.error(pragmaErr.message);
+                db.close();
                 cb(pragmaErr, null, null);
                 return;
             }
             db.run(sql, params, function(err) {
+                db.close();
                 if (err) {
                     logger.error(err.message);
                     cb(err, null, null);
