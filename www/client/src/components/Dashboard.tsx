@@ -19,7 +19,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
     const [isRecordable, setIsRecordable] = useState(true);
-    const [isRecording, setIsRecording] = useState(false);
+    const [recordingInProgress, setRecordingInProgress] = useState(false);
     const [blink, setBlink] = useState(false);
     const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
 
@@ -41,6 +41,10 @@ const Dashboard: React.FC<DashboardProps> = () => {
             }
             if ('isRecordable' in message) {
                 setIsRecordable(message['isRecordable']);
+                // When recording becomes possible again, stop the blinking animation
+                if (message['isRecordable']) {
+                    setRecordingInProgress(false);
+                }
             }
         }
     });
@@ -59,24 +63,24 @@ const Dashboard: React.FC<DashboardProps> = () => {
     }
 
     const handleRecord = () => {
-        if (!isRecording) {
-            setIsRecording(true);
+        if (!recordingInProgress) {
+            setRecordingInProgress(true);
             webSocket.sendRecordCommand();
         } else {
-            setIsRecording(false);
+            setRecordingInProgress(false);
             webSocket.sendStopCommand();
         }
     }
 
     React.useEffect(() => {
         let interval: NodeJS.Timeout | undefined;
-        if (isRecording) {
+        if (recordingInProgress) {
             interval = setInterval(() => setBlink(b => !b), 500);
         } else {
             setBlink(false);
         }
         return () => { if (interval) clearInterval(interval); };
-    }, [isRecording]);
+    }, [recordingInProgress]);
 
     return (
         <div
@@ -100,7 +104,12 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <button
                 className="mediaButton"
                 disabled={!isRecordable}
-                style={{ color: isRecording ? (blink ? cookies.color : '#fff') : cookies.color, transition: 'color 0.2s' }}
+                style={{
+                    color: recordingInProgress
+                        ? (blink ? cookies.color : '#fff')
+                        : (isRecordable ? cookies.color : '#808080'),
+                    transition: 'color 0.2s'
+                }}
                 onClick={handleRecord}
             >
                 <FiberManualRecordIcon fontSize="inherit" />
