@@ -8,8 +8,6 @@ import io
 import json
 import os
 import requests
-import subprocess
-import tempfile
 
 from depinus import logger
 from depinus.websocket_server import WebsocketServer
@@ -390,49 +388,39 @@ class PianoDaemon:
                     logger.error(f'Failed to create composer: {response.status_code}')
                     return
             
-            with tempfile.NamedTemporaryFile(mode='wb', suffix='.mid', delete=False) as tmp_file:
-                tmp_file.write(midi_data)
-                tmp_filename = tmp_file.name
+            def upload_composition():
+                files = {
+                    'midifile': (f'recording_{composition_name}.mid', io.BytesIO(midi_data), 'audio/midi'),
+                    'name': (None, composition_name),
+                    'composerId': (None, str(composer_id))
+                }
+                
+                response = requests.post(
+                    f'{backend_url}/archive/composition',
+                    files=files,
+                    timeout=15
+                )
+                return response
             
             try:
-                def upload_composition():
-                    with open(tmp_filename, 'rb') as f:
-                        files = {
-                            'midifile': (f'recording_{composition_name}.mid', f, 'audio/midi'),
-                            'name': (None, composition_name),
-                            'composerId': (None, str(composer_id))
-                        }
-                        
-                        response = requests.post(
-                            f'{backend_url}/archive/composition',
-                            files=files,
-                            timeout=10
-                        )
-                        return response
+                # Run blocking requests call in thread pool
+                response = await asyncio.to_thread(upload_composition)
                 
-                try:
-                    # Run blocking requests call in thread pool
-                    response = await asyncio.to_thread(upload_composition)
+                if response.status_code == 200:
+                    logger.info(f'Recording saved: {composer_name}: {composition_name}')
+                else:
+                    logger.warning(f'Upload returned status {response.status_code}')
                     
-                    if response.status_code == 200:
-                        logger.info(f'Recording saved: {composer_name}: {composition_name}')
-                    else:
-                        logger.warning(f'Upload returned status {response.status_code}')
-                        
-                except Exception as e:
-                    logger.error(f'Upload error: {e}')
-                
-                # Notify clients about the new composition
-                await self._websocket_server.send_info_message({
-                    'messageType': 'recordingSaved',
-                    'composer': composer_name,
-                    'name': composition_name,
-                    'duration': duration
-                })
-            finally:
-                # Clean up temporary file
-                if os.path.exists(tmp_filename):
-                    os.unlink(tmp_filename)
+            except Exception as e:
+                logger.error(f'Upload error: {e}')
+            
+            # Notify clients about the new composition
+            await self._websocket_server.send_info_message({
+                'messageType': 'recordingSaved',
+                'composer': composer_name,
+                'name': composition_name,
+                'duration': duration
+            })
             
         except Exception as e:
             logger.error(f'Failed to save recording: {e}')
