@@ -5,6 +5,7 @@
 import asyncio
 import mido
 import io
+import requests
 import subprocess
 import json
 
@@ -395,35 +396,32 @@ class PianoDaemon:
                 tmp_filename = tmp_file.name
             
             try:
-                # Convert Windows path to forward slashes for curl
-                curl_path = tmp_filename.replace('\\', '/')
-                
-                curl_cmd = [
-                    'curl', '-s', '-X', 'POST',
-                    '-F', f'name={composition_name}',
-                    '-F', f'composerId={composer_id}',
-                    '-F', f'midifile=@{curl_path}',
-                    f'{backend_url}/archive/composition'
-                ]
+                def upload_composition():
+                    with open(tmp_filename, 'rb') as f:
+                        files = {
+                            'midifile': (f'recording_{composition_name}.mid', f, 'audio/midi'),
+                            'name': (None, composition_name),
+                            'composerId': (None, str(composer_id))
+                        }
+                        
+                        response = requests.post(
+                            f'{backend_url}/archive/composition',
+                            files=files,
+                            timeout=10
+                        )
+                        return response
                 
                 try:
-                    # Use asyncio subprocess instead of blocking subprocess.run
-                    process = await asyncio.create_subprocess_exec(
-                        *curl_cmd,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
+                    # Run blocking requests call in thread pool
+                    response = await asyncio.to_thread(upload_composition)
                     
-                    try:
-                        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=5.0)
-                    except asyncio.TimeoutError:
-                        process.kill()
-                        logger.warning('Upload timed out, but composition should be saved')
+                    if response.status_code == 200:
+                        logger.info(f'Recording saved: {composer_name}: {composition_name}')
+                    else:
+                        logger.warning(f'Upload returned status {response.status_code}')
                         
                 except Exception as e:
-                    logger.error(f'Curl execution error: {e}')
-
-                logger.info(f'Recording saved: {composer_name}: {composition_name}')
+                    logger.error(f'Upload error: {e}')
                 
                 # Notify clients about the new composition
                 await self._websocket_server.send_info_message({
