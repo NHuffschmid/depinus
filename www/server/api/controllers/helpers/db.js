@@ -10,14 +10,29 @@ const get = (sql, params, cb) => {
     // gets as single DB object (or undefined if not found)
     logger.debug('SQL: ' + sql);
     const db = new sqlite3.Database(SQLITE_DB, (err) => {
-        db.get(sql, params, (err, row) => {
-            if (err) {
-                logger.error(err.message);
-                cb(err, null);
+        if (err) {
+            logger.error(err.message);
+            cb(err, null);
+            return;
+        }
+        // Enable foreign key constraints
+        db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+            if (pragmaErr) {
+                logger.error(pragmaErr.message);
+                db.close();
+                cb(pragmaErr, null);
+                return;
             }
-            else {
-                cb(null, row);
-            }
+            db.get(sql, params, (err, row) => {
+                db.close();
+                if (err) {
+                    logger.error(err.message);
+                    cb(err, null);
+                }
+                else {
+                    cb(null, row);
+                }
+            });
         });
     });
 }
@@ -26,14 +41,29 @@ const all = (sql, params, cb) => {
     // gets an array of DB objects
     logger.debug('SQL: ' + sql);
     const db = new sqlite3.Database(SQLITE_DB, (err) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) {
-                logger.error(err.message);
-                cb(err, null);
+        if (err) {
+            logger.error(err.message);
+            cb(err, null);
+            return;
+        }
+        // Enable foreign key constraints
+        db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+            if (pragmaErr) {
+                logger.error(pragmaErr.message);
+                db.close();
+                cb(pragmaErr, null);
+                return;
             }
-            else {
-                cb(null, rows);
-            }
+            db.all(sql, params, (err, rows) => {
+                db.close();
+                if (err) {
+                    logger.error(err.message);
+                    cb(err, null);
+                }
+                else {
+                    cb(null, rows);
+                }
+            });
         });
     });
 }
@@ -42,16 +72,31 @@ const run = (sql, params, cb) => {
     // performs a modifying DB operation
     logger.info('SQL: ' + sql);
     const db = new sqlite3.Database(SQLITE_DB, (err) => {
+        if (err) {
+            logger.error(err.message);
+            cb(err, null, null);
+            return;
+        }
         db.configure('busyTimeout', 5000); // needed for long-running imports
-        db.run(sql, params, function(err) {
-            if (err) {
-                logger.error(err.message);
-                cb(err, null, null);
+        // Enable foreign key constraints
+        db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+            if (pragmaErr) {
+                logger.error(pragmaErr.message);
+                db.close();
+                cb(pragmaErr, null, null);
+                return;
             }
-            else {
-                logger.debug('Number of changes: ' + this.changes);
-                cb(null, this.lastID, this.changes);
-            }
+            db.run(sql, params, function(err) {
+                db.close();
+                if (err) {
+                    logger.error(err.message);
+                    cb(err, null, null);
+                }
+                else {
+                    logger.debug('Number of changes: ' + this.changes);
+                    cb(null, this.lastID, this.changes);
+                }
+            });
         });
     });
 }
