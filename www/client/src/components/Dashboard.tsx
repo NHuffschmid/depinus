@@ -18,6 +18,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [composition, setComposition] = useState('');
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
+    const [isRecordable, setIsRecordable] = useState(true);
     const [isRecording, setIsRecording] = useState(false);
     const [blink, setBlink] = useState(false);
     const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
@@ -38,6 +39,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             if ('isPauseable' in message) {
                 setIsPauseable(message['isPauseable']);
             }
+            if ('isRecordable' in message) {
+                setIsRecordable(message['isRecordable']);
+            }
         }
     });
 
@@ -54,9 +58,14 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }
     }
 
-    const handleRecording = () => {
-        setIsRecording((prev) => !prev);
-        // here comes the record handling
+    const handleRecord = () => {
+        if (!isRecording) {
+            setIsRecording(true);
+            webSocket.sendRecordCommand();
+        } else {
+            setIsRecording(false);
+            webSocket.sendStopCommand();
+        }
     }
 
     React.useEffect(() => {
@@ -90,8 +99,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </button>
             <button
                 className="mediaButton"
+                disabled={!isRecordable}
                 style={{ color: isRecording ? (blink ? cookies.color : '#fff') : cookies.color, transition: 'color 0.2s' }}
-                onClick={handleRecording}
+                onClick={handleRecord}
             >
                 <FiberManualRecordIcon fontSize="inherit" />
             </button>

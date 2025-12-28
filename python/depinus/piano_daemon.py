@@ -10,8 +10,11 @@ from depinus import logger
 from depinus.websocket_server import WebsocketServer
 from depinus.composition import Composition
 from depinus.piano_player import PianoPlayer
+from depinus.piano_recorder import PianoRecorder
 from depinus.midi_interface_observer import MidiInterfaceObserver
 from depinus.config_utils import read_config, persist_config_setting
+from datetime import datetime
+import aiohttp
 
 class PianoDaemon:
     '''Creates and wires up the main components'''
@@ -37,6 +40,8 @@ class PianoDaemon:
         self._piano_player.dynamics = int(settings.get('dynamics', 50))
         self._piano_player.tempo = float(settings.get('tempo', 1.0))
         self._piano_player.transposition = int(settings.get('transposition', 0))
+
+        self._piano_recorder = PianoRecorder()
 
         self._midi_interface_observer = MidiInterfaceObserver()
         self._midi_interface_observer.register(self._on_midi_interfaces_changed)
@@ -76,6 +81,8 @@ class PianoDaemon:
             self._piano_player.register_for_midi_messages(self._on_midi_message)
             self._piano_player.register_for_play_end(self._on_play_end)
 
+            self._piano_recorder.register_for_recording_end(self._on_recording_end)
+
             logger.info('Entering main loop...')
             self._mainloop = asyncio.Future()
             await self._mainloop
@@ -91,21 +98,37 @@ class PianoDaemon:
             logger.info('play command received.')
             await self._piano_player.play()
             await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True }
+                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False }
             )
         elif (cmd.command == 'pause'):
             logger.info('pause command received.')
-            self._piano_player.pause()
-            await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : False }
-            )
+            if self._piano_recorder.is_recording:
+                # Pause recording
+                self._piano_recorder.pause_recording()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : not self._piano_recorder.is_paused, 'isRecordable': False }
+                )
+            else:
+                # Pause playback
+                self._piano_player.pause()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': False }
+                )
         elif (cmd.command == 'stop'):
             logger.info('stop command received.')
-            await self._piano_player.stop()
-            await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False }
-            )
-            self._playlist = None
+            if self._piano_recorder.is_recording:
+                # Stop recording and save
+                await self._piano_recorder.stop_recording()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True }
+                )
+            else:
+                # Stop playback
+                await self._piano_player.stop()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True }
+                )
+                self._playlist = None
         elif (cmd.command == 'tempo'):
             logger.info('tempo command received: ' + str(cmd.value))
             self._piano_player.tempo = cmd.value
@@ -142,9 +165,16 @@ class PianoDaemon:
         elif (cmd.command == 'selectedMidiInPort'):
             logger.info('selectedMidiInPort command received: ' + cmd.value)
             self._midi_in_ports_selected = cmd.value
+            await self._piano_recorder.set_midi_in_port(cmd.value)
             persist_config_setting('Midi', 'midi_in_port', cmd.value)
             await self._websocket_server.send_info_message(
                 { 'messageType': 'info', 'selectedMidiInPort' : cmd.value }
+            )
+        elif (cmd.command == 'record'):
+            logger.info('record command received.')
+            self._piano_recorder.start_recording()
+            await self._websocket_server.send_info_message(
+                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False }
             )
         elif (cmd.command == 'gotoPlayTime'):
             logger.info('gotoPlayTime (%s sec) command received.' % str(cmd.value))
@@ -256,6 +286,10 @@ class PianoDaemon:
             info['isStoppable'] = False
             info['isPlayable'] = False
             info['isPauseable'] = False
+        
+        # Set isRecordable flag
+        info['isRecordable'] = not self._piano_player.is_stoppable and not self._piano_recorder.is_recording
+        
         info['availableMidiOutPorts'] = self._midi_out_ports_available
         info['selectedMidiOutPort'] = self._midi_out_ports_selected
         info['availableMidiInPorts'] = self._midi_in_ports_available
@@ -273,6 +307,7 @@ class PianoDaemon:
             'isStoppable': True,
             'isPlayable': False,
             'isPauseable': True,
+            'isRecordable': False,
             'composition': {
                 'name': self._piano_player.current_composition.name,
                 'compositionId': compositionId,
@@ -298,6 +333,81 @@ class PianoDaemon:
         await self._websocket_server.send_keyboard_message(mido_message)
 
 
+    async def _on_recording_end(self, midi_data):
+        '''Callback when recording ends - save the recording to database via REST API.'''
+        if midi_data is None:
+            logger.warning('No MIDI data recorded')
+            return
+
+        logger.info('Saving recording via REST API...')
+        
+        # Generate composition name from timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        composition_name = timestamp
+        composer_name = 'Depinus'
+        
+        try:
+            # Get backend URL from config
+            config = read_config()
+            backend_port = config['Network']['backend_server_port']
+            backend_url = f'http://localhost:{backend_port}'
+            
+            # Calculate duration
+            midi_stream = io.BytesIO(midi_data)
+            duration = int(mido.MidiFile(file=midi_stream).length)
+            
+            async with aiohttp.ClientSession() as session:
+                # Check if "Depinus" composer exists, otherwise create it
+                async with session.get(f'{backend_url}/archive/composers') as response:
+                    composers = await response.json()
+                    depinus_composer = next((c for c in composers if c['surname'] == composer_name), None)
+                    
+                    if depinus_composer:
+                        composer_id = depinus_composer['id']
+                        logger.info(f'Found existing composer "Depinus" with ID {composer_id}')
+                    else:
+                        # Create "Depinus" composer
+                        form_data = aiohttp.FormData()
+                        form_data.add_field('surname', composer_name)
+                        form_data.add_field('firstname', '')
+                        
+                        async with session.post(f'{backend_url}/archive/composer', data=form_data) as response:
+                            if response.status == 200:
+                                composer_response = await response.json()
+                                composer_id = composer_response['id']
+                                logger.info(f'Created composer "Depinus" with ID {composer_id}')
+                            else:
+                                logger.error(f'Failed to create composer: {response.status}')
+                                return
+                
+                # Save composition via API
+                form_data = aiohttp.FormData()
+                form_data.add_field('name', composition_name)
+                form_data.add_field('composerId', str(composer_id))
+                form_data.add_field('midifile', midi_data, filename='recording.mid', content_type='audio/midi')
+                
+                async with session.post(f'{backend_url}/archive/composition', data=form_data) as response:
+                    if response.status == 200:
+                        composition_response = await response.json()
+                        composition_id = composition_response['id']
+                        logger.info(f'Recording saved: {composer_name} - {composition_name} (ID: {composition_id}, Duration: {duration}s)')
+                        
+                        # Notify clients about the new composition
+                        await self._websocket_server.send_info_message({
+                            'messageType': 'recordingSaved',
+                            'compositionId': composition_id,
+                            'composer': composer_name,
+                            'name': composition_name,
+                            'duration': duration
+                        })
+                    else:
+                        error_text = await response.text()
+                        logger.error(f'Failed to save composition: {response.status} - {error_text}')
+            
+        except Exception as e:
+            logger.error(f'Failed to save recording: {e}')
+
+
     async def _on_play_end(self, cancelled):
         logger.info('Piano player has stopped playing.')
         await self._websocket_server.send_info_message(
@@ -306,6 +416,7 @@ class PianoDaemon:
                 'isStoppable': False,
                 'isPlayable': True,
                 'isPauseable': False,
+                'isRecordable': True,
                 'wasCancelled': cancelled,
                 'composition': {
                     'name': self._piano_player.current_composition.name, 
@@ -361,6 +472,7 @@ class PianoDaemon:
             })
 
         await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
+        await self._piano_recorder.set_midi_in_port(self._midi_in_ports_selected)
 
 
 if __name__ == '__main__':

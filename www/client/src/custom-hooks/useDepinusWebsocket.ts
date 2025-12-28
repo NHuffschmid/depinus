@@ -43,6 +43,10 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		webSocket.sendJsonMessage({ commandType: 'control', command: 'pause' });
 	};
 
+	const sendRecordCommand = () => {
+		webSocket.sendJsonMessage({ commandType: 'control', command: 'record' });
+	};
+
 	const sendSettingsCommand = (command: string, value: any) => {
 		webSocket.sendJsonMessage({ commandType: 'control', command: command, value: value });
 	};
@@ -90,7 +94,7 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 
 	return {
 		sendKeyboardCommand, sendStopCommand,
-		sendPlayCommand, sendPauseCommand, sendSettingsCommand, sendPlaylistCommand,
+		sendPlayCommand, sendPauseCommand, sendRecordCommand, sendSettingsCommand, sendPlaylistCommand,
 		sendGotoPlayTimeCommand
 	};
 }
