@@ -1,7 +1,8 @@
 # Piano recorder
 
-import asyncio
+import getpass
 import mido
+import socket
 import time
 from datetime import datetime
 
@@ -131,7 +132,16 @@ class PianoRecorder:
         # Create a new MIDI file
         mid = mido.MidiFile()
         track = mido.MidiTrack()
+        track.name = 'Depinus track'
         mid.tracks.append(track)
+
+        # Add copyright message
+        current_year = datetime.now().year
+        username = getpass.getuser()
+        hostname = socket.gethostname()
+        recording_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        track.append(mido.MetaMessage('copyright',
+            text=f'© {current_year} Depinus Live Recording - {username}@{hostname} - {recording_datetime}'))
 
         # Add tempo (default 500000 microseconds per beat = 120 BPM)
         track.append(mido.MetaMessage('set_tempo', tempo=500000))
