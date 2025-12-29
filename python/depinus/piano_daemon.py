@@ -345,10 +345,9 @@ class PianoDaemon:
         
         logger.info('Recording ended.')
         
-        # Generate composition name from timestamp (replace spaces and colons for safer filename)
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-        composition_name = timestamp
+        # Generate composition and composer name
         composer_name = 'Depinus'
+        composition_name = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         try:
             # Get backend URL from config
