@@ -142,8 +142,8 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     </h1>
                 ) : (
                     <>
-                        <h1>&#8203;{composer}</h1>
-                        <h2>&#8203;{composition}</h2>
+                        <h1 style={{ fontSize: '0.8rem', margin: 0 }}>&#8203;{composer}</h1>
+                        <h2 style={{ fontSize: '0.6rem', margin: 0 }}>&#8203;{composition}</h2>
                     </>
                 )}
             </div>
