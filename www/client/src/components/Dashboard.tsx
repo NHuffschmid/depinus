@@ -113,23 +113,39 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 className="mediaButton"
                 disabled={!isRecordable}
                 style={{
-                    backgroundColor: recordingInProgress
-                        ? (blink ? cookies.color : 'transparent')
-                        : 'transparent',
-                    color: recordingInProgress
-                        ? (blink ? '#fff' : cookies.color)
-                        : (isRecordable ? cookies.color : '#808080'),
-                    transition: 'background-color 0.2s, color 0.2s'
+                    color: isRecordable ? cookies.color : '#808080'
                 }}
                 onClick={handleRecord}
             >
-                {recordingInProgress ? (
-                    <span style={{ fontSize: '0.9rem', fontWeight: 500, letterSpacing: '0.5px' }}>{t('Recording')}...</span>
-                ) : <FiberManualRecordIcon fontSize="inherit" />}
+                <FiberManualRecordIcon fontSize="inherit" />
             </button>
-            <div>
-                <h1>&#8203;{composer}</h1>
-                <h2>&#8203;{composition}</h2>
+            <div
+                style={recordingInProgress ? {
+                    backgroundColor: blink ? cookies.color : 'transparent',
+                    borderRadius: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    transition: 'background-color 0.2s'
+                } : {}}
+            >
+                {recordingInProgress ? (
+                    <h1
+                        style={{
+                            color: blink ? '#fff' : cookies.color,
+                            fontSize: '1.2rem',
+                            fontWeight: 500,
+                            letterSpacing: '0.5px',
+                            margin: 0,
+                            transition: 'color 0.2s'
+                        }}
+                    >
+                        Recording...
+                    </h1>
+                ) : (
+                    <>
+                        <h1>&#8203;{composer}</h1>
+                        <h2>&#8203;{composition}</h2>
+                    </>
+                )}
             </div>
             <button
                 className="mediaButton"

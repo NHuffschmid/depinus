@@ -179,7 +179,19 @@ class PianoDaemon:
             logger.info('record command received.')
             self._piano_recorder.start_recording()
             await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False }
+                {
+                    'messageType': 'info',
+                    'isStoppable' : True,
+                    'isPlayable' : False, 
+                    'isPauseable' : True,
+                    'isRecordable': False,
+                    'composition': {
+                        'name': 'Live Recording', 
+                        'composerName': 'Depinus', 
+                        'duration': 0,
+                        'playTime': 0
+                    }
+                }
             )
         elif (cmd.command == 'gotoPlayTime'):
             logger.info('gotoPlayTime (%s sec) command received.' % str(cmd.value))
