@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
+import { useCookies } from 'react-cookie';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { useCookies } from 'react-cookie';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { usePlaylistContext } from './playlist/PlaylistContext';
 
 interface DashboardProps { }
 
 const Dashboard: React.FC<DashboardProps> = () => {
+    const { t } = useTranslation();
     const [cookies] = useCookies(['color']);
     const navigate = useNavigate();
     const [isStoppable, setIsStoppable] = useState(false);
@@ -111,14 +113,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 className="mediaButton"
                 disabled={!isRecordable}
                 style={{
+                    backgroundColor: recordingInProgress
+                        ? (blink ? cookies.color : 'transparent')
+                        : 'transparent',
                     color: recordingInProgress
-                        ? (blink ? cookies.color : '#fff')
+                        ? (blink ? '#fff' : cookies.color)
                         : (isRecordable ? cookies.color : '#808080'),
-                    transition: 'color 0.2s'
+                    transition: 'background-color 0.2s, color 0.2s'
                 }}
                 onClick={handleRecord}
             >
-                <FiberManualRecordIcon fontSize="inherit" />
+                {recordingInProgress ? (
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500, letterSpacing: '0.5px' }}>{t('Recording')}...</span>
+                ) : <FiberManualRecordIcon fontSize="inherit" />}
             </button>
             <div>
                 <h1>&#8203;{composer}</h1>
