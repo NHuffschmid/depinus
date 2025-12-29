@@ -70,20 +70,17 @@ class PianoRecorder:
 
     def pause_recording(self):
         '''Pauses the recording.'''
-        if not self._recording:
-            logger.warning('Not recording - cannot pause')
-            return
+        logger.info('Pause recording')
+        self._paused = True
+        self._pause_start_time = time.time()
 
-        if self._paused:
-            logger.info('Resume recording')
-            if self._pause_start_time is not None:
-                self._total_pause_duration += time.time() - self._pause_start_time
-                self._pause_start_time = None
-            self._paused = False
-        else:
-            logger.info('Pause recording')
-            self._paused = True
-            self._pause_start_time = time.time()
+    def resume_recording(self):
+        '''Resumes the recording.'''
+        logger.info('Resume recording')
+        if self._pause_start_time is not None:
+            self._total_pause_duration += time.time() - self._pause_start_time
+            self._pause_start_time = None
+        self._paused = False
 
     async def stop_recording(self):
         '''Stops recording and returns the recorded MIDI data.'''

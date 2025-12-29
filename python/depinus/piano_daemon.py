@@ -101,10 +101,16 @@ class PianoDaemon:
     async def _on_control_command(self, cmd):
         if (cmd.command == 'play'):
             logger.info('play command received.')
-            await self._piano_player.play()
-            await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False, 'isRecording': False }
-            )
+            if self._piano_recorder.is_recording and self._piano_recorder.is_paused:
+                self._piano_recorder.resume_recording()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable': True, 'isPlayable': False, 'isPauseable': True, 'isRecordable': False, 'isRecording': True }
+                )
+            else:
+                await self._piano_player.play()
+                await self._websocket_server.send_info_message(
+                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False, 'isRecording': False }
+                )
         elif (cmd.command == 'pause'):
             logger.info('pause command received.')
             if self._piano_recorder.is_recording:
