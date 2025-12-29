@@ -23,7 +23,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
     const [isPlayable, setIsPlayable] = useState(false);
     const [isPauseable, setIsPauseable] = useState(false);
     const [isRecordable, setIsRecordable] = useState(true);
-    const [recordingInProgress, setRecordingInProgress] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const [blink, setBlink] = useState(false);
     const { forwardable, backwardable, previousTrack, nextTrack } = usePlaylistContext();
 
@@ -45,10 +45,9 @@ const Dashboard: React.FC<DashboardProps> = () => {
             }
             if ('isRecordable' in message) {
                 setIsRecordable(message['isRecordable']);
-                // When recording becomes possible again, stop the blinking animation
-                if (message['isRecordable']) {
-                    setRecordingInProgress(false);
-                }
+            }
+            if ('isRecording' in message) {
+                setIsRecording(message['isRecording']);
             }
             if ('recordingSaved' in message && message.recordingSaved) {
                 // Navigate to Archive view to show the saved recording
@@ -70,25 +69,15 @@ const Dashboard: React.FC<DashboardProps> = () => {
         }
     }
 
-    const handleRecord = () => {
-        if (!recordingInProgress) {
-            setRecordingInProgress(true);
-            webSocket.sendRecordCommand();
-        } else {
-            setRecordingInProgress(false);
-            webSocket.sendStopCommand();
-        }
-    }
-
     React.useEffect(() => {
         let interval: NodeJS.Timeout | undefined;
-        if (recordingInProgress) {
+        if (isRecording) {
             interval = setInterval(() => setBlink(b => !b), 500);
         } else {
             setBlink(false);
         }
         return () => { if (interval) clearInterval(interval); };
-    }, [recordingInProgress]);
+    }, [isRecording]);
 
     return (
         <div
@@ -115,19 +104,19 @@ const Dashboard: React.FC<DashboardProps> = () => {
                 style={{
                     color: isRecordable ? cookies.color : '#808080'
                 }}
-                onClick={handleRecord}
+                onClick={() => webSocket.sendRecordCommand()}
             >
                 <FiberManualRecordIcon fontSize="inherit" />
             </button>
             <div
-                style={recordingInProgress ? {
+                style={isRecording ? {
                     backgroundColor: blink ? cookies.color : 'transparent',
                     borderRadius: '0.5rem',
                     padding: '0.5rem 1rem',
                     transition: 'background-color 0.2s'
                 } : {}}
             >
-                {recordingInProgress ? (
+                {isRecording ? (
                     <h1
                         style={{
                             color: blink ? '#fff' : cookies.color,

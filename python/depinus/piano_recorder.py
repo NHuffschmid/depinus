@@ -144,6 +144,7 @@ class PianoRecorder:
             text=f'© {current_year} Depinus Live Recording - {username}@{hostname} - {recording_datetime}'))
 
         # Add tempo (default 500000 microseconds per beat = 120 BPM)
+        # TODO: Clarify if we really need this (and if PianoPlayer has to consider it)
         track.append(mido.MetaMessage('set_tempo', tempo=500000))
 
         # Convert recorded messages to MIDI track

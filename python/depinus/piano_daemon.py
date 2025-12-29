@@ -103,7 +103,7 @@ class PianoDaemon:
             logger.info('play command received.')
             await self._piano_player.play()
             await self._websocket_server.send_info_message(
-                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False }
+                { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : False, 'isPauseable' : True, 'isRecordable': False, 'isRecording': False }
             )
         elif (cmd.command == 'pause'):
             logger.info('pause command received.')
@@ -111,13 +111,13 @@ class PianoDaemon:
                 # Pause recording
                 self._piano_recorder.pause_recording()
                 await self._websocket_server.send_info_message(
-                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : not self._piano_recorder.is_paused, 'isRecordable': False }
+                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : not self._piano_recorder.is_paused, 'isRecordable': False, 'isRecording': True }
                 )
             else:
                 # Pause playback
                 self._piano_player.pause()
                 await self._websocket_server.send_info_message(
-                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': False }
+                    { 'messageType': 'info', 'isStoppable' : True, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': False, 'isRecording': False }
                 )
         elif (cmd.command == 'stop'):
             logger.info('stop command received.')
@@ -125,13 +125,13 @@ class PianoDaemon:
                 # Stop recording and save
                 await self._piano_recorder.stop_recording()
                 await self._websocket_server.send_info_message(
-                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True }
+                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True, 'isRecording': False }
                 )
             else:
                 # Stop playback
                 await self._piano_player.stop()
                 await self._websocket_server.send_info_message(
-                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True }
+                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True, 'isRecording': False }
                 )
                 self._playlist = None
         elif (cmd.command == 'tempo'):
@@ -185,6 +185,7 @@ class PianoDaemon:
                     'isPlayable' : False, 
                     'isPauseable' : True,
                     'isRecordable': False,
+                    'isRecording': True,
                     'composition': {
                         'name': 'Live Recording', 
                         'composerName': 'Depinus', 
@@ -432,6 +433,7 @@ class PianoDaemon:
                         'isPlayable': True,
                         'isPauseable': False,
                         'isRecordable': True,
+                        'isRecording': False,
                         'composition': {
                             'name': composition.name,
                             'composerName': composition.composer,
