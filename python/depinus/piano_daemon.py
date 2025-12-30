@@ -164,7 +164,7 @@ class PianoDaemon:
                         'isStoppable' : False, 
                         'isPlayable' : self._piano_player.is_playable, 
                         'isPauseable' : False, 
-                        'isRecordable': True, 
+                        'isRecordable': bool(self._midi_in_ports_available),
                         'isRecording': False 
                     }
                 )
@@ -177,7 +177,7 @@ class PianoDaemon:
                         'isStoppable' : False, 
                         'isPlayable' : True, 
                         'isPauseable' : False, 
-                        'isRecordable': True, 
+                        'isRecordable': bool(self._midi_in_ports_available),
                         'isRecording': False 
                     }
                 )
@@ -377,8 +377,9 @@ class PianoDaemon:
             info['isPlayable'] = False
             info['isPauseable'] = False
         
-        # Set isRecordable flag
-        info['isRecordable'] = not self._piano_player.is_stoppable and not self._piano_recorder.is_recording
+        info['isRecordable'] = bool(self._midi_in_ports_available) and \
+                                not self._piano_player.is_stoppable and \
+                                not self._piano_recorder.is_recording
         
         info['availableMidiOutPorts'] = self._midi_out_ports_available
         info['selectedMidiOutPort'] = self._midi_out_ports_selected
@@ -432,7 +433,7 @@ class PianoDaemon:
                 'isStoppable': False,
                 'isPlayable': False,
                 'isPauseable': False,
-                'isRecordable': True,
+                'isRecordable': bool(self._midi_in_ports_available),
                 'isRecording': False,
                 'composition': {
                     'name': '',
@@ -547,7 +548,7 @@ class PianoDaemon:
                 'isStoppable': False,
                 'isPlayable': True,
                 'isPauseable': False,
-                'isRecordable': True,
+                'isRecordable': bool(self._midi_in_ports_available),
                 'wasCancelled': cancelled,
                 'composition': {
                     'name': self._piano_player.current_composition.name, 
@@ -599,7 +600,8 @@ class PianoDaemon:
                 'availableMidiOutPorts': self._midi_out_ports_available,
                 'selectedMidiOutPort': self._midi_out_ports_selected,
                 'availableMidiInPorts': self._midi_in_ports_available,
-                'selectedMidiInPort': self._midi_in_ports_selected
+                'selectedMidiInPort': self._midi_in_ports_selected,
+                'isRecordable': bool(self._midi_in_ports_available)
             })
 
         await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
