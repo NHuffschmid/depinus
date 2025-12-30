@@ -5,9 +5,18 @@ module.exports = {
   composerImage: composerImage
 };
 
-function composerImage(req, res) {
 
-  const UNKNOWN_COMPOSER_IMAGE = path.join(__dirname, '../images', 'unknown_composer.png');
+function getUnknownComposerImagePath() {
+  // in Electron build, the image is located under process.resourcesPath/images
+  if (process.resourcesPath) {
+    return path.join(process.resourcesPath, 'images', 'unknown_composer.png');
+  }
+  // in development mode it is relative to the controller
+  return path.join(__dirname, '../images', 'unknown_composer.png');
+}
+
+function composerImage(req, res) {
+  const UNKNOWN_COMPOSER_IMAGE = getUnknownComposerImagePath();
 
   if (req.swagger.params.composerId.value !== undefined) {
     // select composer by ID
