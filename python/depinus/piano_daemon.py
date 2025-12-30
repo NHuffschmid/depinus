@@ -131,7 +131,7 @@ class PianoDaemon:
                 # Stop recording and save
                 await self._piano_recorder.stop_recording()
                 await self._websocket_server.send_info_message(
-                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : True, 'isPauseable' : False, 'isRecordable': True, 'isRecording': False }
+                    { 'messageType': 'info', 'isStoppable' : False, 'isPlayable' : self._piano_player.is_playable, 'isPauseable' : False, 'isRecordable': True, 'isRecording': False }
                 )
             else:
                 # Stop playback
@@ -360,6 +360,21 @@ class PianoDaemon:
     async def _on_recording_end(self, midi_data):
         '''Callback when recording ends - save the recording to database via REST API.'''
         if midi_data is None:
+            # Nothing was recorded
+            await self._websocket_server.send_info_message({
+                'messageType': 'info',
+                'isStoppable': False,
+                'isPlayable': False,
+                'isPauseable': False,
+                'isRecordable': True,
+                'isRecording': False,
+                'composition': {
+                    'name': '',
+                    'composerName': '',
+                    'duration': 0,
+                    'playTime': 0
+                }
+            })
             return
         
         logger.info('Recording ended.')

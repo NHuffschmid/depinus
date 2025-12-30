@@ -52,6 +52,7 @@ const ProgressBar: React.FC = () => {
                 message['isStoppable'] ||
                 message['isPlayable'] ||
                 message['isPauseable'] ||
+                message['isRecordable'] ||
                 message['playlist']) {
                 setIsWaiting(false);
             }
