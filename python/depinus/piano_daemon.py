@@ -162,7 +162,7 @@ class PianoDaemon:
                     { 
                         'messageType': 'info', 
                         'isStoppable' : False, 
-                        'isPlayable' : self._piano_player.is_playable, 
+                        'isPlayable' : (self._piano_player.current_composition is not None), 
                         'isPauseable' : False, 
                         'isRecordable': bool(self._midi_in_ports_available),
                         'isRecording': False 
