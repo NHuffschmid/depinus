@@ -27,6 +27,9 @@ class PianoPlayer:
         self._positioning_pending = False
         self._midi_messages_callbacks = set()
         self._play_end_callbacks = set()
+        self._tempo = 1.0
+        self._transposition = 0
+        self._dynamics = DYNAMICS_DEFAULT
 
     @property
     def current_composition(self):
@@ -289,14 +292,7 @@ class PianoPlayer:
                         if (self._transposition != 0):
                             message.note = message.note + self._transposition
 
-                        if (message.velocity > 0):
-                            # handle dynamics
-                            if (self.dynamics > DYNAMICS_DEFAULT):
-                                message.velocity = int(
-                                    (message.velocity * (100 - self.dynamics) / DYNAMICS_DEFAULT + (self.dynamics - DYNAMICS_DEFAULT) * 2.54))
-                            else:
-                                message.velocity = int(
-                                    message.velocity * self.dynamics / DYNAMICS_DEFAULT)
+                        message.velocity = int(min(127, message.velocity * self._dynamics / DYNAMICS_DEFAULT))
 
                         if (self._midi_output is not None):
                             self._midi_output.send(message)

@@ -47,6 +47,9 @@ class PianoDaemon:
         self._piano_player.transposition = int(settings.get('transposition', 0))
 
         self._piano_recorder = PianoRecorder()
+        self._piano_recorder.dynamics = int(settings.get('dynamics', 50))
+        self._piano_recorder.tempo = float(settings.get('tempo', 1.0))
+        self._piano_recorder.transposition = int(settings.get('transposition', 0))
 
         self._midi_interface_observer = MidiInterfaceObserver()
         self._midi_interface_observer.register(self._on_midi_interfaces_changed)
@@ -185,6 +188,7 @@ class PianoDaemon:
         elif (cmd.command == 'tempo'):
             logger.info('tempo command received: ' + str(cmd.value))
             self._piano_player.tempo = cmd.value
+            self._piano_recorder.tempo = cmd.value
             persist_config_setting('Settings', 'tempo', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 
@@ -195,6 +199,7 @@ class PianoDaemon:
         elif (cmd.command == 'dynamics'):
             logger.info('dynamics command received: ' + str(cmd.value))
             self._piano_player.dynamics = cmd.value
+            self._piano_recorder.dynamics = cmd.value
             persist_config_setting('Settings', 'dynamics', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 
@@ -205,6 +210,7 @@ class PianoDaemon:
         elif (cmd.command == 'transposition'):
             logger.info('transposition command received: ' + str(cmd.value))
             self._piano_player.transposition = cmd.value
+            self._piano_recorder.transposition = cmd.value
             persist_config_setting('Settings', 'transposition', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 

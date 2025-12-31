@@ -8,6 +8,7 @@ from datetime import datetime
 
 from depinus import logger
 
+DYNAMICS_DEFAULT = 50
 
 class PianoRecorder:
     '''Records MIDI messages from an input device'''
@@ -23,6 +24,39 @@ class PianoRecorder:
         self._pause_start_time = None
         self._total_pause_duration = 0
         self._recording_callbacks = set()
+        self._tempo = 1.0
+        self._transposition = 0
+        self._dynamics = DYNAMICS_DEFAULT
+
+    @property
+    def transposition(self):
+        '''Gets the transposition.'''
+        return self._transposition
+
+    @transposition.setter
+    def transposition(self, value):
+        '''Sets the transposition.'''
+        self._transposition = value
+
+    @property
+    def tempo(self):
+        '''Gets the tempo.'''
+        return self._tempo
+
+    @tempo.setter
+    def tempo(self, value):
+        '''Sets the tempo.'''
+        self._tempo = value
+
+    @property
+    def dynamics(self):
+        '''Gets the dynamics.'''
+        return self._dynamics
+
+    @dynamics.setter
+    def dynamics(self, value):
+        '''Sets the dynamics.'''
+        self._dynamics = value
 
     @property
     def is_recording(self):
@@ -149,13 +183,23 @@ class PianoRecorder:
         for item in self._recorded_messages:
             message = item['message']
             timestamp = item['timestamp']
-            
-            # Calculate delta time in ticks (assuming 480 ticks per beat)
-            delta_time = int((timestamp - last_timestamp) * 480 * 2)  # 2 beats per second at 120 BPM
+            delta_time = int((timestamp - last_timestamp) * 480 * 2 * self._tempo)  # 2 beats per second at 120 BPM
             last_timestamp = timestamp
 
-            # Create message with delta time
-            if message.type in ('note_on', 'note_off', 'control_change', 'program_change'):
+            if message.type in ('note_on', 'note_off') and hasattr(message, 'note'):
+                note = message.note - self._transposition
+
+                if (self._dynamics == 0): # Avoid division by zero
+                    if (message.velocity > 0):
+                        velocity = 127
+                    else:
+                        velocity = 0
+                else:
+                    velocity = int(min(127, message.velocity * DYNAMICS_DEFAULT / self._dynamics))
+
+                msg = message.copy(note=note, velocity=velocity, time=delta_time)
+                track.append(msg)
+            elif message.type in ('control_change', 'program_change'):
                 track.append(message.copy(time=delta_time))
 
         # Add end of track marker
