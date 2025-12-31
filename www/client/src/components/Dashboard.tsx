@@ -127,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
                             transition: 'color 0.2s'
                         }}
                     >
-                        Recording...
+                        {t('Recording')}...
                     </h1>
                 ) : (
                     <>
