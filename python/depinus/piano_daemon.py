@@ -5,8 +5,6 @@
 import asyncio
 import mido
 import io
-import json
-import os
 import requests
 
 from depinus import logger
@@ -17,9 +15,6 @@ from depinus.piano_recorder import PianoRecorder
 from depinus.midi_interface_observer import MidiInterfaceObserver
 from depinus.config_utils import read_config, persist_config_setting
 from datetime import datetime
-import requests
-import subprocess
-import json
 
 class PianoDaemon:
     '''Creates and wires up the main components'''
@@ -509,7 +504,6 @@ class PianoDaemon:
                 
                 if response.status_code == 200:
                     logger.info(f'Recording saved: {composer_name}: {composition_name}')
-                    composition_data = response.json()
                     
                     # Calculate duration from MIDI data
                     midi_stream = io.BytesIO(midi_data)

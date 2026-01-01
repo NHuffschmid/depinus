@@ -292,6 +292,7 @@ class PianoPlayer:
                         if (self._transposition != 0):
                             message.note = message.note + self._transposition
 
+                        # TODO: consider velocity curve instead of linear scaling (to make recording/playback reversible)
                         message.velocity = int(min(127, message.velocity * self._dynamics / DYNAMICS_DEFAULT))
 
                         if (self._midi_output is not None):
