@@ -172,7 +172,7 @@ class PianoRecorder:
         hostname = socket.gethostname()
         recording_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         track.append(mido.MetaMessage('copyright',
-            text=f'© {current_year} Depinus Live Recording - {username}@{hostname} - {recording_datetime}'))
+            text=f'(C) {current_year} Depinus Live Recording - {username}@{hostname} - {recording_datetime}'))
 
         # Add tempo (default 500000 microseconds per beat = 120 BPM)
         # TODO: Clarify if we really need this (and if PianoPlayer has to consider it)
