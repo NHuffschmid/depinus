@@ -48,16 +48,6 @@ const About: React.FC = () => {
                             (c) Norbert Huffschmid
                         </a>
                     </h3>
-                    <h4>
-                        <a
-                            href="http://piano-midi.de/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ textDecoration: 'none' }}
-                        >
-                            🎹 (c) Bernd Krüger 🎹
-                        </a>
-                    </h4>
                     <table style={{
                         marginLeft: 'auto',
                         marginRight: 'auto',
