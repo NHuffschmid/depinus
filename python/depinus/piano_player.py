@@ -27,11 +27,19 @@ class PianoPlayer:
         self._positioning_pending = False
         self._midi_messages_callbacks = set()
         self._play_end_callbacks = set()
+        self._tempo = 1.0
+        self._transposition = 0
+        self._dynamics = DYNAMICS_DEFAULT
 
     @property
     def current_composition(self):
         '''Gets the current composition.'''
         return self._current_composition
+
+    @current_composition.setter
+    def current_composition(self, value):
+        '''Sets the current composition.'''
+        self._current_composition = value
 
     @property
     def play_time(self):
@@ -41,17 +49,17 @@ class PianoPlayer:
     @property
     def is_stoppable(self):
         '''True if the piano player can receive a stop command.'''
-        return not self._play_task.done()
+        return self._play_task is not None and not self._play_task.done()
 
     @property
     def is_playable(self):
         '''True if the piano player can start playing.'''
-        return self._pausing or self._play_task.done()
+        return self._pausing or (self._play_task is not None and self._play_task.done())
 
     @property
     def is_pauseable(self):
         '''True if the piano player can make a pause.'''
-        return (not self._pausing) and (not self._play_task.done())
+        return (not self._pausing) and (self._play_task is not None and not self._play_task.done())
 
     @property
     def transposition(self):
@@ -284,14 +292,8 @@ class PianoPlayer:
                         if (self._transposition != 0):
                             message.note = message.note + self._transposition
 
-                        if (message.velocity > 0):
-                            # handle dynamics
-                            if (self.dynamics > DYNAMICS_DEFAULT):
-                                message.velocity = int(
-                                    (message.velocity * (100 - self.dynamics) / DYNAMICS_DEFAULT + (self.dynamics - DYNAMICS_DEFAULT) * 2.54))
-                            else:
-                                message.velocity = int(
-                                    message.velocity * self.dynamics / DYNAMICS_DEFAULT)
+                        # TODO: consider velocity curve instead of linear scaling (to make recording/playback reversible)
+                        message.velocity = int(min(127, message.velocity * self._dynamics / DYNAMICS_DEFAULT))
 
                         if (self._midi_output is not None):
                             self._midi_output.send(message)

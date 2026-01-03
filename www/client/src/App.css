@@ -85,15 +85,6 @@ html, body {
   flex-basis: 40%;
 }
 
-.dashboard h1 {
-  font-size: 0.8rem;
-  margin: 0;
-}
-
-.dashboard h2 {
-  font-size: 0.6rem;
-  margin: 0;
-}
 
 .dialog {
   border: 2px solid #777;

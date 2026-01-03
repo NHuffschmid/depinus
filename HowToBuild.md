@@ -44,6 +44,7 @@ Then install the following packages with pip (or some other package manager):
 - python-rtmidi
 - mido
 - websockets (V11.0.3, V15.0 does not work!)
+- requests
 - pyinstaller
 
 ### Build package

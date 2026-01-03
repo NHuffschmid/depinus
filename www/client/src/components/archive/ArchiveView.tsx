@@ -1,16 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 import ComposerPanel from './ComposerPanel';
 import UploadCompositionPanel from './UploadCompositionPanel';
 import CompositionMenu from './CompositionMenu';
 import { backendUrl } from '../../config';
+import useDepinusWebSocket from '../../custom-hooks/useDepinusWebsocket';
 
 const ArchiveView: React.FC = () => {
     const [cookies] = useCookies(['color']);
+    const location = useLocation();
     const [composer, setComposer] = useState<any>();
     const [compositions, setCompositions] = useState<any[]>();
     const [selectedComposition, setSelectedComposition] = useState<any>();
     const [openCompositionMenu, setOpenCompositionMenu] = useState(false);
+    const [refreshComposers, setRefreshComposers] = useState(0);
+    const [selectComposerName, setSelectComposerName] = useState<string | null>(null);
+
+    // Check if we were navigated here with a composer to select
+    useEffect(() => {
+        const state = location.state as { selectComposer?: string } | null;
+        if (state?.selectComposer) {
+            setRefreshComposers(prev => prev + 1);
+            setSelectComposerName(state.selectComposer);
+        }
+    }, [location]);
+
+    useDepinusWebSocket({
+        name: 'ArchiveView',
+        onInfoMessage: (message: any) => {
+            if ('recordingSaved' in message && message.recordingSaved) {
+                // New recording was saved, refresh composers and select "Depinus"
+                setRefreshComposers(prev => prev + 1);
+                setSelectComposerName('Depinus');
+            }
+        }
+    });
 
     const getCompositions = (composer: any) => {
         if (composer === null) {
@@ -39,7 +64,12 @@ const ArchiveView: React.FC = () => {
 
     return (
         <React.Fragment>
-            <ComposerPanel updateComposer={updateComposer} />
+            <ComposerPanel 
+                updateComposer={updateComposer} 
+                refreshTrigger={refreshComposers}
+                selectComposerName={selectComposerName}
+                onComposerSelected={() => setSelectComposerName(null)}
+            />
             <div style={{ marginTop: '1rem' }}>
                 <ul
                     className="composition-list"

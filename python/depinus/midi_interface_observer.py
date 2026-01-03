@@ -10,7 +10,8 @@ class MidiInterfaceObserver:
         self._task = None
         self._running = False
         self._observers = []
-        self._last_interfaces = None
+        self._last_output_interfaces = None
+        self._last_input_interfaces = None
 
     def register(self, callback):
         """Register a callback to be notified when interfaces change."""
@@ -25,10 +26,21 @@ class MidiInterfaceObserver:
         self._running = True
         while self._running:
             output_names = mido.get_output_names()
-            if output_names != self._last_interfaces:
-                self._last_interfaces = output_names.copy()
+            input_names = mido.get_input_names()
+            changed = False
+            if output_names != self._last_output_interfaces:
+                self._last_output_interfaces = output_names.copy()
+                changed = True
+            if input_names != self._last_input_interfaces:
+                self._last_input_interfaces = input_names.copy()
+                changed = True
+            if changed:
+                midi_ports = {
+                    'outputs': output_names,
+                    'inputs': input_names
+                }
                 for callback in self._observers:
-                    await callback(output_names)
+                    await callback(midi_ports)
             await asyncio.sleep(self.interval)
 
     def start(self):

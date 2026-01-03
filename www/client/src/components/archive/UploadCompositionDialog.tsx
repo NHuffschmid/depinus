@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { backendUrl } from '../../config';
 import { useTranslation } from "react-i18next";
 import WaitingIndicator from '../WaitingIndicator';
 import Modal from 'react-modal';
@@ -14,7 +15,6 @@ interface UploadCompositionDialogProps {
     header: React.ReactNode;
     title: string;
     composerId?: number;
-    composers?: Composer[];
     midifileIsMandatory: boolean;
     upload: (title: string, midifile: File | undefined, composerId?: number) => Promise<void>;
     finished: (error?: any) => void;
@@ -25,12 +25,22 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
     const [midifile, setMidifile] = useState<File | undefined>();
     const [composerId, setComposerId] = useState<number | undefined>(props.composerId);
     const [uploading, setUploading] = useState(false);
+    const [composers, setComposers] = useState<Composer[]>([]);
     const { t } = useTranslation();
 
+    useEffect(() => {
+        if (props.open) {
+            fetch(backendUrl + '/archive/composers')
+                .then(res => res.json())
+                .then(data => setComposers(data))
+                .catch(() => setComposers([]));
+        }
+    }, [props.open]);
+
     const hasChanges = () => {
-        return title !== props.title || 
-               composerId !== props.composerId || 
-               midifile !== undefined;
+        return title !== props.title ||
+            composerId !== props.composerId ||
+            midifile !== undefined;
     };
 
     return React.createElement(
@@ -54,22 +64,20 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                     onChange={(event) => { setTitle(event.target.value); }}
                     style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
-                {props.composers && (
-                    <>
-                        <label>{t('Composer')}:</label>
-                        <select
-                            value={composerId || ''}
-                            onChange={(event) => { setComposerId(event.target.value ? parseInt(event.target.value) : undefined); }}
-                            style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
-                        >
-                            {props.composers.map((composer) => (
-                                <option key={composer.id} value={composer.id}>
-                                    {composer.firstname} {composer.surname}
-                                </option>
-                            ))}
-                        </select>
-                    </>
-                )}
+                <>
+                    <label>{t('Composer')}:</label>
+                    <select
+                        value={composerId || ''}
+                        onChange={(event) => { setComposerId(event.target.value ? parseInt(event.target.value) : undefined); }}
+                        style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
+                    >
+                        {composers.map((composer) => (
+                            <option key={composer.id} value={composer.id}>
+                                {composer.firstname} {composer.surname}
+                            </option>
+                        ))}
+                    </select>
+                </>
                 <input
                     style={{ gridColumn: '1 / 3', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                     type='file'

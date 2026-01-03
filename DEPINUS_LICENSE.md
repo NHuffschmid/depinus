@@ -22,4 +22,6 @@ You may not apply legal terms or technological measures that legally restrict ot
 This license does not cover any third-party components or dependencies used in this project. Those components are subject to their own licenses.
 
 ### MIDI Files
-The MIDI files included in this project are provided by **Bernd Krüger**. For more information, visit his homepage: [http://piano-midi.de/](http://piano-midi.de/).
+The majority of MIDI files included in this project are provided by **Bernd Krüger**. For more information, visit his homepage: [http://piano-midi.de/](http://piano-midi.de/).
+
+All included MIDI files are available under a public domain license.
