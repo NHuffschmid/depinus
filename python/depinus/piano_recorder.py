@@ -72,10 +72,16 @@ class PianoRecorder:
         '''Sets the MIDI input port.'''
         logger.info('Set MIDI input port for recording: %s' % value)
         if self._midi_input is not None:
+            logger.debug('Removing callback from previous MIDI input port...')
+            self._midi_input.callback = None
+            logger.debug('Closing previous MIDI input port for recording...')
             self._midi_input.close()
+            logger.debug('MIDI input port closed.')
         if value:
             try:
+                logger.debug('Opening MIDI input port for recording: %s' % value)
                 self._midi_input = mido.open_input(value, callback=self._on_midi_input_message)
+                logger.debug('MIDI input port opened.')
             except (OSError, IOError) as e:
                 logger.error(f"Failed to open MIDI input port '{value}': {e}")
                 self._midi_input = None
