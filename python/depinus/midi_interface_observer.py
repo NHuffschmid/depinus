@@ -1,9 +1,12 @@
 import asyncio
 import mido
 
+from depinus import logger
+
+
 class MidiInterfaceObserver:
     """
-    Periodically observes available MIDI output interfaces.
+    Periodically observes the available MIDI interfaces.
     """
     def __init__(self, interval=5):
         self.interval = interval  # seconds
@@ -30,9 +33,12 @@ class MidiInterfaceObserver:
             changed = False
             if output_names != self._last_output_interfaces:
                 self._last_output_interfaces = output_names.copy()
+                logger.info('MIDI output interfaces changed: %s', output_names)
+
                 changed = True
             if input_names != self._last_input_interfaces:
                 self._last_input_interfaces = input_names.copy()
+                logger.info('MIDI input interfaces changed: %s', input_names)
                 changed = True
             if changed:
                 midi_ports = {
