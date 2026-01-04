@@ -75,11 +75,11 @@ class PianoRecorder:
             try:
                 logger.debug('Removing callback from previous MIDI input port...')
                 self._midi_input.callback = None
-                logger.debug('Resetting previous MIDI input port...')
-                self._midi_input.reset()
-                logger.debug('Closing previous MIDI input port...')
-                self._midi_input.close()
-                logger.debug('MIDI input port closed.')
+                #logger.debug('Resetting previous MIDI input port...')
+                #self._midi_input.reset()
+                #logger.debug('Closing previous MIDI input port...')
+                #self._midi_input.close()
+                #logger.debug('MIDI input port closed.')
             except Exception as e:
                 logger.error(f'Failed to close MIDI input port: {e}')
         if value:
