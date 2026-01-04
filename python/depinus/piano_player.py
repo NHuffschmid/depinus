@@ -96,10 +96,17 @@ class PianoPlayer:
         '''Sets the MIDI out port.'''
         logger.info('Set MIDI out port: %s' % value)
         if (self._midi_output is not None):
-            self._midi_output.close()
+            logger.debug('Closing previous MIDI output port...')
+            try:
+                self._midi_output.close()
+                logger.debug('MIDI output port closed.')
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to close previous MIDI output port: {e}")
         if value:
             try:
+                logger.debug('Opening MIDI output port: %s' % value)
                 self._midi_output = mido.open_output(value)
+                logger.debug('MIDI output port opened.')
             except (OSError, IOError) as e:
                 logger.error(f"Failed to open MIDI output port '{value}': {e}")
                 await self.stop()

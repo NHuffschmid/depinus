@@ -28,13 +28,18 @@ class MidiInterfaceObserver:
     async def _observe(self):
         self._running = True
         while self._running:
+
             output_names = mido.get_output_names()
             input_names = mido.get_input_names()
+
+            # Filter out virtual RtMidi client ports
+            output_names = [name for name in output_names if not name.startswith('RtMidiIn Client:')]
+            input_names = [name for name in input_names if not name.startswith('RtMidiOut Client:')]
+
             changed = False
             if output_names != self._last_output_interfaces:
                 self._last_output_interfaces = output_names.copy()
                 logger.info('MIDI output interfaces changed: %s', output_names)
-
                 changed = True
             if input_names != self._last_input_interfaces:
                 self._last_input_interfaces = input_names.copy()
