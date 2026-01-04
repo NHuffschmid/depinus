@@ -8,7 +8,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 def setup_logger():
     logger = logging.getLogger(__name__)  # Logger für das Modul
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     system = platform.system()
 
