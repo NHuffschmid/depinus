@@ -241,7 +241,7 @@ class PianoDaemon:
             )
         elif (cmd.command == 'record'):
             logger.info('record command received.')
-            self._piano_recorder.start_recording()
+            await self._piano_recorder.start_recording()
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
