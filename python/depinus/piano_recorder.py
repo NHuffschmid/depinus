@@ -179,6 +179,23 @@ class PianoRecorder:
             self._midi_input = mido.open_input(self._midi_in_port)
             logger.debug('MIDI input port opened.')
 
+            # Flush any buffered/stale messages that may be in the ALSA buffer
+            # This is especially important on Linux when the device was connected at boot time
+            logger.debug('Flushing stale MIDI messages from input buffer...')
+            flush_start = time.time()
+            flushed_count = 0
+            for msg in self._midi_input.iter_pending():
+                flushed_count += 1
+            if flushed_count > 0:
+                logger.info(f'Flushed {flushed_count} stale MIDI messages from buffer (took {time.time() - flush_start:.3f}s)')
+            
+            # Small delay to let the system stabilize after flushing
+            await asyncio.sleep(0.05)  # 50ms
+            
+            # Reset start time after flushing to ensure accurate timestamps
+            self._start_time = time.time()
+            self._total_pause_duration = 0
+
             # Continuously read messages while recording
             while self._recording:
                 # Use iter_pending() to get available messages without blocking
