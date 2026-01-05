@@ -174,27 +174,38 @@ class PianoRecorder:
     async def _record_midi_input(self):
         '''Async task that continuously reads MIDI messages from the input port.'''
         try:
-            # Open MIDI input port (without callback - we'll iterate over messages)
+            # Reset the port by opening and immediately closing it
+            # This helps initialize ALSA properly, especially when device was connected at boot
+            logger.debug('Resetting MIDI input port (open/close cycle): %s' % self._midi_in_port)
+            try:
+                reset_port = mido.open_input(self._midi_in_port)
+                # Consume any stale messages
+                stale_count = sum(1 for _ in reset_port.iter_pending())
+                if stale_count > 0:
+                    logger.info(f'Discarded {stale_count} stale messages during port reset')
+                reset_port.close()
+                logger.debug('Port reset completed')
+            except Exception as e:
+                logger.warning(f'Port reset failed (continuing anyway): {e}')
+            
+            # Wait a bit for ALSA to settle
+            await asyncio.sleep(0.1)  # 100ms
+            
+            # Now open the port for actual recording
             logger.debug('Opening MIDI input port for recording: %s' % self._midi_in_port)
             self._midi_input = mido.open_input(self._midi_in_port)
             logger.debug('MIDI input port opened.')
 
-            # Flush any buffered/stale messages that may be in the ALSA buffer
-            # This is especially important on Linux when the device was connected at boot time
-            logger.debug('Flushing stale MIDI messages from input buffer...')
-            flush_start = time.time()
-            flushed_count = 0
-            for msg in self._midi_input.iter_pending():
-                flushed_count += 1
-            if flushed_count > 0:
-                logger.info(f'Flushed {flushed_count} stale MIDI messages from buffer (took {time.time() - flush_start:.3f}s)')
-            
-            # Small delay to let the system stabilize after flushing
+            # Another small delay and final flush
             await asyncio.sleep(0.05)  # 50ms
+            flush_count = sum(1 for _ in self._midi_input.iter_pending())
+            if flush_count > 0:
+                logger.info(f'Flushed {flush_count} buffered messages after re-open')
             
-            # Reset start time after flushing to ensure accurate timestamps
+            # Reset start time to NOW to ensure accurate timestamps
             self._start_time = time.time()
             self._total_pause_duration = 0
+            logger.info('Recording loop starting with clean timestamp base')
 
             # Continuously read messages while recording
             while self._recording:
