@@ -173,41 +173,28 @@ class PianoRecorder:
 
     async def _record_midi_input(self):
         '''Async task that continuously reads MIDI messages from the input port.'''
+        logger.info(f'=== RECORD TASK STARTED for port: {self._midi_in_port} ===')
+        
         try:
-            # Reset the port by opening and immediately closing it
-            # This helps initialize ALSA properly, especially when device was connected at boot
-            logger.debug('Resetting MIDI input port (open/close cycle): %s' % self._midi_in_port)
-            try:
-                reset_port = mido.open_input(self._midi_in_port)
-                # Consume any stale messages
-                stale_count = sum(1 for _ in reset_port.iter_pending())
-                if stale_count > 0:
-                    logger.info(f'Discarded {stale_count} stale messages during port reset')
-                reset_port.close()
-                logger.debug('Port reset completed')
-            except Exception as e:
-                logger.warning(f'Port reset failed (continuing anyway): {e}')
-            
-            # Wait a bit for ALSA to settle
-            await asyncio.sleep(0.1)  # 100ms
-            
-            # Now open the port for actual recording
-            logger.debug('Opening MIDI input port for recording: %s' % self._midi_in_port)
+            # Open MIDI input port for recording  
+            logger.info(f'Opening MIDI input port: {self._midi_in_port}')
             self._midi_input = mido.open_input(self._midi_in_port)
-            logger.debug('MIDI input port opened.')
+            logger.info('MIDI input port successfully opened')
 
-            # Another small delay and final flush
-            await asyncio.sleep(0.05)  # 50ms
-            flush_count = sum(1 for _ in self._midi_input.iter_pending())
-            if flush_count > 0:
-                logger.info(f'Flushed {flush_count} buffered messages after re-open')
+            # Small delay to let port stabilize
+            await asyncio.sleep(0.1)
             
-            # Reset start time to NOW to ensure accurate timestamps
+            # Flush any pending messages
+            flush_count = sum(1 for _ in self._midi_input.iter_pending())
+            logger.info(f'Initial flush: {flush_count} messages discarded')
+            
+            # Reset start time to NOW for accurate timestamps
             self._start_time = time.time()
             self._total_pause_duration = 0
-            logger.info('Recording loop starting with clean timestamp base')
+            logger.info(f'Recording initialized. Start time: {self._start_time}')
 
             # Continuously read messages while recording
+            msg_count = 0
             while self._recording:
                 # Use iter_pending() to get available messages without blocking
                 for message in self._midi_input.iter_pending():
@@ -221,20 +208,26 @@ class PianoRecorder:
                             'message': message.copy(),
                             'timestamp': timestamp
                         })
-                        logger.debug(f'Recorded MIDI message: {message}')
+                        msg_count += 1
+                        if msg_count <= 5 or msg_count % 10 == 0:  # Log first 5 and every 10th
+                            logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
 
                 # Small delay to prevent busy-waiting
                 await asyncio.sleep(0.001)  # 1ms
 
+            logger.info(f'Recording loop ended. Total messages: {msg_count}')
+
         except asyncio.CancelledError:
-            logger.debug('Recording task cancelled.')
+            logger.info('Recording task cancelled by user')
             raise
         except (OSError, IOError) as e:
-            logger.error(f"Error reading from MIDI input port '{self._midi_in_port}': {e}")
+            logger.error(f"MIDI I/O error during recording: {e}")
             self._recording = False
         except Exception as e:
             logger.exception(f"Unexpected error in recording task: {e}")
             self._recording = False
+        finally:
+            logger.info('=== RECORD TASK ENDED ===')
 
     def _create_midi_file(self):
         '''Creates a MIDI file from the recorded messages.'''
