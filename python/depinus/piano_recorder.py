@@ -228,8 +228,12 @@ class PianoRecorder:
                             'timestamp': timestamp
                         })
                         msg_count += 1
-                        #if msg_count <= 5 or msg_count % 10 == 0:  # Log first 5 and every 10th
-                        logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+                        if msg_count <= 100 or msg_count % 10 == 0:  # Log first 100 and every 10th
+                            # Detailed logging to debug duplicates
+                            if hasattr(message, 'velocity'):
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                            else:
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
 
                 # Small delay to prevent busy-waiting
                 await asyncio.sleep(0.001)  # 1ms
