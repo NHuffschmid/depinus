@@ -103,6 +103,25 @@ class PianoRecorder:
             logger.error('No MIDI input port selected for recording')
             return
 
+        # Ensure any previous task is properly cleaned up
+        if self._record_task is not None and not self._record_task.done():
+            logger.warning('Previous recording task still running - cancelling it first')
+            self._record_task.cancel()
+            try:
+                await self._record_task
+            except asyncio.CancelledError:
+                pass
+            self._record_task = None
+
+        # Close any open MIDI input port from previous session
+        if self._midi_input is not None:
+            logger.debug('Closing leftover MIDI input port')
+            try:
+                self._midi_input.close()
+            except Exception as e:
+                logger.error(f'Failed to close leftover MIDI input: {e}')
+            self._midi_input = None
+
         logger.info('Start recording MIDI messages')
         self._recording = True
         self._paused = False
@@ -111,7 +130,7 @@ class PianoRecorder:
         self._pause_start_time = None
         self._total_pause_duration = 0
 
-        # start async recording task
+        # Start async recording task
         self._record_task = asyncio.create_task(self._record_midi_input())
 
     def pause_recording(self):
