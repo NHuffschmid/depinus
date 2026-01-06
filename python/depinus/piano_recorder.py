@@ -272,6 +272,11 @@ class PianoRecorder:
             if platform.system() == 'Linux':
                 await self._reset_usb_device_linux()
             
+            # Set start time BEFORE opening port to avoid negative timestamps
+            self._start_time = time.time()
+            self._total_pause_duration = 0
+            logger.info(f'Recording initialized. Start time: {self._start_time}')
+            
             # Open MIDI input port with callback for immediate message handling
             logger.info(f'Opening MIDI input port: {self._midi_in_port}')
             self._midi_input = mido.open_input(self._midi_in_port, callback=self._midi_callback)
@@ -279,11 +284,6 @@ class PianoRecorder:
             
             # Stabilization delay after port open (critical for Linux/ALSA)
             await asyncio.sleep(0.2)
-            
-            # Reset start time to NOW for accurate timestamps
-            self._start_time = time.time()
-            self._total_pause_duration = 0
-            logger.info(f'Recording initialized. Start time: {self._start_time}')
 
             # Just wait for recording to end - callback handles all messages
             while self._recording:
