@@ -241,8 +241,29 @@ class PianoRecorder:
             logger.warning(f'USB device reset failed (may need sudo): {e}')
             return False
 
+    def _midi_callback(self, message):
+        '''Callback function called directly by mido when a MIDI message arrives.'''
+        if self._recording and not self._paused:
+            # Calculate timestamp immediately at callback time
+            current_time = time.time()
+            timestamp = current_time - self._start_time - self._total_pause_duration
+            
+            # Store message with precise timestamp
+            self._recorded_messages.append({
+                'message': message.copy(),
+                'timestamp': timestamp
+            })
+            
+            # Debug logging
+            msg_count = len(self._recorded_messages)
+            if msg_count <= 100 or msg_count % 10 == 0:
+                if hasattr(message, 'velocity'):
+                    logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                else:
+                    logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+
     async def _record_midi_input(self):
-        '''Async task that continuously reads MIDI messages from the input port.'''
+        '''Async task that sets up callback-based MIDI recording.'''
         logger.info(f'=== RECORD TASK STARTED for port: {self._midi_in_port} ===')
         
         try:
@@ -251,49 +272,24 @@ class PianoRecorder:
             if platform.system() == 'Linux':
                 await self._reset_usb_device_linux()
             
-            # Open MIDI input port for recording  
+            # Open MIDI input port with callback for immediate message handling
             logger.info(f'Opening MIDI input port: {self._midi_in_port}')
-            self._midi_input = mido.open_input(self._midi_in_port)
-            logger.info('MIDI input port successfully opened')
+            self._midi_input = mido.open_input(self._midi_in_port, callback=self._midi_callback)
+            logger.info('MIDI input port successfully opened with callback')
             
             # Stabilization delay after port open (critical for Linux/ALSA)
             await asyncio.sleep(0.2)
-            
-            # Flush any pending messages
-            flush_count = sum(1 for _ in self._midi_input.iter_pending())
-            logger.info(f'Initial flush: {flush_count} messages discarded')
             
             # Reset start time to NOW for accurate timestamps
             self._start_time = time.time()
             self._total_pause_duration = 0
             logger.info(f'Recording initialized. Start time: {self._start_time}')
 
-            # Continuously read messages while recording
-            msg_count = 0
+            # Just wait for recording to end - callback handles all messages
             while self._recording:
-                # Use iter_pending() to get available messages without blocking
-                for message in self._midi_input.iter_pending():
-                    if self._recording and not self._paused:
-                        # Calculate timestamp at the moment we receive the message
-                        current_time = time.time()
-                        timestamp = current_time - self._start_time - self._total_pause_duration
-                        
-                        # Store message with timestamp
-                        self._recorded_messages.append({
-                            'message': message.copy(),
-                            'timestamp': timestamp
-                        })
-                        msg_count += 1
-                        if msg_count <= 100 or msg_count % 10 == 0:
-                            if hasattr(message, 'velocity'):
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
-                            else:
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+                await asyncio.sleep(0.1)
 
-                # Yield to event loop without blocking
-                await asyncio.sleep(0)
-
-            logger.info(f'Recording loop ended. Total messages: {msg_count}')
+            logger.info(f'Recording ended. Total messages: {len(self._recorded_messages)}')
 
         except asyncio.CancelledError:
             logger.info('Recording task cancelled by user')
