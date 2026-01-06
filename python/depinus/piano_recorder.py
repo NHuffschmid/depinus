@@ -123,14 +123,14 @@ class PianoRecorder:
             self._midi_input = None
 
         logger.info('Start recording MIDI messages')
-        self._recording = True
+        self._recording = False  # Will be set to True after stabilization
         self._paused = False
         self._recorded_messages = []
         self._start_time = time.time()
         self._pause_start_time = None
         self._total_pause_duration = 0
 
-        # Start async recording task
+        # Start async recording task (it will set _recording=True after flush)
         self._record_task = asyncio.create_task(self._record_midi_input())
 
     def pause_recording(self):
@@ -282,8 +282,21 @@ class PianoRecorder:
             self._midi_input = mido.open_input(self._midi_in_port, callback=self._midi_callback)
             logger.info('MIDI input port successfully opened with callback')
             
-            # Stabilization delay after port open (critical for Linux/ALSA)
-            await asyncio.sleep(0.2)
+            # Stabilization delay - old buffered messages will be discarded during this time
+            logger.info('Stabilization phase: discarding buffered messages...')
+            await asyncio.sleep(0.3)
+            
+            # Clear any messages that arrived during stabilization
+            old_count = len(self._recorded_messages)
+            self._recorded_messages.clear()
+            logger.info(f'Discarded {old_count} buffered messages from stabilization phase')
+            
+            # Reset start time to NOW for clean recording
+            self._start_time = time.time()
+            
+            # NOW activate recording - callback will start storing messages
+            self._recording = True
+            logger.info('Recording active - ready to capture MIDI input')
 
             # Just wait for recording to end - callback handles all messages
             while self._recording:
