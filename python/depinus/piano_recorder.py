@@ -4,7 +4,6 @@ import asyncio
 import getpass
 import mido
 import socket
-import threading
 import time
 from datetime import datetime
 
@@ -23,7 +22,6 @@ class PianoRecorder:
         self._midi_input = None
         self._midi_in_port = None
         self._record_task = None
-        self._record_thread = None
         self._recorded_messages = []
         self._start_time = None
         self._pause_start_time = None
@@ -192,63 +190,73 @@ class PianoRecorder:
 
         return midi_data
 
-    def _record_thread_func(self):
-        '''Thread function that blocks on MIDI receive for instant message capture.'''
-        logger.info(f'=== RECORD THREAD STARTED for port: {self._midi_in_port} ===')
-        logger.info(f'Recording flag state: {self._recording}')
-        msg_count = 0
+    async def _reset_usb_device_linux(self):
+        '''Perform USB device reset on Linux using usbreset or rebind.'''
+        import platform
+        import subprocess
         
+        if platform.system() != 'Linux':
+            return False
+            
         try:
-            while self._recording:
-                try:
-                    # Blocking receive - will throw exception when port closes
-                    message = self._midi_input.receive(block=True)
-                    
-                    if self._recording and not self._paused:
-                        # Calculate timestamp immediately upon message arrival
-                        current_time = time.time()
-                        timestamp = current_time - self._start_time - self._total_pause_duration
-                        
-                        # Store message with precise timestamp
-                        self._recorded_messages.append({
-                            'message': message.copy(),
-                            'timestamp': timestamp
-                        })
-                        msg_count += 1
-                        if msg_count <= 100 or msg_count % 10 == 0:
-                            if hasattr(message, 'velocity'):
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
-                            else:
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
-                except (OSError, IOError) as e:
-                    # Port closed - normal shutdown
-                    if self._recording:
-                        logger.error(f"MIDI port error in thread: {e}")
-                    break
-        
+            logger.info('Attempting USB device reset on Linux...')
+            
+            # Try to find USB MIDI device and reset via sysfs
+            result = subprocess.run(
+                ['bash', '-c', '''
+                    # Find USB MIDI device
+                    for dev in /sys/bus/usb/devices/*/product; do
+                        if grep -qi "midi" "$dev" 2>/dev/null; then
+                            device=$(dirname "$dev")
+                            device_name=$(cat "$dev")
+                            echo "Found: $device_name at $device"
+                            
+                            # Unbind and rebind to reset
+                            device_id=$(basename "$device")
+                            echo "$device_id" > /sys/bus/usb/drivers/usb/unbind 2>/dev/null || true
+                            sleep 0.5
+                            echo "$device_id" > /sys/bus/usb/drivers/usb/bind 2>/dev/null || true
+                            echo "Reset complete"
+                            exit 0
+                        fi
+                    done
+                    echo "Device not found"
+                    exit 1
+                '''],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            logger.info(f'USB reset output: {result.stdout.strip()}')
+            if result.returncode == 0:
+                # Give the device time to re-enumerate
+                await asyncio.sleep(1.5)
+                return True
+            else:
+                logger.warning('USB reset not successful, continuing anyway')
+                return False
+                
         except Exception as e:
-            logger.exception(f"Error in recording thread: {e}")
-        finally:
-            logger.info(f'=== RECORD THREAD ENDED. Total messages: {msg_count} ===')
+            logger.warning(f'USB device reset failed (may need sudo): {e}')
+            return False
 
     async def _record_midi_input(self):
-        '''Async task that manages the recording thread.'''
+        '''Async task that continuously reads MIDI messages from the input port.'''
         logger.info(f'=== RECORD TASK STARTED for port: {self._midi_in_port} ===')
         
         try:
+            # Perform USB-level device reset on Linux to fix boot-time initialization
+            import platform
+            if platform.system() == 'Linux':
+                await self._reset_usb_device_linux()
+            
             # Open MIDI input port for recording  
             logger.info(f'Opening MIDI input port: {self._midi_in_port}')
             self._midi_input = mido.open_input(self._midi_in_port)
             logger.info('MIDI input port successfully opened')
-
-            # Port reset to fix boot-time initialization issues
-            logger.info('Performing port reset (close/reopen)')
-            self._midi_input.close()
-            await asyncio.sleep(0.2)  # 200ms delay for driver cleanup
-            self._midi_input = mido.open_input(self._midi_in_port)
-            logger.info('Port successfully reset and reopened')
             
-            # Stabilization delay after port open
+            # Stabilization delay after port open (critical for Linux/ALSA)
             await asyncio.sleep(0.2)
             
             # Flush any pending messages
@@ -260,18 +268,32 @@ class PianoRecorder:
             self._total_pause_duration = 0
             logger.info(f'Recording initialized. Start time: {self._start_time}')
 
-            # Start blocking receive thread for instant message capture
-            self._record_thread = threading.Thread(target=self._record_thread_func, daemon=True)
-            self._record_thread.start()
-            logger.info('Recording thread started')
-            
-            # Wait for thread to finish or recording to stop
-            while self._recording and self._record_thread.is_alive():
-                await asyncio.sleep(0.1)
-            
-            # If still recording, wait a bit for thread to finish
-            if self._record_thread.is_alive():
-                await asyncio.to_thread(self._record_thread.join, timeout=2.0)
+            # Continuously read messages while recording
+            msg_count = 0
+            while self._recording:
+                # Use iter_pending() to get available messages without blocking
+                for message in self._midi_input.iter_pending():
+                    if self._recording and not self._paused:
+                        # Calculate timestamp at the moment we receive the message
+                        current_time = time.time()
+                        timestamp = current_time - self._start_time - self._total_pause_duration
+                        
+                        # Store message with timestamp
+                        self._recorded_messages.append({
+                            'message': message.copy(),
+                            'timestamp': timestamp
+                        })
+                        msg_count += 1
+                        if msg_count <= 100 or msg_count % 10 == 0:
+                            if hasattr(message, 'velocity'):
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                            else:
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+
+                # Yield to event loop without blocking
+                await asyncio.sleep(0)
+
+            logger.info(f'Recording loop ended. Total messages: {msg_count}')
 
         except asyncio.CancelledError:
             logger.info('Recording task cancelled by user')
