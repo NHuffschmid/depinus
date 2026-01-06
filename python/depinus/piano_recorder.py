@@ -213,16 +213,19 @@ class PianoRecorder:
             logger.info(f'Recording initialized. Start time: {self._start_time}')
 
             # Continuously read messages while recording
+            # Use cumulative message.time for precise hardware-based timestamps
             msg_count = 0
+            cumulative_time = 0.0
+            
             while self._recording:
                 # Use iter_pending() to get available messages without blocking
                 for message in self._midi_input.iter_pending():
                     if self._recording and not self._paused:
-                        # Calculate timestamp at the moment we receive the message
-                        current_time = time.time()
-                        timestamp = current_time - self._start_time - self._total_pause_duration
+                        # Use hardware timestamp from message (delta time since last message)
+                        cumulative_time += message.time
+                        timestamp = cumulative_time - self._total_pause_duration
                         
-                        # Store message with its actual arrival timestamp
+                        # Store message with hardware-based timestamp
                         self._recorded_messages.append({
                             'message': message.copy(),
                             'timestamp': timestamp
@@ -231,9 +234,9 @@ class PianoRecorder:
                         if msg_count <= 100 or msg_count % 10 == 0:  # Log first 100 and every 10th
                             # Detailed logging to debug duplicates
                             if hasattr(message, 'velocity'):
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} hw_delta={message.time:.3f}s cumulative={timestamp:.3f}s')
                             else:
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} hw_delta={message.time:.3f}s cumulative={timestamp:.3f}s')
 
                 # Yield to event loop without blocking (0 sleep = immediate reschedule)
                 await asyncio.sleep(0)
