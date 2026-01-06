@@ -4,6 +4,7 @@ import asyncio
 import getpass
 import mido
 import socket
+import threading
 import time
 from datetime import datetime
 
@@ -22,6 +23,7 @@ class PianoRecorder:
         self._midi_input = None
         self._midi_in_port = None
         self._record_task = None
+        self._record_thread = None
         self._recorded_messages = []
         self._start_time = None
         self._pause_start_time = None
@@ -190,8 +192,42 @@ class PianoRecorder:
 
         return midi_data
 
+    def _record_thread_func(self):
+        '''Thread function that blocks on MIDI receive for instant message capture.'''
+        logger.info(f'=== RECORD THREAD STARTED for port: {self._midi_in_port} ===')
+        msg_count = 0
+        
+        try:
+            while self._recording:
+                # Blocking receive with timeout to allow clean shutdown
+                message = self._midi_input.receive(block=True, timeout=0.1)
+                if message is None:
+                    continue  # Timeout, check if still recording
+                    
+                if self._recording and not self._paused:
+                    # Calculate timestamp immediately upon message arrival
+                    current_time = time.time()
+                    timestamp = current_time - self._start_time - self._total_pause_duration
+                    
+                    # Store message with precise timestamp
+                    self._recorded_messages.append({
+                        'message': message.copy(),
+                        'timestamp': timestamp
+                    })
+                    msg_count += 1
+                    if msg_count <= 100 or msg_count % 10 == 0:
+                        if hasattr(message, 'velocity'):
+                            logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                        else:
+                            logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+        
+        except Exception as e:
+            logger.exception(f"Error in recording thread: {e}")
+        finally:
+            logger.info(f'=== RECORD THREAD ENDED. Total messages: {msg_count} ===')
+
     async def _record_midi_input(self):
-        '''Async task that continuously reads MIDI messages from the input port.'''
+        '''Async task that manages the recording thread.'''
         logger.info(f'=== RECORD TASK STARTED for port: {self._midi_in_port} ===')
         
         try:
@@ -201,7 +237,6 @@ class PianoRecorder:
             logger.info('MIDI input port successfully opened')
 
             # Port reset to fix boot-time initialization issues
-            # Close and reopen to force driver reinitialization
             logger.info('Performing port reset (close/reopen)')
             self._midi_input.close()
             await asyncio.sleep(0.2)  # 200ms delay for driver cleanup
@@ -220,32 +255,13 @@ class PianoRecorder:
             self._total_pause_duration = 0
             logger.info(f'Recording initialized. Start time: {self._start_time}')
 
-            # Continuously read messages while recording
-            msg_count = 0
-            while self._recording:
-                # Use iter_pending() to get available messages without blocking
-                for message in self._midi_input.iter_pending():
-                    if self._recording and not self._paused:
-                        # Calculate timestamp at the moment we receive the message
-                        current_time = time.time()
-                        timestamp = current_time - self._start_time - self._total_pause_duration
-                        
-                        # Store message with timestamp
-                        self._recorded_messages.append({
-                            'message': message.copy(),
-                            'timestamp': timestamp
-                        })
-                        msg_count += 1
-                        if msg_count <= 100 or msg_count % 10 == 0:  # Log first 100 and every 10th
-                            if hasattr(message, 'velocity'):
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
-                            else:
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
-
-                # Yield to event loop without blocking
-                await asyncio.sleep(0)
-
-            logger.info(f'Recording loop ended. Total messages: {msg_count}')
+            # Start blocking receive thread for instant message capture
+            self._record_thread = threading.Thread(target=self._record_thread_func, daemon=True)
+            self._record_thread.start()
+            logger.info('Recording thread started')
+            
+            # Wait for thread to finish (when _recording becomes False)
+            await asyncio.to_thread(self._record_thread.join)
 
         except asyncio.CancelledError:
             logger.info('Recording task cancelled by user')
