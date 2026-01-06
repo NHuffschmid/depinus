@@ -195,31 +195,36 @@ class PianoRecorder:
     def _record_thread_func(self):
         '''Thread function that blocks on MIDI receive for instant message capture.'''
         logger.info(f'=== RECORD THREAD STARTED for port: {self._midi_in_port} ===')
+        logger.info(f'Recording flag state: {self._recording}')
         msg_count = 0
         
         try:
             while self._recording:
-                # Blocking receive with timeout to allow clean shutdown
-                message = self._midi_input.receive(block=True, timeout=0.1)
-                if message is None:
-                    continue  # Timeout, check if still recording
+                try:
+                    # Blocking receive - will throw exception when port closes
+                    message = self._midi_input.receive(block=True)
                     
-                if self._recording and not self._paused:
-                    # Calculate timestamp immediately upon message arrival
-                    current_time = time.time()
-                    timestamp = current_time - self._start_time - self._total_pause_duration
-                    
-                    # Store message with precise timestamp
-                    self._recorded_messages.append({
-                        'message': message.copy(),
-                        'timestamp': timestamp
-                    })
-                    msg_count += 1
-                    if msg_count <= 100 or msg_count % 10 == 0:
-                        if hasattr(message, 'velocity'):
-                            logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
-                        else:
-                            logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+                    if self._recording and not self._paused:
+                        # Calculate timestamp immediately upon message arrival
+                        current_time = time.time()
+                        timestamp = current_time - self._start_time - self._total_pause_duration
+                        
+                        # Store message with precise timestamp
+                        self._recorded_messages.append({
+                            'message': message.copy(),
+                            'timestamp': timestamp
+                        })
+                        msg_count += 1
+                        if msg_count <= 100 or msg_count % 10 == 0:
+                            if hasattr(message, 'velocity'):
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
+                            else:
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
+                except (OSError, IOError) as e:
+                    # Port closed - normal shutdown
+                    if self._recording:
+                        logger.error(f"MIDI port error in thread: {e}")
+                    break
         
         except Exception as e:
             logger.exception(f"Error in recording thread: {e}")
@@ -260,8 +265,13 @@ class PianoRecorder:
             self._record_thread.start()
             logger.info('Recording thread started')
             
-            # Wait for thread to finish (when _recording becomes False)
-            await asyncio.to_thread(self._record_thread.join)
+            # Wait for thread to finish or recording to stop
+            while self._recording and self._record_thread.is_alive():
+                await asyncio.sleep(0.1)
+            
+            # If still recording, wait a bit for thread to finish
+            if self._record_thread.is_alive():
+                await asyncio.to_thread(self._record_thread.join, timeout=2.0)
 
         except asyncio.CancelledError:
             logger.info('Recording task cancelled by user')
