@@ -215,15 +215,14 @@ class PianoRecorder:
             # Continuously read messages while recording
             msg_count = 0
             while self._recording:
-                # Get current timestamp ONCE per iteration (before reading messages)
-                # This ensures that all messages read in one batch get the same timestamp
-                current_time = time.time()
-                timestamp = current_time - self._start_time - self._total_pause_duration
-                
                 # Use iter_pending() to get available messages without blocking
                 for message in self._midi_input.iter_pending():
                     if self._recording and not self._paused:
-                        # Store message with the batch timestamp
+                        # Calculate timestamp at the moment we receive the message
+                        current_time = time.time()
+                        timestamp = current_time - self._start_time - self._total_pause_duration
+                        
+                        # Store message with its actual arrival timestamp
                         self._recorded_messages.append({
                             'message': message.copy(),
                             'timestamp': timestamp
@@ -236,8 +235,8 @@ class PianoRecorder:
                             else:
                                 logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
 
-                # Small delay to prevent busy-waiting
-                await asyncio.sleep(0.001)  # 1ms
+                # Yield to event loop without blocking (0 sleep = immediate reschedule)
+                await asyncio.sleep(0)
 
             logger.info(f'Recording loop ended. Total messages: {msg_count}')
 
