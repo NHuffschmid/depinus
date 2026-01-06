@@ -200,8 +200,16 @@ class PianoRecorder:
             self._midi_input = mido.open_input(self._midi_in_port)
             logger.info('MIDI input port successfully opened')
 
-            # Small delay to let port stabilize
-            await asyncio.sleep(0.1)
+            # Port reset to fix boot-time initialization issues
+            # Close and reopen to force driver reinitialization
+            logger.info('Performing port reset (close/reopen)')
+            self._midi_input.close()
+            await asyncio.sleep(0.2)  # 200ms delay for driver cleanup
+            self._midi_input = mido.open_input(self._midi_in_port)
+            logger.info('Port successfully reset and reopened')
+            
+            # Stabilization delay after port open
+            await asyncio.sleep(0.2)
             
             # Flush any pending messages
             flush_count = sum(1 for _ in self._midi_input.iter_pending())
@@ -213,32 +221,28 @@ class PianoRecorder:
             logger.info(f'Recording initialized. Start time: {self._start_time}')
 
             # Continuously read messages while recording
-            # Use cumulative message.time for precise hardware-based timestamps
             msg_count = 0
-            cumulative_time = 0.0
-            
             while self._recording:
                 # Use iter_pending() to get available messages without blocking
                 for message in self._midi_input.iter_pending():
                     if self._recording and not self._paused:
-                        # Use hardware timestamp from message (delta time since last message)
-                        cumulative_time += message.time
-                        timestamp = cumulative_time - self._total_pause_duration
+                        # Calculate timestamp at the moment we receive the message
+                        current_time = time.time()
+                        timestamp = current_time - self._start_time - self._total_pause_duration
                         
-                        # Store message with hardware-based timestamp
+                        # Store message with timestamp
                         self._recorded_messages.append({
                             'message': message.copy(),
                             'timestamp': timestamp
                         })
                         msg_count += 1
                         if msg_count <= 100 or msg_count % 10 == 0:  # Log first 100 and every 10th
-                            # Detailed logging to debug duplicates
                             if hasattr(message, 'velocity'):
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} hw_delta={message.time:.3f}s cumulative={timestamp:.3f}s')
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} note={message.note} vel={message.velocity} at {timestamp:.3f}s')
                             else:
-                                logger.info(f'Recorded msg #{msg_count}: {message.type} hw_delta={message.time:.3f}s cumulative={timestamp:.3f}s')
+                                logger.info(f'Recorded msg #{msg_count}: {message.type} at {timestamp:.3f}s')
 
-                # Yield to event loop without blocking (0 sleep = immediate reschedule)
+                # Yield to event loop without blocking
                 await asyncio.sleep(0)
 
             logger.info(f'Recording loop ended. Total messages: {msg_count}')
