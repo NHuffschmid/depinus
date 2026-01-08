@@ -1,0 +1,98 @@
+#!/bin/bash
+# Bash script to enable or disable automatic USB MIDI reset at system boot
+
+SERVICE_NAME="depinus-usb-reset"
+SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run this script as root (e.g., using sudo)."
+    exit 1
+fi
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 enable | disable"
+    echo ""
+    echo "This script configures automatic USB MIDI device reset at system boot."
+    echo "This fixes Linux/ALSA initialization issues when USB MIDI devices are"
+    echo "connected during boot. These can result in broken recording timestamps."
+    echo ""
+    echo "  enable  - Create systemd service to reset USB MIDI at boot"
+    echo "  disable - Remove systemd service"
+    exit 1
+fi
+
+if [ "$1" == "enable" ]; then
+    echo "Enabling automatic USB MIDI reset at boot..."
+    
+    # Create systemd service with inline reset script
+    cat > "$SERVICE_FILE" <<'EOL'
+[Unit]
+Description=Depinus USB MIDI Reset Service
+After=multi-user.target
+Before=depinus-headless.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '\
+    echo "Searching for USB MIDI device..."; \
+    DEVICE_FOUND=0; \
+    for dev in /sys/bus/usb/devices/*/product; do \
+        if grep -qi "midi" "$dev" 2>/dev/null; then \
+            DEVICE_DIR=$(dirname "$dev"); \
+            DEVICE_NAME=$(cat "$dev" 2>/dev/null); \
+            DEVICE_ID=$(basename "$DEVICE_DIR"); \
+            echo "Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR"; \
+            echo "Resetting device $DEVICE_ID..."; \
+            echo "$DEVICE_ID" > /sys/bus/usb/drivers/usb/unbind 2>/dev/null || true; \
+            sleep 0.5; \
+            echo "$DEVICE_ID" > /sys/bus/usb/drivers/usb/bind 2>/dev/null || true; \
+            echo "USB MIDI device reset complete"; \
+            DEVICE_FOUND=1; \
+            break; \
+        fi; \
+    done; \
+    if [ $DEVICE_FOUND -eq 0 ]; then \
+        echo "Warning: No USB MIDI device found"; \
+    fi'
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    
+    # Reload systemd and enable service
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME"
+    
+    echo "Automatic USB MIDI reset enabled successfully."
+    echo ""
+    echo "Service created at: $SERVICE_FILE"
+    echo "The USB MIDI device will be reset automatically on every boot."
+    echo ""
+    echo "To test now: sudo systemctl start $SERVICE_NAME"
+    echo "View logs:   sudo journalctl -u $SERVICE_NAME"
+    echo "To disable:  sudo $0 disable"
+    exit 0
+fi
+
+if [ "$1" == "disable" ]; then
+    echo "Disabling automatic USB MIDI reset..."
+    
+    if [ -f "$SERVICE_FILE" ]; then
+        systemctl stop "$SERVICE_NAME" 2>/dev/null
+        systemctl disable "$SERVICE_NAME"
+        rm "$SERVICE_FILE"
+        systemctl daemon-reload
+        echo "Automatic USB MIDI reset disabled."
+        echo "Service removed from $SERVICE_FILE"
+    else
+        echo "Automatic USB MIDI reset is not enabled."
+    fi
+    exit 0
+fi
+
+echo "Usage: $0 enable | disable"
+exit 1

@@ -54,6 +54,12 @@ if (fs.existsSync(autostartScript)) {
     fs.chmodSync(autostartScript, 0o755);
 }
 
+const midiUsbResetScript = path.join(resourcesDir, 'midi_usb_reset');
+if (fs.existsSync(midiUsbResetScript)) {
+    logger.info(`Make ${midiUsbResetScript} executable...`);
+    fs.chmodSync(midiUsbResetScript, 0o755);
+}
+
 const depinusExe = path.join(rootDir, 'depinus.exe');
 if (process.platform === 'win32' && fs.existsSync(depinusExe)) {
     try {
