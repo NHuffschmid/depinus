@@ -69,8 +69,9 @@ class PianoPlayer:
     @transposition.setter
     def transposition(self, value):
         '''Sets the transposition.'''
-        self._transposition = value
-        self._transposition_pending = True
+        if (value != self._transposition):
+            self._transposition = value
+            self._transposition_pending = True
 
     @property
     def tempo(self):
@@ -134,11 +135,7 @@ class PianoPlayer:
         Parameters:
             message: The midi message to play
         '''
-        if (self._midi_output is None):
-            # player is not playing => open a new midi output port
-            with mido.open_output(self._midi_out_port) as midi_output:
-                midi_output.send(message)
-        else:
+        if (self._midi_output is not None):
             # player is playing => add midi message to the current output port
             self._midi_output.send(message)
 
@@ -277,7 +274,8 @@ class PianoPlayer:
                     last_tempo = self.tempo
 
                 if (self._transposition_pending):
-                    self._midi_output.reset()  # reset active keys
+                    if (self._midi_output is not None):
+                        self._midi_output.reset()  # reset active keys
                     self._transposition_pending = False
 
                 #logger.debug('Midifile message:  %s' % str(message))
@@ -335,7 +333,8 @@ class PianoPlayer:
                 for callback in self._play_end_callbacks:
                     await callback(True)
 
-            self._midi_output.reset()
+            if (self._midi_output is not None):
+                self._midi_output.reset()
             raise
 
         except BaseException:
