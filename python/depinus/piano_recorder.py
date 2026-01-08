@@ -1,5 +1,6 @@
 # Piano recorder
 
+import asyncio
 import getpass
 import mido
 import socket
@@ -19,6 +20,8 @@ class PianoRecorder:
         self._recording = False
         self._paused = False
         self._midi_input = None
+        self._midi_in_port = None
+        self._record_task = None
         self._recorded_messages = []
         self._start_time = None
         self._pause_start_time = None
@@ -78,14 +81,9 @@ class PianoRecorder:
                 logger.debug('MIDI input port closed.')
             except Exception as e:
                 logger.error(f'Failed to close MIDI input port: {e}')
-        if value:
-            try:
-                logger.debug('Opening MIDI input port for recording: %s' % value)
-                self._midi_input = mido.open_input(value, callback=self._on_midi_input_message)
-                logger.debug('MIDI input port opened.')
-            except (OSError, IOError) as e:
-                logger.error(f"Failed to open MIDI input port '{value}': {e}")
-                self._midi_input = None
+            self._midi_input = None
+        # store the port name (will be opened when recording starts)
+        self._midi_in_port = value
 
     def register_for_recording_end(self, callback):
         '''Subscribe for notifications about recording termination
@@ -95,10 +93,14 @@ class PianoRecorder:
         '''
         self._recording_callbacks.add(callback)
 
-    def start_recording(self):
+    async def start_recording(self):
         '''Starts recording MIDI messages.'''
         if self._recording:
             logger.warning('Already recording')
+            return
+
+        if not self._midi_in_port:
+            logger.error('No MIDI input port selected for recording')
             return
 
         logger.info('Start recording MIDI messages')
@@ -108,6 +110,9 @@ class PianoRecorder:
         self._start_time = time.time()
         self._pause_start_time = None
         self._total_pause_duration = 0
+
+        # start async recording task
+        self._record_task = asyncio.create_task(self._record_midi_input())
 
     def pause_recording(self):
         '''Pauses the recording.'''
@@ -133,6 +138,24 @@ class PianoRecorder:
         self._recording = False
         self._paused = False
 
+        # stop and wait for recording task to complete
+        if self._record_task:
+            self._record_task.cancel()
+            try:
+                await self._record_task
+            except asyncio.CancelledError:
+                pass
+            self._record_task = None
+
+        # close MIDI input port after recording
+        if self._midi_input is not None:
+            logger.debug('Closing MIDI input port after recording.')
+            try:
+                self._midi_input.close()
+            except Exception as e:
+                logger.error(f'Failed to close MIDI input port: {e}')
+            self._midi_input = None
+
         # Create MIDI file from recorded messages
         midi_data = self._create_midi_file()
 
@@ -148,18 +171,42 @@ class PianoRecorder:
 
         return midi_data
 
-    def _on_midi_input_message(self, message):
-        '''Callback for incoming MIDI messages.'''
-        if self._recording and not self._paused:
-            # Calculate timestamp relative to recording start
-            current_time = time.time()
-            timestamp = current_time - self._start_time - self._total_pause_duration
-            
-            # Store message with timestamp
-            self._recorded_messages.append({
-                'message': message.copy(),
-                'timestamp': timestamp
-            })
+    async def _record_midi_input(self):
+        '''Async task that continuously reads MIDI messages from the input port.'''
+        try:
+            # Open MIDI input port (without callback - we'll iterate over messages)
+            logger.debug('Opening MIDI input port for recording: %s' % self._midi_in_port)
+            self._midi_input = mido.open_input(self._midi_in_port)
+            logger.debug('MIDI input port opened.')
+
+            # Continuously read messages while recording
+            while self._recording:
+                # Use iter_pending() to get available messages without blocking
+                for message in self._midi_input.iter_pending():
+                    if self._recording and not self._paused:
+                        # Calculate timestamp relative to recording start
+                        current_time = time.time()
+                        timestamp = current_time - self._start_time - self._total_pause_duration
+                        
+                        # Store message with timestamp
+                        self._recorded_messages.append({
+                            'message': message.copy(),
+                            'timestamp': timestamp
+                        })
+                        logger.debug(f'Recorded MIDI message: {message}')
+
+                # Small delay to prevent busy-waiting
+                await asyncio.sleep(0.001)  # 1ms
+
+        except asyncio.CancelledError:
+            logger.debug('Recording task cancelled.')
+            raise
+        except (OSError, IOError) as e:
+            logger.error(f"Error reading from MIDI input port '{self._midi_in_port}': {e}")
+            self._recording = False
+        except Exception as e:
+            logger.exception(f"Unexpected error in recording task: {e}")
+            self._recording = False
 
     def _create_midi_file(self):
         '''Creates a MIDI file from the recorded messages.'''
