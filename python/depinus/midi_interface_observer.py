@@ -33,8 +33,8 @@ class MidiInterfaceObserver:
             input_names = mido.get_input_names()
 
             # Filter out virtual RtMidi client ports
-            output_names = [name for name in output_names if not name.startswith('RtMidiIn Client:')]
-            input_names = [name for name in input_names if not name.startswith('RtMidiOut Client:')]
+            output_names = [name for name in output_names if not name.startswith('RtMidiIn Client:') and not name.startswith('Midi Through:')]
+            input_names = [name for name in input_names if not name.startswith('RtMidiOut Client:') and not name.startswith('Midi Through:')]
 
             changed = False
             if output_names != self._last_output_interfaces:
