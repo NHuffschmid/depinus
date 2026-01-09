@@ -21,7 +21,7 @@ if [ "$1" == "enable" ]; then
     cat > "$SERVICE_FILE" <<EOL
 [Unit]
 Description=Depinus Headless Mode Service
-After=network.target depinus-usb-reset.service
+After=network.target
 
 [Service]
 ExecStart=$PROGRAM_PATH $PROGRAM_ARGS
