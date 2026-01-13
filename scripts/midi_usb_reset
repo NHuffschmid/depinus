@@ -25,45 +25,39 @@ fi
 
 if [ "$1" == "enable" ]; then
     echo "Enabling automatic USB MIDI reset at boot..."
-    
+
     # Create systemd service with inline reset script
     # This service fixes ALSA timing issues when USB MIDI devices are connected during boot.
     # The kernel/ALSA initialization at boot is flawed for some USB MIDI interfaces,
-    # resulting in massive jitter and chaotic MIDI timing. Hotplug initialization works correctly.
-    # This service forces a hotplug-style re-initialization by deauthorizing and re-authorizing
-    # the USB device, which triggers clean ALSA initialization and stable MIDI timing.
+    # resulting in massive jitter and chaotic MIDI timing. After unbind/bind it works correctly.
     cat > "$SERVICE_FILE" <<'EOL'
 [Unit]
-Description=Depinus USB MIDI Hotplug Fix Service
-Before=network.target
-DefaultDependencies=no
+Description=Depinus USB MIDI Hotplug Fix (unbind/bind)
+After=multi-user.target
+Wants=multi-user.target
 
 [Service]
 Type=oneshot
 ExecStart=/bin/bash -c '\
-    echo "Searching for USB MIDI device..."; \
+    # Wait until system is fully initialized (PipeWire, ALSA, udev)
+    sleep 12; \
+    echo "Searching for USB MIDI devices..."; \
     DEVICE_FOUND=0; \
     for dev in /sys/bus/usb/devices/*/product; do \
-        if grep -qi "midi" "$dev" 2>/dev/null; then \
+        if grep -Eqi "midi" "$dev" 2>/dev/null; then \
             DEVICE_DIR=$(dirname "$dev"); \
-            DEVICE_NAME=$(cat "$dev" 2>/dev/null); \
             DEVICE_ID=$(basename "$DEVICE_DIR"); \
-            AUTHORIZED_FILE="$DEVICE_DIR/authorized"; \
-            if [ ! -f "$AUTHORIZED_FILE" ]; then \
-                echo "Warning: No authorized file found for $DEVICE_ID, skipping"; \
-                continue; \
-            fi; \
-            echo "Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR"; \
-            echo "Forcing hotplug re-initialization for device $DEVICE_ID..."; \
-            echo "0" > "$AUTHORIZED_FILE" 2>/dev/null || true; \
-            sleep 1; \
-            echo "1" > "$AUTHORIZED_FILE" 2>/dev/null || true; \
-            echo "USB MIDI device hotplug fix applied successfully"; \
+            echo "Found USB MIDI device: $(cat "$dev") at $DEVICE_DIR"; \
+            echo "Performing USB driver unbind/bind reset on $DEVICE_ID..."; \
+            echo -n "$DEVICE_ID" > /sys/bus/usb/drivers/usb/unbind; \
+            sleep 3; \
+            echo -n "$DEVICE_ID" > /sys/bus/usb/drivers/usb/bind; \
+            echo "USB MIDI device reset complete"; \
             DEVICE_FOUND=1; \
         fi; \
     done; \
     if [ $DEVICE_FOUND -eq 0 ]; then \
-        echo "Info: No USB MIDI device found (may be added later via hotplug)"; \
+        echo "No USB MIDI device found at boot (may be plugged in later)"; \
     fi'
 RemainAfterExit=yes
 StandardOutput=journal
@@ -72,11 +66,11 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOL
-    
+
     # Reload systemd and enable service
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME"
-    
+
     echo "Automatic USB MIDI hotplug fix enabled successfully."
     echo ""
     echo "Service created at: $SERVICE_FILE"
@@ -91,7 +85,7 @@ fi
 
 if [ "$1" == "disable" ]; then
     echo "Disabling automatic USB MIDI hotplug fix..."
-    
+
     if [ -f "$SERVICE_FILE" ]; then
         systemctl stop "$SERVICE_NAME" 2>/dev/null
         systemctl disable "$SERVICE_NAME"
