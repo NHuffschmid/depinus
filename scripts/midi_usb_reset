@@ -16,7 +16,7 @@ if [ -z "$1" ]; then
     echo "This fixes Linux/ALSA initialization issues when USB MIDI devices are"
     echo "connected during boot. Boot initialization causes timing jitter, while"
     echo "hotplug initialization works correctly. This service forces hotplug-style"
-    echo "re-initialization by deauthorizing and re-authorizing the USB device."
+    echo "re-initialization by unbinding and re-binding the USB device."
     echo ""
     echo "  enable  - Create systemd service to apply USB MIDI hotplug fix at boot"
     echo "  disable - Remove systemd service"
