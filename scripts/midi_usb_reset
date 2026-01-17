@@ -13,7 +13,7 @@ if [ -z "$1" ]; then
     echo "Usage: $0 enable | disable"
     echo ""
     echo "This script configures automatic USB MIDI hotplug fix at system boot."
-    echo "This fixes Linux/ALSA initialization issues when USB MIDI devices are"
+    echo "This may fix Linux/ALSA initialization issues when USB MIDI devices are"
     echo "connected during boot. Boot initialization causes timing jitter, while"
     echo "hotplug initialization works correctly. This service forces hotplug-style"
     echo "re-initialization by unbinding and re-binding the USB device."
@@ -25,11 +25,6 @@ fi
 
 if [ "$1" == "enable" ]; then
     echo "Enabling automatic USB MIDI reset at boot..."
-
-    # Create systemd service with inline reset script
-    # This service fixes ALSA timing issues when USB MIDI devices are connected during boot.
-    # The kernel/ALSA initialization at boot is flawed for some USB MIDI interfaces,
-    # resulting in massive jitter and chaotic MIDI timing. After unbind/bind it works correctly.
     cat > "$SERVICE_FILE" <<'EOL'
 [Unit]
 Description=Depinus USB MIDI Hotplug Fix (unbind/bind)
