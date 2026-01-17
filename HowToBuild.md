@@ -47,6 +47,10 @@ Then install the following packages with pip (or some other package manager):
 - requests
 - pyinstaller
 
+In case of PyInstaller issues on Linux systems it might be helpful to run:
+
+> sudo apt install -y python3.11-dev
+
 ### Build package
 - edit the scripts section of the package.json file in the root folder
 - add a new package script according to your needs
