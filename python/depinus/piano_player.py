@@ -21,6 +21,7 @@ class PianoPlayer:
         self._play_task = None
         self._current_composition = None
         self._midi_output = None
+        self._midi_out_port = None
         self._play_time = 0
         self._pausing = False
         self._transposition_pending = False
@@ -96,6 +97,7 @@ class PianoPlayer:
     async def set_midi_out_port(self, value):
         '''Sets the MIDI out port.'''
         logger.info('Set MIDI out port: %s' % value)
+        # Close any currently open port
         if (self._midi_output is not None):
             logger.debug('Closing previous MIDI output port...')
             try:
@@ -103,15 +105,9 @@ class PianoPlayer:
                 logger.debug('MIDI output port closed.')
             except (OSError, IOError) as e:
                 logger.error(f"Failed to close previous MIDI output port: {e}")
-        if value:
-            try:
-                logger.debug('Opening MIDI output port: %s' % value)
-                self._midi_output = mido.open_output(value)
-                logger.debug('MIDI output port opened.')
-            except (OSError, IOError) as e:
-                logger.error(f"Failed to open MIDI output port '{value}': {e}")
-                await self.stop()
-                self._midi_output = None
+            self._midi_output = None
+        # Store port name (will be opened when playback starts)
+        self._midi_out_port = value
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
@@ -219,6 +215,16 @@ class PianoPlayer:
         # create midifile from mididata
         with open(MIDI_FILE_PATH, 'wb') as midi_file:
             midi_file.write(midi_data)
+
+        # Open MIDI output port for playback
+        if self._midi_out_port:
+            try:
+                logger.debug('Opening MIDI output port for playback: %s' % self._midi_out_port)
+                self._midi_output = mido.open_output(self._midi_out_port)
+                logger.debug('MIDI output port opened.')
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to open MIDI output port '{self._midi_out_port}': {e}")
+                self._midi_output = None
 
         try:
 
@@ -332,12 +338,20 @@ class PianoPlayer:
 
                 for callback in self._play_end_callbacks:
                     await callback(True)
-
-            if (self._midi_output is not None):
-                self._midi_output.reset()
             raise
 
         except BaseException:
             logger.exception('BaseException received.')
-            self._midi_output.reset()
             raise
+
+        finally:
+            # Always close MIDI output port after playback
+            if self._midi_output is not None:
+                logger.debug('Closing MIDI output port after playback.')
+                try:
+                    self._midi_output.reset()
+                    self._midi_output.close()
+                    logger.debug('MIDI output port closed.')
+                except Exception as e:
+                    logger.error(f'Failed to close MIDI output port: {e}')
+                self._midi_output = None
