@@ -144,7 +144,7 @@ class PianoRecorder:
             try:
                 await self._record_task
             except asyncio.CancelledError:
-                pass
+                pass # recording task was cancelled as expected
             self._record_task = None
 
         # close MIDI input port after recording

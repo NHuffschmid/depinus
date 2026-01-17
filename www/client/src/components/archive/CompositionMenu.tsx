@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Modal from 'react-modal';
 import { usePlaylistContext } from '../playlist/PlaylistContext';
 import { useTranslation } from "react-i18next";
