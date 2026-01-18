@@ -122,16 +122,30 @@ class PianoRecorder:
             logger.error('No MIDI input port selected for recording')
             return
 
+        # Save the port name before USB reset (it will be cleared during reset)
+        saved_port_name = self._midi_in_port
+
         # Trigger USB reset before recording to ensure clean ALSA state
         self._trigger_usb_reset()
 
         # Wait for USB device to come back after reset (on Linux)
-        # This gives the system time to re-enumerate the device
-        await asyncio.sleep(1.5)
-
-        # Check if MIDI port is still available after USB reset
-        if not self._midi_in_port:
-            logger.error('MIDI input port not available after USB reset')
+        # The device disappears and reappears, taking ~5 seconds
+        logger.info(f'Waiting for USB MIDI device to re-enumerate after reset...')
+        max_wait = 10  # Maximum 10 seconds
+        wait_increment = 0.5
+        waited = 0
+        while waited < max_wait:
+            await asyncio.sleep(wait_increment)
+            waited += wait_increment
+            # Check if port name is back in available inputs
+            available_ports = mido.get_input_names()
+            if saved_port_name in available_ports:
+                logger.info(f'USB MIDI device re-enumerated after {waited:.1f}s')
+                # Restore the port name
+                self._midi_in_port = saved_port_name
+                break
+        else:
+            logger.error(f'MIDI input port "{saved_port_name}" did not re-enumerate after {max_wait}s')
             return
 
         logger.info('Start recording MIDI messages')
