@@ -102,7 +102,8 @@ class PianoRecorder:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1.0)
             sock.connect(('127.0.0.1', self._usb_reset_daemon_port))
-            sock.send(b'RESET')
+            sock.sendall(b'RESET\n')
+            sock.shutdown(socket.SHUT_WR)  # Signal end of send, allow server to read
             sock.close()
             logger.info('USB MIDI reset triggered successfully')
         except (ConnectionRefusedError, TimeoutError, OSError):
