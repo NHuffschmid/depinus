@@ -16,7 +16,7 @@ find_usb_midi_device() {
             if [ -f "$AUTHORIZED_FILE" ]; then
                 DEVICE_NAME=$(cat "$dev" 2>/dev/null)
                 DEVICE_ID=$(basename "$DEVICE_DIR")
-                echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR"
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR" >&2
                 echo "$AUTHORIZED_FILE"
                 return 0
             fi
@@ -65,25 +65,23 @@ fi
 echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Daemon listening on 127.0.0.1:$PORT"
 
 # Handle termination signals gracefully
-trap 'echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI Reset Daemon stopped."; exit 0' SIGTERM SIGINT
+cleanup() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI Reset Daemon stopped."
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
 
 # Main loop - listen for connections
 while true; do
     # Listen for one connection, process it, then loop again
-    COMMAND=$(echo "" | nc -l -p $PORT 127.0.0.1 2>/dev/null | tr -d '\0\r\n' | head -c 10)
+    # timeout ensures nc exits after client disconnects (max 1 second wait)
+    COMMAND=$(timeout 1 nc -l 127.0.0.1 $PORT 2>/dev/null | tr -d '\0\r\n' | cut -c1-10)
     
     if [ "$COMMAND" = "RESET" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Reset trigger received from piano_daemon"
         
-        if reset_usb_device "$AUTHORIZED_FILE"; then
-            echo "OK" | nc 127.0.0.1 $PORT 2>/dev/null &
-        else
-            echo "ERROR" | nc 127.0.0.1 $PORT 2>/dev/null &
-        fi
+        reset_usb_device "$AUTHORIZED_FILE"
     elif [ -n "$COMMAND" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') [WARNING] Unknown command received: $COMMAND"
     fi
-    
-    # Small delay to prevent busy loop if nc fails immediately
-    sleep 0.1
 done
