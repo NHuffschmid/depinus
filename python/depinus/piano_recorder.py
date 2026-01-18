@@ -10,6 +10,8 @@ from datetime import datetime
 from depinus import logger
 
 DYNAMICS_DEFAULT = 50
+USB_RESET_DAEMON_PORT = 9999
+
 
 class PianoRecorder:
     '''Records MIDI messages from an input device'''
@@ -30,6 +32,7 @@ class PianoRecorder:
         self._tempo = 1.0
         self._transposition = 0
         self._dynamics = DYNAMICS_DEFAULT
+        self._usb_reset_daemon_port = USB_RESET_DAEMON_PORT
 
     @property
     def transposition(self):
@@ -93,6 +96,25 @@ class PianoRecorder:
         '''
         self._recording_callbacks.add(callback)
 
+    def _trigger_usb_reset(self):
+        '''Triggers the USB MIDI reset daemon (Linux only, silently ignored on Windows).'''
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1.0)
+            sock.connect(('127.0.0.1', self._usb_reset_daemon_port))
+            sock.send(b'RESET')
+            response = sock.recv(1024)
+            sock.close()
+            if response == b'OK':
+                logger.info('USB MIDI reset triggered successfully')
+            else:
+                logger.warning(f'USB reset daemon returned: {response}')
+        except (ConnectionRefusedError, TimeoutError, OSError):
+            # Daemon not running (Windows or disabled on Linux) - this is OK
+            logger.debug('USB reset daemon not available (expected on Windows or when disabled)')
+        except Exception as e:
+            logger.error(f'Error triggering USB reset: {e}')
+
     async def start_recording(self):
         '''Starts recording MIDI messages.'''
         if self._recording:
@@ -102,6 +124,9 @@ class PianoRecorder:
         if not self._midi_in_port:
             logger.error('No MIDI input port selected for recording')
             return
+
+        # Trigger USB reset before recording to ensure clean ALSA state
+        self._trigger_usb_reset()
 
         logger.info('Start recording MIDI messages')
         self._recording = True
