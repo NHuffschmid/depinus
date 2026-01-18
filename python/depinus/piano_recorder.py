@@ -133,19 +133,17 @@ class PianoRecorder:
 
         # Wait for USB device to come back after reset (on Linux)
         # The device disappears and reappears, taking ~5 seconds
-        logger.info(f'Waiting for USB MIDI device to re-enumerate after reset...')
+        # We wait for the MidiInterfaceObserver to restore the port
+        logger.info(f'Waiting for USB MIDI device "{saved_port_name}" to re-enumerate after reset...')
         max_wait = 10  # Maximum 10 seconds
-        wait_increment = 0.5
+        wait_increment = 0.2
         waited = 0
         while waited < max_wait:
             await asyncio.sleep(wait_increment)
             waited += wait_increment
-            # Check if port name is back in available inputs
-            available_ports = mido.get_input_names()
-            if saved_port_name in available_ports:
-                logger.info(f'USB MIDI device re-enumerated after {waited:.1f}s')
-                # Restore the port name
-                self._midi_in_port = saved_port_name
+            # Check if the observer has restored the port (not just if it's in the list)
+            if self._midi_in_port == saved_port_name:
+                logger.info(f'USB MIDI device re-enumerated and port restored after {waited:.1f}s')
                 break
         else:
             logger.error(f'MIDI input port "{saved_port_name}" did not re-enumerate after {max_wait}s')
