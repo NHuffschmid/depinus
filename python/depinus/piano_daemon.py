@@ -36,12 +36,16 @@ class PianoDaemon:
         port = config['Network']['piano_daemon_websocket_port']
         self._websocket_server = WebsocketServer(port)
 
+        # Get USB reset daemon port from config (default 1732)
+        network = config['Network'] if 'Network' in config else {}
+        usb_reset_daemon_port = int(network.get('usb_reset_daemon_port', 1732))
+
         self._piano_player = PianoPlayer()
         self._piano_player.dynamics = int(settings.get('dynamics', 50))
         self._piano_player.tempo = float(settings.get('tempo', 1.0))
         self._piano_player.transposition = int(settings.get('transposition', 0))
 
-        self._piano_recorder = PianoRecorder()
+        self._piano_recorder = PianoRecorder(usb_reset_daemon_port)
         self._piano_recorder.dynamics = int(settings.get('dynamics', 50))
         self._piano_recorder.tempo = float(settings.get('tempo', 1.0))
         self._piano_recorder.transposition = int(settings.get('transposition', 0))

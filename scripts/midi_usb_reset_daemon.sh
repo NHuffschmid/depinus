@@ -2,7 +2,7 @@
 # USB MIDI Reset Daemon - Bash implementation
 # Runs with root privileges and listens for USB reset triggers
 
-PORT=${1:-9999}
+PORT=${1:-1732}
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI Reset Daemon starting on port $PORT..."
 

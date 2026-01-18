@@ -4,7 +4,7 @@
 DAEMON_PATH="$(dirname "$(readlink -f "$0")")/midi_usb_reset_daemon.sh"
 SERVICE_NAME="depinus-usb-reset-daemon"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
-DEFAULT_PORT=9999
+DEFAULT_PORT=1732
 
 if [ "$EUID" -ne 0 ]; then
     echo "Please run this script as root (e.g., using sudo)."

@@ -10,14 +10,17 @@ from datetime import datetime
 from depinus import logger
 
 DYNAMICS_DEFAULT = 50
-USB_RESET_DAEMON_PORT = 9999
 
 
 class PianoRecorder:
     '''Records MIDI messages from an input device'''
 
-    def __init__(self):
-        '''Constructor'''
+    def __init__(self, usb_reset_daemon_port=1732):
+        '''Constructor
+        
+        Parameters:
+            usb_reset_daemon_port: Port for USB reset daemon communication (default: 1732)
+        '''
 
         self._recording = False
         self._paused = False
@@ -32,7 +35,7 @@ class PianoRecorder:
         self._tempo = 1.0
         self._transposition = 0
         self._dynamics = DYNAMICS_DEFAULT
-        self._usb_reset_daemon_port = USB_RESET_DAEMON_PORT
+        self._usb_reset_daemon_port = usb_reset_daemon_port
 
     @property
     def transposition(self):
