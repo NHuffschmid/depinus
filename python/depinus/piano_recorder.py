@@ -124,6 +124,15 @@ class PianoRecorder:
         # Trigger USB reset before recording to ensure clean ALSA state
         self._trigger_usb_reset()
 
+        # Wait for USB device to come back after reset (on Linux)
+        # This gives the system time to re-enumerate the device
+        await asyncio.sleep(1.5)
+
+        # Check if MIDI port is still available after USB reset
+        if not self._midi_in_port:
+            logger.error('MIDI input port not available after USB reset')
+            return
+
         logger.info('Start recording MIDI messages')
         self._recording = True
         self._paused = False
