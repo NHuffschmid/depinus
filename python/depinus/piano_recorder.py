@@ -103,12 +103,8 @@ class PianoRecorder:
             sock.settimeout(1.0)
             sock.connect(('127.0.0.1', self._usb_reset_daemon_port))
             sock.send(b'RESET')
-            response = sock.recv(1024)
             sock.close()
-            if response == b'OK':
-                logger.info('USB MIDI reset triggered successfully')
-            else:
-                logger.warning(f'USB reset daemon returned: {response}')
+            logger.info('USB MIDI reset triggered successfully')
         except (ConnectionRefusedError, TimeoutError, OSError):
             # Daemon not running (Windows or disabled on Linux) - this is OK
             logger.debug('USB reset daemon not available (expected on Windows or when disabled)')
