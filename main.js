@@ -333,9 +333,8 @@ function startAppInitialization() {
                     Menu.setApplicationMenu(null);
                   }
 
-                  logger.info('Skip playing startup jingle!');
-                  //logger.info('Play startup jingle...');
-                  //pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
+                  logger.info('Play startup jingle...');
+                  pianoDaemonWebsocket.send(JSON.stringify({ commandType: 'control', command: 'play_startup_jingle' }));
                 })
                 .catch((error) => {
                   show_userinfo(`ERROR: Cannot start the frontend server on port ${frontend_server_port}.`, true);
