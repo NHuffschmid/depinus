@@ -115,6 +115,62 @@ class PianoRecorder:
         except Exception as e:
             logger.error(f'Error triggering USB reset: {e}')
 
+    async def _wait_for_usb_reset_complete(self, saved_port_name):
+        '''Waits for USB reset to complete by monitoring port disappearance and reappearance.
+        
+        Parameters:
+            saved_port_name: The MIDI port name before reset
+            
+        Returns:
+            True if reset completed successfully or no reset needed, False on error
+        '''
+        # Trigger USB reset before recording to ensure clean ALSA state
+        self._trigger_usb_reset()
+
+        # Wait for USB device to disappear and come back after reset (on Linux)
+        # Phase 1: Wait for device to disappear (MidiInterfaceObserver sets port to None)
+        logger.info(f'Waiting for USB MIDI device "{saved_port_name}" to disappear after reset...')
+        max_wait_disappear = 2  # Maximum 2 seconds to disappear
+        wait_increment = 0.1
+        waited = 0
+        while waited < max_wait_disappear:
+            await asyncio.sleep(wait_increment)
+            waited += wait_increment
+            if self._midi_in_port is None:
+                logger.info(f'USB MIDI device disappeared after {waited:.1f}s')
+                break
+        else:
+            # Device didn't disappear - probably no daemon running (Windows)
+            # or device enumeration was very fast
+            logger.debug(f'USB MIDI device did not disappear (no reset or very fast re-enumeration)')
+            # Small delay to ensure any pending reset is complete
+            await asyncio.sleep(0.2)
+            if self._midi_in_port == saved_port_name:
+                logger.info('Port still available, proceeding with recording')
+                return True
+            else:
+                logger.error('MIDI input port changed unexpectedly')
+                return False
+        
+        # Phase 2: Wait for device to come back (only if it disappeared)
+        if self._midi_in_port is None:
+            logger.info(f'Waiting for USB MIDI device to re-enumerate...')
+            max_wait_reappear = 8  # Maximum 8 seconds to reappear
+            waited = 0
+            while waited < max_wait_reappear:
+                await asyncio.sleep(wait_increment)
+                waited += wait_increment
+                if self._midi_in_port == saved_port_name:
+                    logger.info(f'USB MIDI device re-enumerated and port restored after {waited:.1f}s')
+                    return True
+            
+            # Device did not come back in time
+            logger.error(f'MIDI input port "{saved_port_name}" did not re-enumerate after {max_wait_reappear}s')
+            return False
+        
+        # Device didn't disappear, no reset needed
+        return True
+
     async def start_recording(self):
         '''Starts recording MIDI messages.'''
         if self._recording:
@@ -128,25 +184,8 @@ class PianoRecorder:
         # Save the port name before USB reset (it will be cleared during reset)
         saved_port_name = self._midi_in_port
 
-        # Trigger USB reset before recording to ensure clean ALSA state
-        self._trigger_usb_reset()
-
-        # Wait for USB device to come back after reset (on Linux)
-        # The device disappears and reappears, taking ~5 seconds
-        # We wait for the MidiInterfaceObserver to restore the port
-        logger.info(f'Waiting for USB MIDI device "{saved_port_name}" to re-enumerate after reset...')
-        max_wait = 10  # Maximum 10 seconds
-        wait_increment = 0.2
-        waited = 0
-        while waited < max_wait:
-            await asyncio.sleep(wait_increment)
-            waited += wait_increment
-            # Check if the observer has restored the port (not just if it's in the list)
-            if self._midi_in_port == saved_port_name:
-                logger.info(f'USB MIDI device re-enumerated and port restored after {waited:.1f}s')
-                break
-        else:
-            logger.error(f'MIDI input port "{saved_port_name}" did not re-enumerate after {max_wait}s')
+        # Wait for USB reset to complete
+        if not await self._wait_for_usb_reset_complete(saved_port_name):
             return
 
         logger.info('Start recording MIDI messages')
