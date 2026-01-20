@@ -41,6 +41,8 @@ DEPINUS uses the following default network configuration values:
 - piano_daemon_websocket_port = 1770
 - backend_rest_api_port = 5000
 - frontend_server_port (remote control) = 8080
+- usb_reset_daemon_port = 1732
+
 
 If these ports are already in use in your environment, you can modify the depinus.conf file in the resources folder before starting the program.
 
@@ -49,6 +51,38 @@ If you wish to run the frontend server on port 80, the procedure depends on your
 - On Windows, you can simply change the port in depinus.conf from 8080 to 80, as there are no restrictions regarding privileged ports.
 
 - On Linux, things may be more complex, as non-root users are not permitted to use privileged ports. Solutions such as authbind or port forwarding can help resolve this issue.
+
+## Known issues
+
+### Recording on Linux
+
+On Linux systems using ALSA with USB MIDI devices, MIDI recording may experience strange timing issues. This is probably caused by a kernel-level state corruption in ALSA's bidirectional MIDI port handling, where the playback operation leaves the MIDI device in an inconsistent state.
+
+**Symptoms:**
+- MIDI events arrive with significant delays (100-400ms)
+- Recording timing is accurate again after plugging off/in the MIDI USB device
+- Problem reoccurs after playing MIDI files
+
+**Workaround:**
+
+DEPINUS includes an optional USB MIDI Reset Daemon that automatically resets the USB MIDI device before each recording session. To enable this feature:
+
+1. Navigate to the resources folder in your DEPINUS installation
+2. Run the following command with administrator privileges:
+
+   ```
+   sudo ./midi_usb_reset enable
+   ```
+
+The daemon will now start automatically on each system boot and reset the USB MIDI device before each recording, ensuring accurate timing.
+
+To disable the daemon:
+
+```
+sudo ./midi_usb_reset disable
+```
+
+**Note:** This feature is only available on Linux. Windows users are not affected by this issue.
 
 ## Contact
 
