@@ -33,11 +33,10 @@ class PianoDaemon:
         config = read_config()
         settings = config['Settings'] if 'Settings' in config else {}
 
-        port = config['Network']['piano_daemon_websocket_port']
+        network = config['Network'] if 'Network' in config else {}
+        port = int(network.get('piano_daemon_websocket_port', 8765))
         self._websocket_server = WebsocketServer(port)
 
-        # Get USB reset daemon port from config (default 1732)
-        network = config['Network'] if 'Network' in config else {}
         usb_reset_daemon_port = int(network.get('usb_reset_daemon_port', 1732))
 
         self._piano_player = PianoPlayer()
