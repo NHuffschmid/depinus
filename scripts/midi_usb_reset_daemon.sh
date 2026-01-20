@@ -29,7 +29,13 @@ find_usb_midi_device() {
 
 # Function to reset USB device
 reset_usb_device() {
-    local authorized_file=$1
+    # Re-search for the device on each reset to handle device changes
+    local authorized_file=$(find_usb_midi_device)
+    
+    if [ -z "$authorized_file" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No USB MIDI device found for reset" >&2
+        return 1
+    fi
     
     echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Deauthorizing USB MIDI device..."
     echo "0" > "$authorized_file" 2>/dev/null || {
@@ -49,9 +55,8 @@ reset_usb_device() {
     return 0
 }
 
-# Find USB MIDI device at startup
-AUTHORIZED_FILE=$(find_usb_midi_device)
-if [ -z "$AUTHORIZED_FILE" ]; then
+# Verify USB MIDI device is available at startup
+if ! find_usb_midi_device > /dev/null; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No USB MIDI device found. Daemon cannot operate." >&2
     exit 1
 fi
@@ -80,7 +85,7 @@ while true; do
     if [ "$COMMAND" = "RESET" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Reset trigger received from piano_daemon"
         
-        reset_usb_device "$AUTHORIZED_FILE"
+        reset_usb_device
     elif [ -n "$COMMAND" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') [WARNING] Unknown command received: $COMMAND"
     fi
