@@ -1,8 +1,10 @@
 #!/bin/bash
-# Bash script to enable or disable automatic USB MIDI reset at system boot
+# Bash script to enable or disable the USB MIDI Reset Daemon on Linux machines
 
-SERVICE_NAME="depinus-usb-reset"
+DAEMON_PATH="$(dirname "$(readlink -f "$0")")/midi_usb_reset_daemon.sh"
+SERVICE_NAME="depinus-usb-reset-daemon"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+DEFAULT_PORT=1732
 
 if [ "$EUID" -ne 0 ]; then
     echo "Please run this script as root (e.g., using sudo)."
@@ -10,89 +12,84 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 enable | disable"
+    echo "Usage: $0 enable [port] | disable"
     echo ""
-    echo "This script configures automatic USB MIDI hotplug fix at system boot."
-    echo "This may fix Linux/ALSA initialization issues when USB MIDI devices are"
-    echo "connected during boot. Boot initialization causes timing jitter, while"
-    echo "hotplug initialization works correctly. This service forces hotplug-style"
-    echo "re-initialization by unbinding and re-binding the USB device."
+    echo "This script configures the USB MIDI Reset Daemon that runs with root privileges."
+    echo "The daemon listens for reset triggers from the piano daemon and performs USB device"
+    echo "resets to fix ALSA timing issues on Linux systems."
     echo ""
-    echo "  enable  - Create systemd service to apply USB MIDI hotplug fix at boot"
-    echo "  disable - Remove systemd service"
+    echo "  enable [port] - Create and start systemd service (default port: $DEFAULT_PORT)"
+    echo "  disable       - Stop and remove systemd service"
     exit 1
 fi
 
 if [ "$1" == "enable" ]; then
-    echo "Enabling automatic USB MIDI reset at boot..."
-    cat > "$SERVICE_FILE" <<'EOL'
+    PORT=${2:-$DEFAULT_PORT}
+    
+    echo "Enabling USB MIDI Reset Daemon on port $PORT..."
+    
+    # Validate port number
+    if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1024 ] || [ "$PORT" -gt 65535 ]; then
+        echo "Error: Port must be a number between 1024 and 65535"
+        exit 1
+    fi
+    
+    # Check if daemon script exists
+    if [ ! -f "$DAEMON_PATH" ]; then
+        echo "Error: Daemon script not found at $DAEMON_PATH"
+        exit 1
+    fi
+    
+    # Create systemd service
+    cat > "$SERVICE_FILE" <<EOL
 [Unit]
-Description=Depinus USB MIDI Hotplug Fix (unbind/bind)
-After=multi-user.target
-Wants=multi-user.target
+Description=Depinus USB MIDI Reset Daemon
+After=network.target
+Before=depinus-headless.service
 
 [Service]
-Type=oneshot
-ExecStart=/bin/bash -c '\
-    # Wait until system is fully initialized (PipeWire, ALSA, udev)
-    sleep 12; \
-    echo "Searching for USB MIDI devices..."; \
-    DEVICE_FOUND=0; \
-    for dev in /sys/bus/usb/devices/*/product; do \
-        if grep -Eqi "midi" "$dev" 2>/dev/null; then \
-            DEVICE_DIR=$(dirname "$dev"); \
-            DEVICE_ID=$(basename "$DEVICE_DIR"); \
-            echo "Found USB MIDI device: $(cat "$dev") at $DEVICE_DIR"; \
-            echo "Performing USB driver unbind/bind reset on $DEVICE_ID..."; \
-            echo -n "$DEVICE_ID" > /sys/bus/usb/drivers/usb/unbind; \
-            sleep 3; \
-            echo -n "$DEVICE_ID" > /sys/bus/usb/drivers/usb/bind; \
-            echo "USB MIDI device reset complete"; \
-            DEVICE_FOUND=1; \
-        fi; \
-    done; \
-    if [ $DEVICE_FOUND -eq 0 ]; then \
-        echo "No USB MIDI device found at boot (may be plugged in later)"; \
-    fi'
-RemainAfterExit=yes
+Type=simple
+ExecStart=$DAEMON_PATH $PORT
+Restart=always
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOL
-
+    
     # Reload systemd and enable service
     systemctl daemon-reload
     systemctl enable "$SERVICE_NAME"
-
-    echo "Automatic USB MIDI hotplug fix enabled successfully."
+    systemctl start "$SERVICE_NAME"
+    
+    echo "USB MIDI Reset Daemon enabled successfully on port $PORT."
     echo ""
     echo "Service created at: $SERVICE_FILE"
-    echo "The USB MIDI device will be re-initialized automatically on every boot."
-    echo "This forces hotplug-style initialization to fix ALSA timing issues."
+    echo "The daemon will start automatically on system boot."
     echo ""
-    echo "To test now: sudo systemctl start $SERVICE_NAME"
-    echo "View logs:   sudo journalctl -u $SERVICE_NAME"
-    echo "To disable:  sudo $0 disable"
+    echo "To check status: sudo systemctl status $SERVICE_NAME"
+    echo "View logs:       sudo journalctl -u $SERVICE_NAME -f"
+    echo "To disable:      sudo $0 disable"
     exit 0
 fi
 
 if [ "$1" == "disable" ]; then
-    echo "Disabling automatic USB MIDI hotplug fix..."
-
+    echo "Disabling USB MIDI Reset Daemon..."
+    
     if [ -f "$SERVICE_FILE" ]; then
         systemctl stop "$SERVICE_NAME" 2>/dev/null
         systemctl disable "$SERVICE_NAME"
         rm "$SERVICE_FILE"
         systemctl daemon-reload
-        echo "Automatic USB MIDI hotplug fix disabled."
+        echo "USB MIDI Reset Daemon disabled."
         echo "Service removed from $SERVICE_FILE"
     else
-        echo "Automatic USB MIDI hotplug fix is not enabled."
+        echo "USB MIDI Reset Daemon is not enabled."
     fi
     exit 0
 fi
 
-echo "Usage: $0 enable | disable"
+echo "Usage: $0 enable [port] | disable"
 exit 1
