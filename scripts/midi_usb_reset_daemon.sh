@@ -4,7 +4,7 @@
 
 PORT=${1:-1732}
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI Reset Daemon starting on port $PORT..."
+echo "[INFO] USB MIDI Reset Daemon starting on port $PORT..."
 
 # Function to find USB MIDI device
 find_usb_midi_device() {
@@ -16,14 +16,14 @@ find_usb_midi_device() {
             if [ -f "$AUTHORIZED_FILE" ]; then
                 DEVICE_NAME=$(cat "$dev" 2>/dev/null)
                 DEVICE_ID=$(basename "$DEVICE_DIR")
-                echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR" >&2
+                echo "[INFO] Found USB MIDI device: $DEVICE_NAME at $DEVICE_DIR" >&2
                 echo "$AUTHORIZED_FILE"
                 return 0
             fi
         fi
     done
     
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No USB MIDI device found" >&2
+    echo "[ERROR] No USB MIDI device found" >&2
     return 1
 }
 
@@ -33,45 +33,66 @@ reset_usb_device() {
     local authorized_file=$(find_usb_midi_device)
     
     if [ -z "$authorized_file" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No USB MIDI device found for reset" >&2
+        echo "[ERROR] No USB MIDI device found for reset" >&2
         return 1
     fi
     
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Deauthorizing USB MIDI device..."
+    echo "[INFO] Deauthorizing USB MIDI device..."
     echo "0" > "$authorized_file" 2>/dev/null || {
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Failed to deauthorize device" >&2
+        echo "[ERROR] Failed to deauthorize device" >&2
         return 1
     }
     
     sleep 0.5
     
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Reauthorizing USB MIDI device..."
+    echo "[INFO] Reauthorizing USB MIDI device..."
     echo "1" > "$authorized_file" 2>/dev/null || {
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Failed to reauthorize device" >&2
+        echo "[ERROR] Failed to reauthorize device" >&2
         return 1
     }
     
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI device reset completed successfully."
+    echo "[INFO] USB MIDI device reset completed successfully."
     return 0
 }
 
 # Verify USB MIDI device is available at startup
 if ! find_usb_midi_device > /dev/null; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] No USB MIDI device found. Daemon cannot operate." >&2
+    echo "[ERROR] No USB MIDI device found. Daemon cannot operate." >&2
     exit 1
 fi
 
-# Check if netcat is available
+# Check if netcat is available and determine which variant
 if ! command -v nc &> /dev/null; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] netcat (nc) not found. Please install: apt-get install netcat-openbsd" >&2
+    echo "[ERROR] netcat (nc) not found." >&2
+    echo "[ERROR] Please install one of:" >&2
+    echo "[ERROR]   apt-get install netcat-openbsd   (Debian/Ubuntu)" >&2
+    echo "[ERROR]   apt-get install netcat-traditional" >&2
+    echo "[ERROR]   yum install nmap-ncat            (RedHat/CentOS)" >&2
     exit 1
 fi
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Daemon listening on 127.0.0.1:$PORT"
+# Detect netcat variant and set appropriate command
+NC_HELP=$(nc -h 2>&1)
+if echo "$NC_HELP" | grep -q "\-l -p port"; then
+    # netcat-traditional: requires -p flag for port
+    NC_LISTEN="nc -l -p $PORT"
+    NC_VARIANT="netcat-traditional"
+elif echo "$NC_HELP" | grep -q "nmap.org/ncat"; then
+    # ncat (nmap): supports host specification
+    NC_LISTEN="nc -l 127.0.0.1 $PORT"
+    NC_VARIANT="ncat"
+else
+    # netcat-openbsd (default): modern syntax
+    NC_LISTEN="nc -l 127.0.0.1 $PORT"
+    NC_VARIANT="netcat-openbsd"
+fi
+
+echo "[INFO] Detected $NC_VARIANT"
+echo "[INFO] Daemon listening on 127.0.0.1:$PORT"
 
 # Handle termination signals gracefully
 cleanup() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] USB MIDI Reset Daemon stopped."
+    echo "[INFO] USB MIDI Reset Daemon stopped."
     exit 0
 }
 trap cleanup SIGTERM SIGINT
@@ -79,14 +100,14 @@ trap cleanup SIGTERM SIGINT
 # Main loop - listen for connections
 while true; do
     # Listen for one connection, process it, then loop again
-    # timeout ensures nc exits after client disconnects (max 1 second wait)
-    COMMAND=$(timeout 1 nc -l 127.0.0.1 $PORT 2>/dev/null | tr -d '\0\r\n' | cut -c1-10)
+    # timeout ensures nc exits after client disconnects (max 2 seconds wait)
+    COMMAND=$(timeout 2 $NC_LISTEN 2>/dev/null | tr -d '\0\r\n' | head -c 10)
     
     if [ "$COMMAND" = "RESET" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Reset trigger received from piano_daemon"
+        echo "[INFO] Reset trigger received from piano_daemon"
         
         reset_usb_device
     elif [ -n "$COMMAND" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [WARNING] Unknown command received: $COMMAND"
+        echo "[WARNING] Unknown command received: $COMMAND"
     fi
 done
