@@ -59,6 +59,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
                 open={uploadDialogIsOpen}
                 header={t('Add midifile to archive')}
                 title={''}
+                composerId={props.composerId}
                 midifileIsMandatory={true}
                 upload={uploadComposition}
                 finished={uploadFinished}
