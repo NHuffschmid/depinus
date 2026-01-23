@@ -34,8 +34,12 @@ const UploadCompositionDialog: React.FC<UploadCompositionDialogProps> = (props) 
                 .then(res => res.json())
                 .then(data => setComposers(data))
                 .catch(() => setComposers([]));
+            // Reset state when dialog opens
+            setTitle(props.title);
+            setMidifile(undefined);
+            setComposerId(props.composerId);
         }
-    }, [props.open]);
+    }, [props.open, props.title, props.composerId]);
 
     const hasChanges = () => {
         return title !== props.title ||
