@@ -3,6 +3,7 @@
 import asyncio
 import getpass
 import mido
+import platform
 import socket
 import time
 from datetime import datetime
@@ -133,6 +134,11 @@ class PianoRecorder:
         Returns:
             True if reset completed successfully or no reset needed, False on error
         '''
+        # Skip USB reset on Windows - not needed there
+        if platform.system() == 'Windows':
+            logger.debug('Windows detected - skipping USB reset (not required)')
+            return True
+        
         # Notify about waiting state
         for callback in self._waiting_callbacks:
             await callback(True)
