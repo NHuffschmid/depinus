@@ -227,14 +227,18 @@ const startFrontend = () => {
 
         fs.readFile(filePath, (err, content) => {
           if (err) {
-            if (err.code === 'ENOENT') {
-              fs.readFile(path.join(buildDir, '404.html'), (error, page404) => {
+            // For SPA routing: serve index.html for all file-not-found errors
+            // This includes ENOENT (file doesn't exist) and EISDIR (path is a directory)
+            // This allows BrowserRouter to handle navigation on page reload
+            if (err.code === 'ENOENT' || err.code === 'EISDIR') {
+              const indexPath = path.join(__dirname, 'www/client/dist', 'index.html');
+              fs.readFile(indexPath, (error, indexContent) => {
                 if (error) {
                   res.writeHead(500);
                   res.end('500 - Internal Server Error');
                 } else {
-                  res.writeHead(404, { 'Content-Type': 'text/html' });
-                  res.end(page404, 'utf-8');
+                  res.writeHead(200, { 'Content-Type': 'text/html' });
+                  res.end(indexContent, 'utf-8');
                 }
               });
             } else {

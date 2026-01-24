@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.9.4] - Bach
+
+### Features
+- Added MIDI recording feature
+- Added export of MIDI files
+- Added support to move a composition to another composer
+
+### Bugfixes
+- https://github.com/NHuffschmid/depinus/issues/24
+- fixed BrowserRouter issue on page reload
+
+
 ## [0.9.3] - Vivaldi
 
 ### Features

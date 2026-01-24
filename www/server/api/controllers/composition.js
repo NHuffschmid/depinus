@@ -7,7 +7,8 @@ module.exports = {
   getCompositionsOfComposer: getCompositionsOfComposer,
   deleteComposition: deleteComposition,
   patchComposition: patchComposition,
-  postComposition: postComposition
+  postComposition: postComposition,
+  exportCompositionMidi: exportCompositionMidi
 };
 
 function calculateMidifileDuration(data) {
@@ -102,41 +103,60 @@ function patchComposition(req, res) {
   const compositionId = req.swagger.params.id.value;
   const hasName = req.swagger.params.name && req.swagger.params.name.value;
   const hasMidifile = req.swagger.params.midifile && req.swagger.params.midifile.value;
+  const hasComposerId = req.swagger.params.composerId && req.swagger.params.composerId.value;
 
-  if (hasName && hasMidifile) {
-    // update both name and midifile
+  // Build update fields and values dynamically
+  const updateFields = [];
+  const updateValues = [];
+
+  if (hasName) {
     const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
+    updateFields.push('name=(?)');
+    updateValues.push(compositionName);
+  }
+
+  if (hasComposerId) {
+    updateFields.push('composer_id=(?)');
+    updateValues.push(req.swagger.params.composerId.value);
+  }
+
+  // Helper function to execute the UPDATE
+  const executeUpdate = () => {
+    if (updateFields.length > 0) {
+      updateValues.push(compositionId);
+      const sql = `UPDATE composition SET ${updateFields.join(', ')} WHERE id=(?);`;
+      db.run(sql, updateValues, (err) => {
+        if (err) {
+          logger.error("Cannot update composition in DB: " + err.toString());
+          res.status(500).json({ 'message': err.toString() });
+        } else {
+          logger.debug("Patch command successful. Sending 204...");
+          res.status(204).send();
+        }
+      });
+    } else {
+      logger.debug("No fields to update. Sending 204...");
+      res.status(204).send();
+    }
+  };
+
+  if (hasMidifile) {
+    // If midifile is included, calculate duration first
     calculateMidifileDuration(req.swagger.params.midifile.value.buffer)
       .then((duration) => {
-        db.run(`UPDATE composition SET name=(?), midifile=(?), duration=(?) WHERE id=(?);`,
-          [compositionName, req.swagger.params.midifile.value.buffer, duration, compositionId], (err) => {
-            if (err) {
-              logger.error("Cannot update composition in DB: " + err.toString());
-              res.status(500).json({ 'message': err.toString() });
-            } else {
-              logger.debug("Patch command successful (name + midifile). Sending 204...");
-              res.status(204).send();
-            }
-          });
+        updateFields.push('midifile=(?)');
+        updateValues.push(req.swagger.params.midifile.value.buffer);
+        updateFields.push('duration=(?)');
+        updateValues.push(duration);
+        executeUpdate();
       })
       .catch((error) => {
         logger.error("Cannot calculate midifile duration: " + error.toString());
         res.status(500).json({ 'message': error.toString() });
       });
-  }
-  else {
-    // update only name
-    const compositionName = req.swagger.params.name.value.replace(/[\u200B]/g, '');
-    db.run(`UPDATE composition SET name=(?) WHERE id=(?);`,
-      [compositionName, compositionId], (err) => {
-        if (err) {
-          logger.error("Cannot update composition name in DB: " + err.toString());
-          res.status(500).json({ 'message': err.toString() });
-        } else {
-          logger.debug("Patch command successful (name only). Sending 204...");
-          res.status(204).send();
-        }
-      });
+  } else {
+    // No midifile, execute update immediately
+    executeUpdate();
   }
 }
 
@@ -166,5 +186,34 @@ function postComposition(req, res) {
     })
     .catch((err) => {
       res.status(500).json({ 'message': err.toString() });
+    });
+}
+
+function exportCompositionMidi(req, res) {
+  const compositionId = req.swagger.params.id.value;
+  
+  db.get(`SELECT composition.name, composition.midifile, composer.surname 
+          FROM composition 
+          LEFT JOIN composer ON composition.composer_id = composer.id 
+          WHERE composition.id=?;`,
+    [compositionId], (err, row) => {
+      if (err) {
+        res.status(500).json({ 'message': err.toString() });
+      }
+      else {
+        if (row && row.midifile) {
+          // Create a safe filename from composer surname and composition name
+          const composerPart = row.surname ? row.surname.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' : '';
+          const compositionPart = row.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          const safeFilename = composerPart + compositionPart + '.mid';
+          
+          res.setHeader('Content-Type', 'audio/midi');
+          res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+          res.send(row.midifile);
+        }
+        else {
+          res.status(404).json({ 'message': 'No composition or MIDI file found for this ID' });
+        }
+      }
     });
 }

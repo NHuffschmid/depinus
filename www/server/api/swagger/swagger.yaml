@@ -195,6 +195,11 @@ paths:
           description: "Name of the composition"
           required: false
           type: "string"
+        - name: "composerId"
+          in: "formData"
+          description: "Composer ID"
+          required: false
+          type: "integer"
         - name: "midifile"
           in: "formData"
           description: "Midi file to upload"
@@ -203,6 +208,32 @@ paths:
       responses:
         "204":
           description: Modified
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /archive/composition/{id}/export:
+    x-swagger-router-controller: composition
+    get:
+      description: Exports a composition as MIDI file
+      operationId: exportCompositionMidi
+      produces:
+        - audio/midi
+      parameters:
+        - in: path
+          name: id
+          type: integer
+          required: true
+          description: ID of the composition to export
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: file
+        "404":
+          description: Composition not found
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         default:
           description: Error
           schema:

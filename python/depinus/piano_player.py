@@ -21,17 +21,26 @@ class PianoPlayer:
         self._play_task = None
         self._current_composition = None
         self._midi_output = None
+        self._midi_out_port = None
         self._play_time = 0
         self._pausing = False
         self._transposition_pending = False
         self._positioning_pending = False
         self._midi_messages_callbacks = set()
         self._play_end_callbacks = set()
+        self._tempo = 1.0
+        self._transposition = 0
+        self._dynamics = DYNAMICS_DEFAULT
 
     @property
     def current_composition(self):
         '''Gets the current composition.'''
         return self._current_composition
+
+    @current_composition.setter
+    def current_composition(self, value):
+        '''Sets the current composition.'''
+        self._current_composition = value
 
     @property
     def play_time(self):
@@ -41,17 +50,17 @@ class PianoPlayer:
     @property
     def is_stoppable(self):
         '''True if the piano player can receive a stop command.'''
-        return not self._play_task.done()
+        return self._play_task is not None and not self._play_task.done()
 
     @property
     def is_playable(self):
         '''True if the piano player can start playing.'''
-        return self._pausing or self._play_task.done()
+        return self._pausing or (self._play_task is not None and self._play_task.done())
 
     @property
     def is_pauseable(self):
         '''True if the piano player can make a pause.'''
-        return (not self._pausing) and (not self._play_task.done())
+        return (not self._pausing) and (self._play_task is not None and not self._play_task.done())
 
     @property
     def transposition(self):
@@ -61,8 +70,9 @@ class PianoPlayer:
     @transposition.setter
     def transposition(self, value):
         '''Sets the transposition.'''
-        self._transposition = value
-        self._transposition_pending = True
+        if (value != self._transposition):
+            self._transposition = value
+            self._transposition_pending = True
 
     @property
     def tempo(self):
@@ -87,15 +97,17 @@ class PianoPlayer:
     async def set_midi_out_port(self, value):
         '''Sets the MIDI out port.'''
         logger.info('Set MIDI out port: %s' % value)
+        # Close any currently open port
         if (self._midi_output is not None):
-            self._midi_output.close()
-        if value:
+            logger.debug('Closing previous MIDI output port...')
             try:
-                self._midi_output = mido.open_output(value)
+                self._midi_output.close()
+                logger.debug('MIDI output port closed.')
             except (OSError, IOError) as e:
-                logger.error(f"Failed to open MIDI output port '{value}': {e}")
-                await self.stop()
-                self._midi_output = None
+                logger.error(f"Failed to close previous MIDI output port: {e}")
+            self._midi_output = None
+        # Store port name (will be opened when playback starts)
+        self._midi_out_port = value
 
     def register_for_midi_messages(self, callback):
         '''Subscribe for notifications about played midi messages
@@ -119,11 +131,7 @@ class PianoPlayer:
         Parameters:
             message: The midi message to play
         '''
-        if (self._midi_output is None):
-            # player is not playing => open a new midi output port
-            with mido.open_output(self._midi_out_port) as midi_output:
-                midi_output.send(message)
-        else:
+        if (self._midi_output is not None):
             # player is playing => add midi message to the current output port
             self._midi_output.send(message)
 
@@ -208,6 +216,16 @@ class PianoPlayer:
         with open(MIDI_FILE_PATH, 'wb') as midi_file:
             midi_file.write(midi_data)
 
+        # Open MIDI output port for playback
+        if self._midi_out_port:
+            try:
+                logger.debug('Opening MIDI output port for playback: %s' % self._midi_out_port)
+                self._midi_output = mido.open_output(self._midi_out_port)
+                logger.debug('MIDI output port opened.')
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to open MIDI output port '{self._midi_out_port}': {e}")
+                self._midi_output = None
+
         try:
 
             mido_file = mido.MidiFile(MIDI_FILE_PATH)
@@ -262,7 +280,8 @@ class PianoPlayer:
                     last_tempo = self.tempo
 
                 if (self._transposition_pending):
-                    self._midi_output.reset()  # reset active keys
+                    if (self._midi_output is not None):
+                        self._midi_output.reset()  # reset active keys
                     self._transposition_pending = False
 
                 #logger.debug('Midifile message:  %s' % str(message))
@@ -284,14 +303,8 @@ class PianoPlayer:
                         if (self._transposition != 0):
                             message.note = message.note + self._transposition
 
-                        if (message.velocity > 0):
-                            # handle dynamics
-                            if (self.dynamics > DYNAMICS_DEFAULT):
-                                message.velocity = int(
-                                    (message.velocity * (100 - self.dynamics) / DYNAMICS_DEFAULT + (self.dynamics - DYNAMICS_DEFAULT) * 2.54))
-                            else:
-                                message.velocity = int(
-                                    message.velocity * self.dynamics / DYNAMICS_DEFAULT)
+                        # TODO: consider velocity curve instead of linear scaling (to make recording/playback reversible)
+                        message.velocity = int(min(127, message.velocity * self._dynamics / DYNAMICS_DEFAULT))
 
                         if (self._midi_output is not None):
                             self._midi_output.send(message)
@@ -325,11 +338,20 @@ class PianoPlayer:
 
                 for callback in self._play_end_callbacks:
                     await callback(True)
-
-            self._midi_output.reset()
             raise
 
         except BaseException:
             logger.exception('BaseException received.')
-            self._midi_output.reset()
             raise
+
+        finally:
+            # Always close MIDI output port after playback
+            if self._midi_output is not None:
+                logger.debug('Closing MIDI output port after playback.')
+                try:
+                    self._midi_output.reset()
+                    self._midi_output.close()
+                    logger.debug('MIDI output port closed.')
+                except Exception as e:
+                    logger.error(f'Failed to close MIDI output port: {e}')
+                self._midi_output = None

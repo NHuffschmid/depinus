@@ -8,7 +8,6 @@ Software:
 move billions of style definitions to CSS file(s)
 add additional midi repositories
 - e.g. from http://www.members.tripod.com/~rosemck1/jukebox-classical.html
-add "assign composition to other composer" feature
 add "remove" button for composer image
 add MacOS support
 add more GUI languages
@@ -19,5 +18,5 @@ Bugs:
 
 - Kaiserwalzer crashes DurationCalculation
 - analyse "Task exception was never retrieved" errors from piano_daemon log
-- remove --strip switch from PyInstaller (Windows) script
 - show better error message when user tries to add an already existing composition to the playlist
+- PianoDaemon crashes when plugging out MIDI adapter while playing
