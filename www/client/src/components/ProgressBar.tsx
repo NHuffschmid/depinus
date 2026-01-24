@@ -40,22 +40,8 @@ const ProgressBar: React.FC = () => {
                     tickInterval.current = setInterval(tick, 1000 / tempo);
                 }
             }
-
-            // TODO: rework this strange waiting indication handling
-
-            if (
-                (totalTime === 0) ||
-                message['selectedMidiOutPort'] ||
-                ('dynamics' in message) ||
-                message['tempo'] ||
-                ('transposition' in message) ||
-                message['isStoppable'] ||
-                message['isPlayable'] ||
-                message['isPauseable']) {
-                setIsWaiting(false);
-            }
-            else {
-                setIsWaiting(true);
+            if ('isWaiting' in message) {
+                setIsWaiting(message['isWaiting']);
             }
         }
     });

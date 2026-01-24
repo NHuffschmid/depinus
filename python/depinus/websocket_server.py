@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import asyncio
 import json
-import os
 import websockets
 
 from depinus import logger
@@ -96,8 +94,8 @@ class WebsocketServer:
                         'note': mido_message.note,
                         'velocity': velocity
                     })
-                    logger.debug('JSON Message: ' + ws_message)
-                    asyncio.create_task(websocket.send(ws_message))
+                    #logger.debug('JSON Message: ' + ws_message)
+                    await websocket.send(ws_message)
 
                 if (mido_message.type == 'control_change'):
                     if (mido_message.control == 123):
@@ -107,7 +105,7 @@ class WebsocketServer:
 
 
         except (ConnectionClosedOK, ConnectionClosedError) as exc:
-            logger.info('ConnectionClosed connection detected!!!')
+            logger.debug('ConnectionClosed connection detected!!!')
             pass
 
 

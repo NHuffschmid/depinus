@@ -44,7 +44,12 @@ Then install the following packages with pip (or some other package manager):
 - python-rtmidi
 - mido
 - websockets (V11.0.3, V15.0 does not work!)
+- requests
 - pyinstaller
+
+In case of PyInstaller issues on Linux systems it might be helpful to run:
+
+> sudo apt install -y python3.11-dev
 
 ### Build package
 - edit the scripts section of the package.json file in the root folder

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
+import { usePlaylistContext } from '../playlist/PlaylistContext';
 import { useTranslation } from "react-i18next";
 import { MessageDialog, ConfirmationDialog } from "../MessageBox";
 import UploadCompositionDialog from "./UploadCompositionDialog";
 import { backendUrl } from '../../config';
 
+
+
 interface CompositionMenuProps {
     open: boolean;
-    composition?: { id: number; name: string } | null;
+    composition?: { id: number; name: string; composer_id?: number } | null;
     finished: () => void;
 }
 
@@ -16,8 +19,9 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const [confirmationMessage, setConfirmationMessage] = useState<string | undefined>();
     const { t } = useTranslation();
+    const { selectedPlaylist } = usePlaylistContext();
 
-    //console.log('Uploading composition data');
+
     const playComposition = () => {
         const requestOptions = {
             method: 'POST',
@@ -43,12 +47,15 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         props.finished();
     }
 
-    const uploadComposition = (title: string, midifile: File) => {
+    const uploadComposition = (title: string, midifile: File | undefined, composerId?: number) => {
         return new Promise<void>((resolve, reject) => {
             const formData = new FormData();
             formData.append('name', title);
             if (midifile) {
                 formData.append('midifile', midifile);
+            }
+            if (composerId !== undefined) {
+                formData.append('composerId', String(composerId));
             }
             fetch(backendUrl + '/archive/composition/' + props.composition?.id, {
                 method: 'PATCH',
@@ -78,6 +85,31 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         }
     }
 
+    const handleAddToPlaylist = () => {
+        if (!props.composition || !selectedPlaylist) return;
+        fetch(`${backendUrl}/playlist/${selectedPlaylist.id}/compositions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ compositionId: props.composition.id })
+        })
+            .then(res => {
+                if (res.status === 200) {
+                    props.finished();
+                } else {
+                    res.json().then(data => setErrorMessage(data.message || 'Error at adding to playlist'));
+                }
+            })
+            .catch(err => setErrorMessage(err.toString()));
+    };
+
+    const handleExportMidi = () => {
+        if (!props.composition) return;
+        
+        const url = `${backendUrl}/archive/composition/${props.composition.id}/export`;
+        window.open(url, '_blank');
+        props.finished();
+    };
+
     return React.createElement(
         Modal as any,
         {
@@ -91,11 +123,35 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
         },
         <>
             <div className='menu'>
-                <div className='menu-header'>{props.composition ? props.composition.name : null}</div>
-                <div className='menu-item' onClick={playComposition}>{t('Play')}</div>
-                <div className='menu-item' onClick={showDeleteConfirmationDialog}>{t('Delete')}</div>
-                <div className='menu-item'>{t('Add to playlist')}</div>
-                <div className='menu-item' onClick={() => { setUploadDialogIsOpen(true) }}>{t('Edit')}</div>
+                <div
+                    className='menu-header'>{props.composition ? props.composition.name : null}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={playComposition}
+                >
+                    {t('Play')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={showDeleteConfirmationDialog}
+                >
+                    {t('Delete')}
+                </div>
+                <div
+                    className='menu-item' onClick={handleAddToPlaylist}
+                    style={{ opacity: selectedPlaylist ? 1 : 0.5, pointerEvents: selectedPlaylist ? 'auto' : 'none' }}
+                >
+                    {t('Add to playlist')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={() => { setUploadDialogIsOpen(true) }}>{t('Edit')}
+                </div>
+                <div
+                    className='menu-item'
+                    onClick={handleExportMidi}>{t('Export as MIDI file')}
+                </div>
             </div>
             <ConfirmationDialog
                 open={confirmationMessage !== undefined}
@@ -108,6 +164,7 @@ const CompositionMenu: React.FC<CompositionMenuProps> = (props) => {
                 open={uploadDialogIsOpen}
                 header={t('Edit')}
                 title={props.composition ? props.composition.name ?? '' : ''}
+                composerId={props.composition?.composer_id}
                 midifileIsMandatory={false}
                 upload={uploadComposition}
                 finished={uploadFinished}

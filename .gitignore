@@ -7,7 +7,7 @@
 /.vs
 #.vscode/launch.json
 #.env
-/venv
+/venv*
 *.pyc
 /develop/installer/windows/deploy
 

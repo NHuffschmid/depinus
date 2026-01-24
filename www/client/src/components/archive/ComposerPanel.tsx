@@ -15,6 +15,9 @@ interface Composer {
 
 interface ComposerPanelProps {
     updateComposer: (composer: Composer | null) => void;
+    refreshTrigger?: number;
+    selectComposerName?: string | null;
+    onComposerSelected?: () => void;
 }
 
 const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
@@ -29,7 +32,29 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
 
     useEffect(() => {
         getComposers();
-    }, []);
+    }, [props.refreshTrigger]);
+
+    useEffect(() => {
+        // Programmatically select a composer by surname
+        if (props.selectComposerName && composers) {
+            const composer = composers.find(c => c.surname === props.selectComposerName);
+            if (composer) {
+                setSelectedComposer(composer);
+                props.updateComposer(composer);
+                
+                // Update the select element
+                const selectElement = document.getElementById('composers') as HTMLSelectElement;
+                if (selectElement) {
+                    selectElement.value = composer.id.toString();
+                }
+                
+                // Notify parent that selection is complete
+                if (props.onComposerSelected) {
+                    props.onComposerSelected();
+                }
+            }
+        }
+    }, [props.selectComposerName, composers]);
 
     const getComposers = () => {
         fetch(backendUrl + '/archive/composers')
@@ -117,7 +142,10 @@ const ComposerPanel: React.FC<ComposerPanelProps> = (props) => {
             backgroundColor: 'gray',
             padding: '0.2rem'
         }}>
-            <select id='composers' style={{ fontSize: '1.2rem' }} defaultValue={'DEFAULT'}
+            <select
+                id='composers'
+                style={{ fontSize: '1.2rem' }}
+                defaultValue={'DEFAULT'}
                 onChange={(e) => {
                     fetch(backendUrl + '/archive/compositions?composerId=' + e.target.value)
                         .then((response) => response.json())

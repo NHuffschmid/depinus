@@ -33,25 +33,15 @@ function getComposers(req, res) {
 
 function deleteComposer(req, res) {
 
-  // delete all compositions of composer
-  db.run('DELETE FROM composition WHERE composer_id=(?);',
+  // delete composer (and all his/her compositions due to foreign key constraint) from DB
+  db.run('DELETE FROM composer WHERE id=(?);',
     [req.swagger.params.id.value], (err) => {
       if (err) {
         res.status(500).json({ 'message': err.toString() });
         logger.error(err.message);
       }
       else {
-        // delete composer
-        db.run('DELETE FROM composer WHERE id=(?);',
-          [req.swagger.params.id.value], (err) => {
-            if (err) {
-              res.status(500).json({ 'message': err.toString() });
-              logger.error(err.message);
-            }
-            else {
-              res.status(204).send();
-            }
-          });
+        res.status(204).send();
       }
     });
 }
@@ -98,7 +88,7 @@ function postComposer(req, res) {
   db.run('INSERT INTO composer (firstname, surname, imagefile) VALUES (?, ?, ?)',
     [firstname, req.swagger.params.surname.value, image],
     (err, lastID) => {
-      if (err) { 
+      if (err) {
         res.status(500).json({ 'message': err.toString() });
       }
       else {
