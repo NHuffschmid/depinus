@@ -9,6 +9,7 @@
 
 ### Bugfixes
 - https://github.com/NHuffschmid/depinus/issues/24
+- fixed BrowserRouter issue on page reload
 
 
 ## [0.9.3] - Vivaldi
