@@ -32,6 +32,7 @@ class PianoRecorder:
         self._pause_start_time = None
         self._total_pause_duration = 0
         self._recording_callbacks = set()
+        self._waiting_callbacks = set()
         self._tempo = 1.0
         self._transposition = 0
         self._dynamics = DYNAMICS_DEFAULT
@@ -99,6 +100,14 @@ class PianoRecorder:
         '''
         self._recording_callbacks.add(callback)
 
+    def register_for_waiting_state(self, callback):
+        '''Subscribe for notifications about waiting state changes
+
+            Parameters:
+            callback: Async callback routine to be invoked with is_waiting (bool)
+        '''
+        self._waiting_callbacks.add(callback)
+
     def _trigger_usb_reset(self):
         '''Triggers the USB MIDI reset daemon (Linux only, silently ignored on Windows).'''
         try:
@@ -124,6 +133,10 @@ class PianoRecorder:
         Returns:
             True if reset completed successfully or no reset needed, False on error
         '''
+        # Notify about waiting state
+        for callback in self._waiting_callbacks:
+            await callback(True)
+        
         # Trigger USB reset before recording to ensure clean ALSA state
         self._trigger_usb_reset()
 
@@ -186,7 +199,14 @@ class PianoRecorder:
 
         # Wait for USB reset to complete
         if not await self._wait_for_usb_reset_complete(saved_port_name):
+            # Notify about waiting state ending
+            for callback in self._waiting_callbacks:
+                await callback(False)
             return
+
+        # Notify about waiting state ending
+        for callback in self._waiting_callbacks:
+            await callback(False)
 
         logger.info('Start recording MIDI messages')
         self._recording = True
