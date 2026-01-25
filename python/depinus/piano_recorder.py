@@ -34,6 +34,7 @@ class PianoRecorder:
         self._total_pause_duration = 0
         self._recording_callbacks = set()
         self._waiting_callbacks = set()
+        self._midi_message_callbacks = set()
         self._tempo = 1.0
         self._transposition = 0
         self._dynamics = DYNAMICS_DEFAULT
@@ -108,6 +109,14 @@ class PianoRecorder:
             callback: Async callback routine to be invoked with is_waiting (bool)
         '''
         self._waiting_callbacks.add(callback)
+
+    def register_for_midi_messages(self, callback):
+        '''Subscribe for notifications about MIDI messages during recording
+
+            Parameters:
+            callback: Async callback routine to be invoked with each MIDI message
+        '''
+        self._midi_message_callbacks.add(callback)
 
     def _trigger_usb_reset(self):
         '''Triggers the USB MIDI reset daemon (Linux only, silently ignored on Windows).'''
@@ -305,6 +314,10 @@ class PianoRecorder:
                             'timestamp': timestamp
                         })
                         logger.debug(f'Recorded MIDI message: {message}')
+                        
+                        # Notify callbacks about new MIDI message
+                        for callback in self._midi_message_callbacks:
+                            await callback(message)
 
                 # Small delay to prevent busy-waiting
                 await asyncio.sleep(0.001)  # 1ms

@@ -83,12 +83,14 @@ class PianoDaemon:
             self._websocket_server.register_for_connect_notifications(self._on_connect_notification)
             self._websocket_server.register_for_rpc("PlayComposition", self._on_play_composition)
             self._websocket_server.register_for_rpc("CalculatePlayDuration", self._on_calculate_play_duration)
+            self._websocket_server.register_for_rpc("GetCurrentMidiData", self._on_get_current_midi_data)
 
             self._piano_player.register_for_midi_messages(self._on_midi_message)
             self._piano_player.register_for_play_end(self._on_play_end)
 
             self._piano_recorder.register_for_recording_end(self._on_recording_end)
             self._piano_recorder.register_for_waiting_state(self._on_recording_waiting_state)
+            self._piano_recorder.register_for_midi_messages(self._on_recording_midi_message)
 
             logger.info('Entering main loop...')
             self._mainloop = asyncio.Future()
@@ -417,11 +419,32 @@ class PianoDaemon:
             self._playlist['compositionId'] = compositionId
 
 
+    def _extract_midi_events_from_composition(self, composition):
+        """Extract all MIDI events from composition for score rendering."""
+        midi_file = mido.MidiFile(file=io.BytesIO(composition.midi_data))
+        events = []
+        for msg in midi_file:
+            events.append(msg.dict())
+        return events
+
+
     async def _on_calculate_play_duration(self, mididata):
         midi_stream = io.BytesIO(bytes(mididata))
         duration = int(mido.MidiFile(file=midi_stream).length)
         logger.info('Calculated play duration: %s sec' % str(duration))
         return duration
+
+
+    async def _on_get_current_midi_data(self):
+        """RPC to get MIDI data of currently playing composition."""
+        if self._piano_player.current_composition is None:
+            return None
+        
+        midi_events = self._extract_midi_events_from_composition(self._piano_player.current_composition)
+        return {
+            'midiEvents': midi_events,
+            'compositionName': self._piano_player.current_composition.name
+        }
 
 
     async def _on_midi_message(self, mido_message):
@@ -434,6 +457,13 @@ class PianoDaemon:
         await self._websocket_server.send_info_message({
             'messageType': 'info',
             'isWaiting': is_waiting
+        })
+
+    async def _on_recording_midi_message(self, mido_message):
+        '''Callback for MIDI messages during recording - send to ScoreView.'''
+        await self._websocket_server.send_info_message({
+            'messageType': 'info',
+            'midiEvent': mido_message.dict()
         })
 
     async def _on_recording_end(self, midi_data):
