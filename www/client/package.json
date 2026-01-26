@@ -15,6 +15,7 @@
     "client": "file:",
     "i18next": "^22.4.13",
     "i18next-browser-languagedetector": "^7.0.1",
+    "jspdf": "^4.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-accessible-treeview": "^2.10.0",
