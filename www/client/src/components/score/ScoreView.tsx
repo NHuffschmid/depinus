@@ -16,7 +16,7 @@ interface ScoreViewProps {
 }
 interface ScoreViewProps {}
 
-const SCORE_XML_PATH = '/simpledemo.xml'; // Passe ggf. den Pfad an
+const SCORE_XML_PATH = '/elise.xml';
 
 const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
