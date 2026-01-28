@@ -9,7 +9,7 @@ function midiNoteToPitch(midiNote: number) {
     return { step, alter, octave };
 }
 
-export function midiEventsToMusicXML(midiEvents: MidiEvent[], compositionName?: string): string {
+export function midiEventsToMusicXML(midiEvents: MidiEvent[], compositionName?: string, composerName?: string): string {
     // Find the first Note-On event
     const firstNote = midiEvents.find(e => e.type === 'note_on' && typeof e.note === 'number');
     if (!firstNote || typeof firstNote.note !== 'number') {
@@ -18,14 +18,15 @@ export function midiEventsToMusicXML(midiEvents: MidiEvent[], compositionName?: 
     }
 
     const { step, alter, octave } = midiNoteToPitch(firstNote.note);
-    const safeTitle = compositionName ? compositionName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Depinus';
-
+    const safeTitle = compositionName ? compositionName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    const safeComposer = composerName ? composerName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
     return `
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <score-partwise version="3.1">
   <work>
     <work-title>${safeTitle}</work-title>
   </work>
+  ${safeComposer ? `<identification><creator type=\"composer\">${safeComposer}</creator></identification>` : ''}
   <part-list>
     <score-part id="P1">
       <part-name>Startnote:</part-name>

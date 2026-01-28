@@ -443,7 +443,8 @@ class PianoDaemon:
         midi_events = self._extract_midi_events_from_composition(self._piano_player.current_composition)
         return {
             'midiEvents': midi_events,
-            'compositionName': self._piano_player.current_composition.name
+            'compositionName': self._piano_player.current_composition.name,
+            'composerName': self._piano_player.current_composition.composer
         }
 
 

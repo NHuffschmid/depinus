@@ -1,9 +1,7 @@
 import React from 'react';
-import { useTranslation } from "react-i18next";
 import ScoreView from "../components/ScoreView";
 
 const Score: React.FC = () => {
-    const { t } = useTranslation();
 
     return (
         <div style={{ 
@@ -13,7 +11,6 @@ const Score: React.FC = () => {
             padding: '20px',
             overflow: 'auto'
         }}>
-            <h2>{t('Score')}</h2>
             <ScoreView />
         </div>
     );
