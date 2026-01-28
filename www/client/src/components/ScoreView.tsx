@@ -1,16 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import useDepinusWebSocket from '../../custom-hooks/useDepinusWebsocket';
-import { midiEventsToMusicXML } from '../../modules/midiToMusicXML';
-
-interface MidiEvent {
-    type: string;
-    note?: number;
-    velocity?: number;
-    time?: number;
-    channel?: number;
-}
+import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import { midiEventsToMusicXML } from '../modules/Midi2MusicXML/index';
+import { MidiEvent } from '../modules/Midi2MusicXML/types';
 
 interface ScoreViewProps {}
 

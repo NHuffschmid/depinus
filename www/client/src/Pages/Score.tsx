@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from "react-i18next";
-import ScoreView from "../components/score/ScoreView";
+import ScoreView from "../components/ScoreView";
 
 const Score: React.FC = () => {
     const { t } = useTranslation();

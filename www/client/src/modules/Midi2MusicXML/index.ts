@@ -1,10 +1,4 @@
-interface MidiEvent {
-    type: string;
-    note?: number; // (0-127)
-    velocity?: number;
-    time?: number;
-    channel?: number;
-}
+import { MidiEvent } from './types';
 
 function midiNoteToPitch(midiNote: number) {
     const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
