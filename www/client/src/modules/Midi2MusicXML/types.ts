@@ -1,7 +1,8 @@
 export interface MidiEvent {
     type: string;
-    note?: number; // (0-127)
+    note?: number;
     velocity?: number;
     time?: number;
     channel?: number;
+    text?: string;
 }
