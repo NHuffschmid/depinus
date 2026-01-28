@@ -11,6 +11,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [midiEvents, setMidiEvents] = useState<MidiEvent[]>([]);
+    const [compositionName, setCompositionName] = useState<string>('');
     const [mode, setMode] = useState<'playback' | 'recording' | null>(null);
     const [isWebSocketReady, setIsWebSocketReady] = useState(false);
     const [currentCompositionId, setCurrentCompositionId] = useState<string | null>(null);
@@ -83,6 +84,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 console.log('Received RPC midiData:', message.result);
                 setMode('playback');
                 setMidiEvents(message.result.midiEvents);
+                setCompositionName(message.result.compositionName || '');
             } else if (message.result === null) {
                 console.log('No composition currently playing');
             }
@@ -101,7 +103,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     useEffect(() => {
         if (!osmdContainerRef.current) return;
         // Generate MusicXML
-        const musicXML = midiEventsToMusicXML(midiEvents);
+        const musicXML = midiEventsToMusicXML(midiEvents, compositionName);
         // Initialize or reuse OSMD
         if (!osmdRef.current) {
             osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
