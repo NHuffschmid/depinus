@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import jsPDF from 'jspdf';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../../custom-hooks/useDepinusWebsocket';
+import { midiEventsToMusicXML } from '../../modules/midiToMusicXML';
 
 interface MidiEvent {
     type: string;
@@ -11,12 +12,7 @@ interface MidiEvent {
     channel?: number;
 }
 
-interface ScoreViewProps {
-    // Placeholder for future props
-}
 interface ScoreViewProps {}
-
-const SCORE_XML_PATH = '/elise.xml';
 
 const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
@@ -26,7 +22,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const [isWebSocketReady, setIsWebSocketReady] = useState(false);
     const [currentCompositionId, setCurrentCompositionId] = useState<string | null>(null);
 
-    // OSMD Instanz
     const osmdRef = useRef<OpenSheetMusicDisplay>();
 
     function exportScoreAsPDF() {
@@ -90,7 +85,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             }
         },
         onRtcResponseMessage: (message: any) => {
-            // Handle RPC response for GetCurrentMidiData
             console.log('RPC Response:', message);
             if (message.result && message.result.midiEvents) {
                 console.log('Received RPC midiData:', message.result);
@@ -110,26 +104,20 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
     }, [isWebSocketReady]);
 
-    // OSMD laden und anzeigen
+    // Create MusicXML from MIDI and display with OSMD
     useEffect(() => {
-        let osmd: OpenSheetMusicDisplay;
-        if (osmdContainerRef.current) {
-            osmd = new OpenSheetMusicDisplay(osmdContainerRef.current, {
+        if (!osmdContainerRef.current) return;
+        // Generate MusicXML
+        const musicXML = midiEventsToMusicXML(midiEvents);
+        // Initialize or reuse OSMD
+        if (!osmdRef.current) {
+            osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
                 drawingParameters: "default",
             });
-            osmdRef.current = osmd;
-            fetch(SCORE_XML_PATH)
-                .then(resp => resp.text())
-                .then(xml => osmd.load(xml))
-                .then(() => osmd.render());
         }
-        // Cleanup
-        return () => {
-            if (osmdRef.current) {
-                osmdRef.current.clear();
-            }
-        };
-    }, []);
+        osmdRef.current.clear();
+        osmdRef.current.load(musicXML).then(() => osmdRef.current!.render());
+    }, [midiEvents]);
 
     return (
         <div>
