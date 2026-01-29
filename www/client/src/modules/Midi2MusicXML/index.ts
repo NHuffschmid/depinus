@@ -1,4 +1,4 @@
-import { MidiEvent } from './types';
+import { MidiEvent, Note, Measure, Part, Score, scoreToXml } from './types';
 
 function midiNoteToPitch(midiNote: number) {
   const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
@@ -14,70 +14,59 @@ export function midiEventsToMusicXML(
   compositionName?: string,
   composerName?: string
 ): string {
-
-  const firstNote = midiEvents.find(e => e.type === 'note_on' && typeof e.note === 'number');
-  if (!firstNote || typeof firstNote.note !== 'number') {
-    // No note found: return empty string
-    return '';
-  }
-
+  // Copyright extrahieren
   const copyrightEvent = midiEvents.find(e => e.type === 'copyright' && typeof e.text === 'string');
-  const safeCopyright = (copyrightEvent && typeof copyrightEvent.text === 'string')
+  const copyright = copyrightEvent && typeof copyrightEvent.text === 'string'
     ? copyrightEvent.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    : '';
+    : undefined;
 
-  const { step, alter, octave } = midiNoteToPitch(firstNote.note);
-  const safeTitle = compositionName ? compositionName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-  const safeComposer = composerName ? composerName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+  // Alle Note-On Events mit velocity > 0
+  const noteOnEvents = midiEvents.filter(e => e.type === 'note_on' && typeof e.note === 'number' && (e.velocity ?? 0) > 0);
 
-  let identification = '';
-  if (safeComposer || safeCopyright) {
-    identification = '<identification>';
-    if (safeComposer) identification += `<creator type="composer">${safeComposer}</creator>`;
-    // display of copyright info is not guaranteed in all MusicXML renderers
-    if (safeCopyright) identification += `<rights>${safeCopyright}</rights>`;
-    identification += '</identification>';
+  // Noten erzeugen (alle als Viertelnote, divisions=1)
+  const notes: Note[] = noteOnEvents.map(e => {
+    const { step, alter, octave } = midiNoteToPitch(e.note!);
+    return {
+      step,
+      alter,
+      octave,
+      duration: 1,
+      type: 'quarter',
+    };
+  });
+
+  if (notes.length === 0) return '';
+
+
+  // Noten in 4er-Gruppen aufteilen (4/4-Takt, 4 Viertelnoten pro Measure)
+  const measures: Measure[] = [];
+  for (let i = 0; i < notes.length; i += 4) {
+    const measureNotes = notes.slice(i, i + 4);
+    measures.push({
+      notes: measureNotes,
+      attributes: i === 0 ? {
+        divisions: 1,
+        key: 4,
+        time: { beats: 4, beatType: 4 },
+        clef: { sign: 'G', line: 2 },
+      } : undefined,
+    });
   }
 
-  return `
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<score-partwise version="3.1">
-  <work>
-    <work-title>${safeTitle}</work-title>
-  </work>
-  ${identification}
-  <part-list>
-    <score-part id="P1">
-      <part-name>Startnote:</part-name>
-    </score-part>
-  </part-list>
-  <part id="P1">
-    <measure number="1">
-      <attributes>
-        <divisions>1</divisions>
-        <key>
-          <fifths>0</fifths>
-        </key>
-        <time>
-          <beats>4</beats>
-          <beat-type>4</beat-type>
-        </time>
-        <clef>
-          <sign>G</sign>
-          <line>2</line>
-        </clef>
-      </attributes>
-      <note>
-        <pitch>
-          <step>${step}</step>
-          ${alter ? `<alter>${alter}</alter>` : ''}
-          <octave>${octave}</octave>
-        </pitch>
-        <duration>1</duration>
-        <type>quarter</type>
-      </note>
-    </measure>
-  </part>
-</score-partwise>
-    `.trim();
+  // Ein Part mit mehreren Measures
+  const part: Part = {
+    id: 'P1',
+    measures,
+  };
+
+  // Score zusammenbauen
+  const score: Score = {
+    title: compositionName,
+    composer: composerName,
+    copyright,
+    parts: [part],
+  };
+
+  // Als MusicXML rendern
+  return scoreToXml(score);
 }
