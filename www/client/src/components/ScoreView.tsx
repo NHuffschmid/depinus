@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import jsPDF from 'jspdf';
+import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { midiEventsToMusicXML } from '../modules/Midi2MusicXML/index';
 import { MidiEvent } from '../modules/Midi2MusicXML/types';
 
-interface ScoreViewProps {}
+interface ScoreViewProps { }
 
 const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const [midiEvents, setMidiEvents] = useState<MidiEvent[]>([]);
     const [compositionName, setCompositionName] = useState<string>('');
     const [composerName, setComposerName] = useState<string>('');
@@ -20,32 +20,27 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdRef = useRef<OpenSheetMusicDisplay>();
 
     function exportScoreAsPDF() {
-        if (!canvasRef.current || !osmdContainerRef.current) {
-            alert('No Canvas or OSMD container found!');
+        if (!osmdContainerRef.current) {
+            alert('No OSMD container found!');
             return;
         }
-        // SVG zu PNG zu PDF
         const svg = osmdContainerRef.current.querySelector('svg');
         if (!svg) {
             alert('No SVG found!');
             return;
         }
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const img = new window.Image();
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-        img.onload = function () {
-            const canvas = canvasRef.current!;
-            const ctx = canvas.getContext('2d')!;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'landscape' });
-            pdf.addImage(imgData, 'PNG', 0, 0, 297, 100);
+        // SVG-Größe auslesen
+        const bbox = svg.getBBox();
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: [bbox.width, bbox.height]
+        });
+        // svg2pdf.js erwartet ein SVGElement
+        // @ts-ignore
+        pdf.svg(svg, { x: 0, y: 0, width: bbox.width, height: bbox.height }).then(() => {
             pdf.save('score.pdf');
-            URL.revokeObjectURL(url);
-        };
-        img.src = url;
+        });
     }
 
     // WebSocket Connection
@@ -121,7 +116,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             <p>Mode: {mode || 'Waiting...'} | MIDI Events: {midiEvents.length}</p>
             <button onClick={exportScoreAsPDF}>Export as PDF</button>
             <div ref={osmdContainerRef}></div>
-            <canvas ref={canvasRef} style={{ display: 'none' }} width={1200} height={400}></canvas>
+            {/* Canvas entfernt, da nicht mehr benötigt */}
         </div>
     );
 };
