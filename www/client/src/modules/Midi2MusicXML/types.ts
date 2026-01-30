@@ -24,6 +24,13 @@ export type Measure = {
         time?: { beats: number; beatType: number };
         clef?: { sign: string; line: number };
     };
+    sound?: {
+        tempo: number;
+    };
+    direction?: {
+        tempo: number;
+        beatUnit?: string;
+    };
 };
 
 export type Part = {
@@ -54,7 +61,12 @@ export function measureToXml(measure: Measure): string {
         if (attr.clef) attrXml += `  <clef>\n    <sign>${attr.clef.sign}</sign>\n    <line>${attr.clef.line}</line>\n  </clef>\n`;
         attrXml += `</attributes>\n`;
     }
-    return `<measure>\n${attrXml}${measure.notes.map(noteToXml).join('\n')}\n</measure>`;
+    let directionXml = '';
+    if (measure.direction) {
+        directionXml = `<direction placement=\"above\">\n  <direction-type>\n    <metronome>\n      <beat-unit>${measure.direction.beatUnit || 'quarter'}</beat-unit>\n      <per-minute>${measure.direction.tempo}</per-minute>\n    </metronome>\n  </direction-type>\n  <sound tempo=\"${measure.direction.tempo}\"/>\n</direction>\n`;
+    }
+    const soundXml = measure.sound && !measure.direction ? `<sound tempo=\"${measure.sound.tempo}\"/>\n` : '';
+    return `<measure>\n${attrXml}${directionXml}${soundXml}${measure.notes.map(noteToXml).join('\n')}\n</measure>`;
 }
 
 export function partToXml(part: Part): string {

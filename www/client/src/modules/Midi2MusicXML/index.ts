@@ -20,6 +20,22 @@ export function midiEventsToMusicXML(
     ? copyrightEvent.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
     : undefined;
 
+  // Tempo auslesen (falls vorhanden)
+  // Akzeptiere sowohl microsecondsPerQuarterNote als auch tempo (beides µs/quarter)
+  let tempo: number | undefined = undefined;
+  const tempoEvent = midiEvents.find(e => e.type === 'set_tempo' && (typeof (e as any).microsecondsPerQuarterNote === 'number' || typeof (e as any).tempo === 'number'));
+  let usPerQuarter: number | undefined = undefined;
+  if (tempoEvent) {
+    if (typeof (tempoEvent as any).microsecondsPerQuarterNote === 'number') {
+      usPerQuarter = (tempoEvent as any).microsecondsPerQuarterNote;
+    } else if (typeof (tempoEvent as any).tempo === 'number') {
+      usPerQuarter = (tempoEvent as any).tempo;
+    }
+    if (usPerQuarter) {
+      tempo = Math.round(60000000 / usPerQuarter);
+    }
+  }
+
   // Alle Note-On Events mit velocity > 0
   const noteOnEvents = midiEvents.filter(e => e.type === 'note_on' && typeof e.note === 'number' && (e.velocity ?? 0) > 0);
 
@@ -37,7 +53,6 @@ export function midiEventsToMusicXML(
 
   if (notes.length === 0) return '';
 
-
   // Noten in 4er-Gruppen aufteilen (4/4-Takt, 4 Viertelnoten pro Measure)
   const measures: Measure[] = [];
   for (let i = 0; i < notes.length; i += 4) {
@@ -50,6 +65,8 @@ export function midiEventsToMusicXML(
         time: { beats: 4, beatType: 4 },
         clef: { sign: 'G', line: 2 },
       } : undefined,
+      direction: i === 0 && tempo ? { tempo, beatUnit: 'quarter' } : undefined,
+      sound: i === 0 && tempo ? { tempo } : undefined,
     });
   }
 
