@@ -3,8 +3,7 @@ import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { midiEventsToMusicXML } from '../modules/Midi2MusicXML/index';
-import { MidiEvent } from '../modules/Midi2MusicXML/types';
+import { midiToMusicXML } from '../modules/Midi2MusicXML/index';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 
@@ -111,46 +110,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     useEffect(() => {
         if (!osmdContainerRef.current) return;
         if (!midi) return;
-        // Extract MIDI events (notes + meta events from header)
-        const midiEvents: MidiEvent[] = [];
-        // Note events
-        midi.tracks.forEach(track => {
-            track.notes.forEach(note => {
-                midiEvents.push({
-                    type: 'note_on',
-                    note: note.midi,
-                    velocity: note.velocity ? Math.round(note.velocity * 127) : 64,
-                    time: note.ticks,
-                });
-            });
-        });
-        // Tempo events
-        if (midi.header.tempos && midi.header.tempos.length > 0) {
-            midi.header.tempos.forEach(tempo => {
-                midiEvents.push({
-                    type: 'set_tempo',
-                    microsecondsPerQuarterNote: Math.round(60000000 / tempo.bpm)
-                } as any);
-            });
-        }
-        // Copyright event (from meta)
-        if (Array.isArray(midi.header.meta)) {
-            const copyrightMeta = midi.header.meta.find(e => e.type === 'copyright' && typeof e.text === 'string');
-            if (copyrightMeta) {
-                midiEvents.push({
-                    type: 'copyright',
-                    text: copyrightMeta.text
-                } as any);
-            }
-        }
-        // Track/piece name
-        if (midi.header.name) {
-            midiEvents.push({
-                type: 'track_name',
-                text: midi.header.name
-            } as any);
-        }
-        const xml = midiEventsToMusicXML(midiEvents, compositionName, composerName);
+        const xml = midiToMusicXML(midi, compositionName, composerName);
         if (!osmdRef.current) {
             osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
                 drawingParameters: "default",
@@ -171,20 +131,47 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         try {
             // Extract only note-on events (simplified assumption: 3 bytes per event)
-            const midiEvents: MidiEvent[] = [];
+            const midiEvents: { note: number; velocity: number }[] = [];
             liveMidiEvents.forEach(bytes => {
                 // Very simple heuristic: status byte 0x90 = note-on, 0x80 = note-off
                 if (bytes.length >= 3 && (bytes[0] & 0xf0) === 0x90 && bytes[2] > 0) {
                     midiEvents.push({
-                        type: 'note_on',
                         note: bytes[1],
-                        velocity: bytes[2],
-                        time: 0 // Timing information is missing in the live stream
+                        velocity: bytes[2]
                     });
                 }
             });
-            // Generate MusicXML
-            const xml = midiEventsToMusicXML(midiEvents, 'Live Recording', '');
+            // Generate MusicXML (minimal, for live events)
+            const notes: any[] = midiEvents.map(e => {
+                // Use the same midiNoteToPitch logic as in midiToMusicXML
+                const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+                const alterMap = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+                const midiNote = e.note;
+                const step = stepNames[midiNote % 12];
+                const alter = alterMap[midiNote % 12];
+                const octave = Math.floor(midiNote / 12) - 1;
+                return {
+                    step,
+                    alter,
+                    octave,
+                    duration: 1,
+                    type: 'quarter',
+                };
+            });
+            const measures: any[] = [];
+            for (let i = 0; i < notes.length; i += 4) {
+                measures.push({
+                    notes: notes.slice(i, i + 4),
+                    attributes: i === 0 ? {
+                        divisions: 1,
+                        key: 4, // E major
+                        time: { beats: 4, beatType: 4 },
+                        clef: { sign: 'G', line: 2 }
+                    } : undefined
+                });
+            }
+            const partXml = `<part id="P1">\n${measures.map(measure => `<measure>\n${measure.attributes ? `<attributes>\n  <divisions>${measure.attributes.divisions}</divisions>\n  <key>\n    <fifths>${measure.attributes.key}</fifths>\n  </key>\n  <time>\n    <beats>${measure.attributes.time.beats}</beats>\n    <beat-type>${measure.attributes.time.beatType}</beat-type>\n  </time>\n  <clef>\n    <sign>${measure.attributes.clef.sign}</sign>\n    <line>${measure.attributes.clef.line}</line>\n  </clef>\n</attributes>\n` : ''}${measure.notes.map((note: any) => `<note>\n  <pitch>\n    <step>${note.step}</step>\n    ${note.alter ? `<alter>${note.alter}</alter>` : ''}\n    <octave>${note.octave}</octave>\n  </pitch>\n  <duration>${note.duration}</duration>\n  <type>${note.type}</type>\n</note>`).join('\n')}\n</measure>`).join('\n')}\n</part>`;
+            const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<score-partwise version="3.1">\n  <work>\n    <work-title>Live Recording</work-title>\n  </work>\n  <part-list>\n    <score-part id=\"P1\"><part-name>Part</part-name></score-part>\n  </part-list>\n  ${partXml}\n</score-partwise>`;
             if (!osmdRef.current) {
                 osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
                     drawingParameters: "default",

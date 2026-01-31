@@ -1,4 +1,5 @@
-import { MidiEvent, Note, Measure, Part, Score, scoreToXml } from './types';
+import { Note, Measure, Part, Score, scoreToXml } from './types';
+import { Midi } from '@tonejs/midi';
 
 function midiNoteToPitch(midiNote: number) {
   const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
@@ -9,46 +10,39 @@ function midiNoteToPitch(midiNote: number) {
   return { step, alter, octave };
 }
 
-export function midiEventsToMusicXML(
-  midiEvents: MidiEvent[],
+export function midiToMusicXML(
+  midi: Midi,
   compositionName?: string,
   composerName?: string
 ): string {
-  // Extract copyright
-  const copyrightEvent = midiEvents.find(e => e.type === 'copyright' && typeof e.text === 'string');
-  const copyright = copyrightEvent && typeof copyrightEvent.text === 'string'
-    ? copyrightEvent.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    : undefined;
-
-  // Read tempo (if present)
-  // Accept both microsecondsPerQuarterNote and tempo (both µs/quarter)
-  let tempo: number | undefined = undefined;
-  const tempoEvent = midiEvents.find(e => e.type === 'set_tempo' && (typeof (e as any).microsecondsPerQuarterNote === 'number' || typeof (e as any).tempo === 'number'));
-  let usPerQuarter: number | undefined = undefined;
-  if (tempoEvent) {
-    if (typeof (tempoEvent as any).microsecondsPerQuarterNote === 'number') {
-      usPerQuarter = (tempoEvent as any).microsecondsPerQuarterNote;
-    } else if (typeof (tempoEvent as any).tempo === 'number') {
-      usPerQuarter = (tempoEvent as any).tempo;
-    }
-    if (usPerQuarter) {
-      tempo = Math.round(60000000 / usPerQuarter);
+  // Extract copyright from header.meta
+  let copyright: string | undefined = undefined;
+  if (Array.isArray(midi.header.meta)) {
+    const copyrightMeta = midi.header.meta.find(e => e.type === 'copyright' && typeof e.text === 'string');
+    if (copyrightMeta) {
+      copyright = copyrightMeta.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   }
 
-  // All note-on events with velocity > 0
-  const noteOnEvents = midiEvents.filter(e => e.type === 'note_on' && typeof e.note === 'number' && (e.velocity ?? 0) > 0);
+  // Extract tempo (first tempo event)
+  let tempo: number | undefined = undefined;
+  if (midi.header.tempos && midi.header.tempos.length > 0) {
+    tempo = Math.round(midi.header.tempos[0].bpm);
+  }
 
-  // Create notes (all as quarter notes, divisions=1)
-  const notes: Note[] = noteOnEvents.map(e => {
-    const { step, alter, octave } = midiNoteToPitch(e.note!);
-    return {
-      step,
-      alter,
-      octave,
-      duration: 1,
-      type: 'quarter',
-    };
+  // Collect all notes from all tracks
+  const notes: Note[] = [];
+  midi.tracks.forEach(track => {
+    track.notes.forEach(note => {
+      const { step, alter, octave } = midiNoteToPitch(note.midi);
+      notes.push({
+        step,
+        alter,
+        octave,
+        duration: 1,
+        type: 'quarter',
+      });
+    });
   });
 
   if (notes.length === 0) return '';
