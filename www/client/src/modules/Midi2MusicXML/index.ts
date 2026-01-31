@@ -14,14 +14,14 @@ export function midiEventsToMusicXML(
   compositionName?: string,
   composerName?: string
 ): string {
-  // Copyright extrahieren
+  // Extract copyright
   const copyrightEvent = midiEvents.find(e => e.type === 'copyright' && typeof e.text === 'string');
   const copyright = copyrightEvent && typeof copyrightEvent.text === 'string'
     ? copyrightEvent.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
     : undefined;
 
-  // Tempo auslesen (falls vorhanden)
-  // Akzeptiere sowohl microsecondsPerQuarterNote als auch tempo (beides µs/quarter)
+  // Read tempo (if present)
+  // Accept both microsecondsPerQuarterNote and tempo (both µs/quarter)
   let tempo: number | undefined = undefined;
   const tempoEvent = midiEvents.find(e => e.type === 'set_tempo' && (typeof (e as any).microsecondsPerQuarterNote === 'number' || typeof (e as any).tempo === 'number'));
   let usPerQuarter: number | undefined = undefined;
@@ -36,10 +36,10 @@ export function midiEventsToMusicXML(
     }
   }
 
-  // Alle Note-On Events mit velocity > 0
+  // All note-on events with velocity > 0
   const noteOnEvents = midiEvents.filter(e => e.type === 'note_on' && typeof e.note === 'number' && (e.velocity ?? 0) > 0);
 
-  // Noten erzeugen (alle als Viertelnote, divisions=1)
+  // Create notes (all as quarter notes, divisions=1)
   const notes: Note[] = noteOnEvents.map(e => {
     const { step, alter, octave } = midiNoteToPitch(e.note!);
     return {
@@ -53,7 +53,7 @@ export function midiEventsToMusicXML(
 
   if (notes.length === 0) return '';
 
-  // Noten in 4er-Gruppen aufteilen (4/4-Takt, 4 Viertelnoten pro Measure)
+  // Split notes into groups of 4 (4/4 time, 4 quarter notes per measure)
   const measures: Measure[] = [];
   for (let i = 0; i < notes.length; i += 4) {
     const measureNotes = notes.slice(i, i + 4);
@@ -70,13 +70,13 @@ export function midiEventsToMusicXML(
     });
   }
 
-  // Ein Part mit mehreren Measures
+  // One part with multiple measures
   const part: Part = {
     id: 'P1',
     measures,
   };
 
-  // Score zusammenbauen
+  // Assemble score
   const score: Score = {
     title: compositionName,
     composer: composerName,
@@ -84,6 +84,6 @@ export function midiEventsToMusicXML(
     parts: [part],
   };
 
-  // Als MusicXML rendern
+  // Render as MusicXML
   return scoreToXml(score);
 }

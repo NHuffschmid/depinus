@@ -3,6 +3,7 @@
 # Piano daemon - Depinus main loop
 
 import asyncio
+import base64
 import mido
 import io
 import requests
@@ -419,13 +420,6 @@ class PianoDaemon:
             self._playlist['compositionId'] = compositionId
 
 
-    def _extract_midi_events_from_composition(self, composition):
-        """Extract all MIDI events from composition for score rendering."""
-        midi_file = mido.MidiFile(file=io.BytesIO(composition.midi_data))
-        events = []
-        for msg in midi_file:
-            events.append(msg.dict())
-        return events
 
 
     async def _on_calculate_play_duration(self, mididata):
@@ -436,13 +430,13 @@ class PianoDaemon:
 
 
     async def _on_get_current_midi_data(self):
-        """RPC to get MIDI data of currently playing composition."""
+        """RPC to get MIDI binary data of currently playing composition (base64 encoded)."""
         if self._piano_player.current_composition is None:
             return None
-        
-        midi_events = self._extract_midi_events_from_composition(self._piano_player.current_composition)
+        midi_data = self._piano_player.current_composition.midi_data
+        midi_base64 = base64.b64encode(midi_data).decode('ascii')
         return {
-            'midiEvents': midi_events,
+            'midiBase64': midi_base64,
             'compositionName': self._piano_player.current_composition.name,
             'composerName': self._piano_player.current_composition.composer
         }
@@ -460,11 +454,11 @@ class PianoDaemon:
             'isWaiting': is_waiting
         })
 
-    async def _on_recording_midi_message(self, mido_message):
-        '''Callback for MIDI messages during recording - send to ScoreView.'''
+    async def _on_recording_midi_message(self, midi_event_base64):
+        '''Callback for MIDI messages during recording - send raw MIDI bytes (base64).'''
         await self._websocket_server.send_info_message({
             'messageType': 'info',
-            'midiEvent': mido_message.dict()
+            'midiEventBytes': midi_event_base64
         })
 
     async def _on_recording_end(self, midi_data):

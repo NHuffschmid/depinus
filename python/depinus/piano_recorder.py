@@ -1,6 +1,7 @@
 # Piano recorder
 
 import asyncio
+import base64
 import getpass
 import mido
 import platform
@@ -315,9 +316,11 @@ class PianoRecorder:
                         })
                         logger.debug(f'Recorded MIDI message: {message}')
                         
-                        # Notify callbacks about new MIDI message
+                        # Notify callbacks about new MIDI message (send raw bytes as base64)
+                        raw_bytes = message.bytes() if hasattr(message, 'bytes') else message.bin()
+                        base64_bytes = base64.b64encode(bytes(raw_bytes)).decode('ascii')
                         for callback in self._midi_message_callbacks:
-                            await callback(message)
+                            await callback(base64_bytes)
 
                 # Small delay to prevent busy-waiting
                 await asyncio.sleep(0.001)  # 1ms
