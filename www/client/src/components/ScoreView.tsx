@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { midiToMusicXML } from '../modules/Midi2MusicXML/index';
+import { midi2MusicXML } from '../modules/Midi2MusicXML/index';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 
@@ -12,7 +12,9 @@ interface ScoreViewProps { }
 const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
     const [midi, setMidi] = useState<Midi | null>(null);
-    const [liveMidiEvents, setLiveMidiEvents] = useState<Uint8Array[]>([]);
+    const [liveMidi, setLiveMidi] = useState<Midi | null>(null);
+    const liveActiveNotesRef = useRef<Map<number, { startTick: number, velocity: number }>>(new Map());
+    const liveTickRef = useRef<number>(0);
     const [compositionName, setCompositionName] = useState<string>('');
     const [composerName, setComposerName] = useState<string>('');
     const [mode, setMode] = useState<'playback' | 'recording' | null>(null);
@@ -58,7 +60,12 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 setMode('recording');
                 setMidi(null);
                 setCurrentCompositionId(null);
-                setLiveMidiEvents([]);
+                const midi = new Midi();
+                midi.header.setTempo(120); // Default tempo
+                midi.addTrack();
+                setLiveMidi(midi);
+                liveActiveNotesRef.current = new Map();
+                liveTickRef.current = 0;
             }
             else if (message.composition && message.composition.compositionId) {
                 const newId = message.composition.compositionId;
@@ -72,9 +79,36 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 }
             }
             // Receive live MIDI event as base64 bytes
-            if (message.midiEventBytes) {
+            if (message.midiEventBytes && mode === 'recording') {
                 const bytes = Base64.toUint8Array(message.midiEventBytes);
-                setLiveMidiEvents(prev => [...prev, bytes]);
+                // Only handle note-on and note-off events (3 bytes)
+                if (bytes.length >= 3) {
+                    const status = bytes[0] & 0xf0;
+                    const channel = bytes[0] & 0x0f;
+                    const note = bytes[1];
+                    const velocity = bytes[2];
+                    if (liveMidi) {
+                        const track = liveMidi.tracks[0];
+                        const tick = liveTickRef.current;
+                        if (status === 0x90 && velocity > 0) {
+                            liveActiveNotesRef.current.set(note, { startTick: tick, velocity });
+                        } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
+                            const active = liveActiveNotesRef.current.get(note);
+                            if (active) {
+                                const duration = Math.max(1, tick - active.startTick);
+                                track.addNote({
+                                    midi: note,
+                                    time: active.startTick,
+                                    duration,
+                                    velocity: active.velocity / 127,
+                                });
+                                liveActiveNotesRef.current.delete(note);
+                            }
+                        }
+                        liveTickRef.current += 1;
+                        setLiveMidi(liveMidi.clone());
+                    }
+                }
             }
         },
         onRtcResponseMessage: async (message: any) => {
@@ -110,7 +144,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     useEffect(() => {
         if (!osmdContainerRef.current) return;
         if (!midi) return;
-        const xml = midiToMusicXML(midi, compositionName, composerName);
+        const xml = midi2MusicXML(midi, compositionName, composerName);
         if (!osmdRef.current) {
             osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
                 drawingParameters: "default",
@@ -120,58 +154,17 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         osmdRef.current.load(xml).then(() => osmdRef.current!.render());
     }, [midi, compositionName, composerName]);
 
-    // Live recording: display live received MIDI events as score
+    // Live recording: display liveMidi as score
     useEffect(() => {
         if (!osmdContainerRef.current) return;
         if (mode !== 'recording') return;
-        if (liveMidiEvents.length === 0) {
+        if (!liveMidi || liveMidi.tracks[0].notes.length === 0) {
             // Clear score
             if (osmdRef.current) osmdRef.current.clear();
             return;
         }
         try {
-            // Extract only note-on events (simplified assumption: 3 bytes per event)
-            const midiEvents: { note: number; velocity: number }[] = [];
-            liveMidiEvents.forEach(bytes => {
-                // Very simple heuristic: status byte 0x90 = note-on, 0x80 = note-off
-                if (bytes.length >= 3 && (bytes[0] & 0xf0) === 0x90 && bytes[2] > 0) {
-                    midiEvents.push({
-                        note: bytes[1],
-                        velocity: bytes[2]
-                    });
-                }
-            });
-            // Generate MusicXML (minimal, for live events)
-            const notes: any[] = midiEvents.map(e => {
-                // Use the same midiNoteToPitch logic as in midiToMusicXML
-                const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
-                const alterMap = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
-                const midiNote = e.note;
-                const step = stepNames[midiNote % 12];
-                const alter = alterMap[midiNote % 12];
-                const octave = Math.floor(midiNote / 12) - 1;
-                return {
-                    step,
-                    alter,
-                    octave,
-                    duration: 1,
-                    type: 'quarter',
-                };
-            });
-            const measures: any[] = [];
-            for (let i = 0; i < notes.length; i += 4) {
-                measures.push({
-                    notes: notes.slice(i, i + 4),
-                    attributes: i === 0 ? {
-                        divisions: 1,
-                        key: 4, // E major
-                        time: { beats: 4, beatType: 4 },
-                        clef: { sign: 'G', line: 2 }
-                    } : undefined
-                });
-            }
-            const partXml = `<part id="P1">\n${measures.map(measure => `<measure>\n${measure.attributes ? `<attributes>\n  <divisions>${measure.attributes.divisions}</divisions>\n  <key>\n    <fifths>${measure.attributes.key}</fifths>\n  </key>\n  <time>\n    <beats>${measure.attributes.time.beats}</beats>\n    <beat-type>${measure.attributes.time.beatType}</beat-type>\n  </time>\n  <clef>\n    <sign>${measure.attributes.clef.sign}</sign>\n    <line>${measure.attributes.clef.line}</line>\n  </clef>\n</attributes>\n` : ''}${measure.notes.map((note: any) => `<note>\n  <pitch>\n    <step>${note.step}</step>\n    ${note.alter ? `<alter>${note.alter}</alter>` : ''}\n    <octave>${note.octave}</octave>\n  </pitch>\n  <duration>${note.duration}</duration>\n  <type>${note.type}</type>\n</note>`).join('\n')}\n</measure>`).join('\n')}\n</part>`;
-            const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<score-partwise version="3.1">\n  <work>\n    <work-title>Live Recording</work-title>\n  </work>\n  <part-list>\n    <score-part id=\"P1\"><part-name>Part</part-name></score-part>\n  </part-list>\n  ${partXml}\n</score-partwise>`;
+            const xml = midi2MusicXML(liveMidi, 'Live Recording', 'Depinus');
             if (!osmdRef.current) {
                 osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
                     drawingParameters: "default",
@@ -180,13 +173,13 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             osmdRef.current.clear();
             osmdRef.current.load(xml).then(() => osmdRef.current!.render());
         } catch (e) {
-            console.error('Error parsing live MIDI events:', e);
+            console.error('Error rendering live MIDI:', e);
         }
-    }, [liveMidiEvents, mode]);
+    }, [liveMidi, mode]);
 
     return (
         <div>
-            <p>Mode: {mode || 'Waiting...'} | {midi ? `Tracks: ${midi.tracks.length}` : 'No MIDI loaded'}</p>
+            <p>Mode: {mode || 'Waiting...'} | {mode === 'recording' ? `Live notes: ${liveMidi?.tracks[0].notes.length ?? 0}` : midi ? `Tracks: ${midi.tracks.length}` : 'No MIDI loaded'}</p>
             <button onClick={exportScoreAsPDF}>Export as PDF</button>
             <div ref={osmdContainerRef}></div>
         </div>

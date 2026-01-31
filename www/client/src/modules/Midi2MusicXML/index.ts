@@ -10,11 +10,25 @@ function midiNoteToPitch(midiNote: number) {
   return { step, alter, octave };
 }
 
-export function midiToMusicXML(
+export function midi2MusicXML(
   midi: Midi,
-  compositionName?: string,
-  composerName?: string
+  title?: string,
+  composer?: string
 ): string {
+  // Extract title and composer from MIDI meta if not provided
+  let extractedTitle: string | undefined = title;
+  let extractedComposer: string | undefined = composer;
+  if (!title) {
+    if (!extractedTitle && typeof midi.header.name === 'string' && midi.header.name.length > 0) {
+      extractedTitle = midi.header.name;
+    }
+  }
+  if (!composer) {
+    if (Array.isArray(midi.header.meta)) {
+      const composerMeta = midi.header.meta.find(e => (e.type === 'composer' || e.type === 'text') && typeof e.text === 'string');
+      if (composerMeta) extractedComposer = composerMeta.text;
+    }
+  }
   // Extract copyright from header.meta
   let copyright: string | undefined = undefined;
   if (Array.isArray(midi.header.meta)) {
@@ -72,8 +86,8 @@ export function midiToMusicXML(
 
   // Assemble score
   const score: Score = {
-    title: compositionName,
-    composer: composerName,
+    title: extractedTitle,
+    composer: extractedComposer,
     copyright,
     parts: [part],
   };
