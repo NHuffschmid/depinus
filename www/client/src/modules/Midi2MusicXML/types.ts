@@ -9,6 +9,11 @@ export type Note = {
 
 export type Measure = {
     notes: Note[];
+    section: Section;
+};
+
+export type Section = {
+    measures: Measure[];
     attributes?: {
         divisions?: number;
         key?: number;
@@ -26,7 +31,7 @@ export type Measure = {
 
 export type Part = {
     id: string;
-    measures: Measure[];
+    sections: Section[];
 };
 
 export type Score = {

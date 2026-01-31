@@ -1,4 +1,4 @@
-import { Note, Measure, Part, Score } from './types';
+import { Note, Measure, Section, Part, Score } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
@@ -12,7 +12,7 @@ export function midi2MusicXML(
   title?: string,
   composer?: string
 ): string {
-  
+
   const scoreTitle = title ?? analyzeTitle(midi);
   const scoreComposer = composer ?? analyzeComposer(midi);
   const copyright = analyzeCopyright(midi);
@@ -42,21 +42,30 @@ export function midi2MusicXML(
     const measureNotes = notes.slice(i, i + 4);
     measures.push({
       notes: measureNotes,
-      attributes: i === 0 ? {
-        divisions: 1,
-        key: 4,
-        time: { beats: 4, beatType: 4 },
-        clef: { sign: 'G', line: 2 },
-      } : undefined,
-      direction: i === 0 && tempo ? { tempo, beatUnit: 'quarter' } : undefined,
-      sound: i === 0 && tempo ? { tempo } : undefined,
+      section: {} as Section, // Placeholder, will be set later
     });
   }
+
+  const section: Section = {
+    measures,
+    attributes: {
+      divisions: 1,
+      key: -1,
+      time: { beats: 4, beatType: 4 },
+      clef: { sign: 'G', line: 2 },
+    },
+    direction: tempo ? { tempo, beatUnit: 'quarter' } : undefined,
+    sound: tempo ? { tempo } : undefined,
+  };
+
+  measures.forEach(measure => {
+    (measure as any).section = section;
+  });
 
   // One part with multiple measures
   const part: Part = {
     id: 'P1',
-    measures,
+    sections: [section],
   };
 
   // Assemble score

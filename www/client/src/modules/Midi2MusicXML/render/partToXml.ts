@@ -1,6 +1,6 @@
 import { Part } from '../types';
-import { measureToXml } from './measureToXml';
+import { sectionToXml } from './sectionToXml';
 
 export function partToXml(part: Part): string {
-    return `<part id="${part.id}">\n${part.measures.map(measureToXml).join('\n')}\n</part>`;
+    return `<part id="${part.id}">\n${part.sections.map(sectionToXml).join('\n')}\n</part>`;
 }
