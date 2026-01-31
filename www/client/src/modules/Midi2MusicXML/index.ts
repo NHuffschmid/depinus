@@ -1,49 +1,24 @@
-import { Note, Measure, Part, Score, scoreToXml } from './types';
+import { Note, Measure, Part, Score } from './types';
 import { Midi } from '@tonejs/midi';
-
-function midiNoteToPitch(midiNote: number) {
-  const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
-  const alterMap = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
-  const step = stepNames[midiNote % 12];
-  const alter = alterMap[midiNote % 12];
-  const octave = Math.floor(midiNote / 12) - 1;
-  return { step, alter, octave };
-}
+import { analyzeTitle } from './analysis/analyzeTitle';
+import { analyzeComposer } from './analysis/analyzeComposer';
+import { analyzeTempo } from './analysis/analyzeTempo';
+import { analyzeCopyright } from './analysis/analyzeCopyright';
+import { scoreToXml } from './render/scoreToXml';
+import { midiNoteToPitch } from './utils/midiNoteToPitch';
 
 export function midi2MusicXML(
   midi: Midi,
   title?: string,
   composer?: string
 ): string {
-  // Extract title and composer from MIDI meta if not provided
-  let extractedTitle: string | undefined = title;
-  let extractedComposer: string | undefined = composer;
-  if (!title) {
-    if (!extractedTitle && typeof midi.header.name === 'string' && midi.header.name.length > 0) {
-      extractedTitle = midi.header.name;
-    }
-  }
-  if (!composer) {
-    if (Array.isArray(midi.header.meta)) {
-      const composerMeta = midi.header.meta.find(e => (e.type === 'composer' || e.type === 'text') && typeof e.text === 'string');
-      if (composerMeta) extractedComposer = composerMeta.text;
-    }
-  }
-  // Extract copyright from header.meta
-  let copyright: string | undefined = undefined;
-  if (Array.isArray(midi.header.meta)) {
-    const copyrightMeta = midi.header.meta.find(e => e.type === 'copyright' && typeof e.text === 'string');
-    if (copyrightMeta) {
-      copyright = copyrightMeta.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-  }
+  
+  const scoreTitle = title ?? analyzeTitle(midi);
+  const scoreComposer = composer ?? analyzeComposer(midi);
+  const copyright = analyzeCopyright(midi);
+  const tempo = analyzeTempo(midi);
 
-  // Extract tempo (first tempo event)
-  let tempo: number | undefined = undefined;
-  if (midi.header.tempos && midi.header.tempos.length > 0) {
-    tempo = Math.round(midi.header.tempos[0].bpm);
-  }
-
+  // TODO: analyzeNotes, analyzeKey, analyzeTime, analyzeRests ...
   // Collect all notes from all tracks
   const notes: Note[] = [];
   midi.tracks.forEach(track => {
@@ -86,8 +61,8 @@ export function midi2MusicXML(
 
   // Assemble score
   const score: Score = {
-    title: extractedTitle,
-    composer: extractedComposer,
+    title: scoreTitle,
+    composer: scoreComposer,
     copyright,
     parts: [part],
   };
