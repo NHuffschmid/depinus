@@ -6,6 +6,7 @@ import { analyzeTempo } from './analysis/analyzeTempo';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { scoreToXml } from './render/scoreToXml';
 import { midiNoteToPitch } from './utils/midiNoteToPitch';
+import { collectAndSortNotes } from './utils/collectAndSortNotes';
 
 export function midi2MusicXML(
   midi: Midi,
@@ -18,21 +19,8 @@ export function midi2MusicXML(
   const copyright = analyzeCopyright(midi);
   const tempo = analyzeTempo(midi);
 
-  // TODO: analyzeNotes, analyzeKey, analyzeTime, analyzeRests ...
-  // Collect all notes from all tracks
-  const notes: Note[] = [];
-  for (const track of midi.tracks) {
-    for (const note of track.notes) {
-      const { step, alter, octave } = midiNoteToPitch(note.midi);
-      notes.push({
-        step,
-        alter,
-        octave,
-        duration: 1,
-        type: 'quarter',
-      });
-    }
-  }
+  // Collect and sort all notes from all tracks
+  const notes: Note[] = collectAndSortNotes(midi);
 
   if (notes.length === 0) return '';
 

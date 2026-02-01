@@ -6,6 +6,7 @@ export type Note = {
     duration: number;
     type: string;
     isRest?: boolean;
+    tick?: number;
 };
 
 export type Measure = {
