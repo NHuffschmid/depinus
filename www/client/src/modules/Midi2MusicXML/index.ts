@@ -21,8 +21,8 @@ export function midi2MusicXML(
   // TODO: analyzeNotes, analyzeKey, analyzeTime, analyzeRests ...
   // Collect all notes from all tracks
   const notes: Note[] = [];
-  midi.tracks.forEach(track => {
-    track.notes.forEach(note => {
+  for (const track of midi.tracks) {
+    for (const note of track.notes) {
       const { step, alter, octave } = midiNoteToPitch(note.midi);
       notes.push({
         step,
@@ -31,8 +31,8 @@ export function midi2MusicXML(
         duration: 1,
         type: 'quarter',
       });
-    });
-  });
+    }
+  }
 
   if (notes.length === 0) return '';
 
@@ -40,6 +40,16 @@ export function midi2MusicXML(
   const measures: Measure[] = [];
   for (let i = 0; i < notes.length; i += 4) {
     const measureNotes = notes.slice(i, i + 4);
+    // Fill incomplete measures with rests
+    while (measureNotes.length < 4) {
+      measureNotes.push({
+        step: 'C',
+        octave: 4,
+        duration: 1,
+        type: 'quarter',
+        isRest: true,
+      });
+    }
     measures.push({
       notes: measureNotes,
       section: {} as Section, // Placeholder, will be set later

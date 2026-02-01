@@ -3,9 +3,10 @@ import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { midi2MusicXML } from '../modules/Midi2MusicXML/index';
+import { useMidi2MusicXMLWorker } from '../modules/Midi2MusicXML/useMidi2MusicXMLWorker';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
+import WaitingIndicator from './WaitingIndicator';
 
 interface ScoreViewProps { }
 
@@ -20,8 +21,10 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const [mode, setMode] = useState<'playback' | 'recording' | null>(null);
     const [isWebSocketReady, setIsWebSocketReady] = useState(false);
     const [currentCompositionId, setCurrentCompositionId] = useState<string | null>(null);
+    const [isRendering, setIsRendering] = useState(false);
 
     const osmdRef = useRef<OpenSheetMusicDisplay>();
+    const midi2MusicXML = useMidi2MusicXMLWorker();
 
     function exportScoreAsPDF() {
         if (!osmdContainerRef.current) {
@@ -47,7 +50,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         });
     }
 
-    function exportScoreAsMusicXML() {
+    async function exportScoreAsMusicXML() {
         const currentMidi = mode === 'recording' ? liveMidi : midi;
         if (!currentMidi) {
             alert('No MIDI data available!');
@@ -55,7 +58,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const xml = midi2MusicXML(currentMidi, title, composer);
+        const xml = await midi2MusicXML(currentMidi, title, composer);
         
         // Create Blob and download
         const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
@@ -71,7 +74,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const webSocket = useDepinusWebSocket({
         name: 'ScoreView',
         onOpen: () => {
-            console.log('WebSocket connected');
             setIsWebSocketReady(true);
         },
         onInfoMessage: (message: any) => {
@@ -164,14 +166,44 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     useEffect(() => {
         if (!osmdContainerRef.current) return;
         if (!midi) return;
-        const xml = midi2MusicXML(midi, compositionName, composerName);
-        if (!osmdRef.current) {
-            osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
-                drawingParameters: "default",
-            });
-        }
-        osmdRef.current.clear();
-        osmdRef.current.load(xml).then(() => osmdRef.current!.render());
+        setIsRendering(true);
+        // Use async IIFE to handle worker call
+        (async () => {
+            try {
+                const xml = await midi2MusicXML(midi, compositionName, composerName);
+                // Give browser a frame to update UI
+                await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+                
+                if (!osmdRef.current) {
+                    osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
+                        drawingParameters: "default",
+                    });
+                }
+                osmdRef.current.clear();
+                
+                console.log('[OSMD] Starting load() - XML length:', xml.length);
+                const loadStart = performance.now();
+                await osmdRef.current.load(xml);
+                console.log('[OSMD] load() completed in', (performance.now() - loadStart).toFixed(0), 'ms');
+                
+                // Give browser a frame before heavy render operation
+                await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
+                
+                console.log('[OSMD] Starting render()');
+                const renderStart = performance.now();
+                osmdRef.current.render(); // GUI will freeze here because OSMD is sync
+                console.log('[OSMD] render() completed in', (performance.now() - renderStart).toFixed(0), 'ms');
+                
+                // Give browser time to paint the SVG before state update
+                console.log('[OSMD] Waiting for browser to paint...');
+                await new Promise(resolve => setTimeout(() => resolve(undefined), 100));
+                console.log('[OSMD] SVG painting done!');
+                setIsRendering(false);
+            } catch (error) {
+                console.error('Error rendering MIDI:', error);
+                setIsRendering(false);
+            }
+        })();
     }, [midi, compositionName, composerName]);
 
     // Live recording: display liveMidi as score
@@ -183,26 +215,52 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             if (osmdRef.current) osmdRef.current.clear();
             return;
         }
-        try {
-            const xml = midi2MusicXML(liveMidi, 'Live Recording', 'Depinus');
-            if (!osmdRef.current) {
-                osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current, {
-                    drawingParameters: "default",
-                });
+        // Use async IIFE to handle worker call (no isRendering in live mode to prevent flicker)
+        (async () => {
+            try {
+                const xml = await midi2MusicXML(liveMidi, 'Live Recording', 'Depinus');
+                
+                if (!osmdRef.current) {
+                    osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
+                        drawingParameters: "default",
+                    });
+                }
+                osmdRef.current.clear();
+                
+                await osmdRef.current.load(xml);
+                osmdRef.current.render();
+            } catch (error) {
+                console.error('Error rendering live MIDI:', error);
             }
-            osmdRef.current.clear();
-            osmdRef.current.load(xml).then(() => osmdRef.current!.render());
-        } catch (e) {
-            console.error('Error rendering live MIDI:', e);
-        }
+        })();
     }, [liveMidi, mode]);
 
     return (
-        <div>
-            <p>Mode: {mode || 'Waiting...'} | {mode === 'recording' ? `Live notes: ${liveMidi?.tracks[0].notes.length ?? 0}` : midi ? `Tracks: ${midi.tracks.length}` : 'No MIDI loaded'}</p>
-            <button onClick={exportScoreAsPDF}>Export as PDF</button>
-            <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>Export as MusicXML</button>
-            <div ref={osmdContainerRef}></div>
+        <div style={{ position: 'relative' }}>
+            {isRendering && mode !== 'recording' && (
+                <div style={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <WaitingIndicator width='4rem' height='2rem' />
+                </div>
+            )}
+            <div style={{ visibility: isRendering ? 'hidden' : 'visible' }}>
+                {mode !== 'recording' && (
+                    <>
+                        <button onClick={exportScoreAsPDF}>Export as PDF</button>
+                        <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>Export as MusicXML</button>
+                    </>
+                )}
+            </div>
+            <div ref={osmdContainerRef} style={{ visibility: isRendering ? 'hidden' : 'visible' }}></div>
         </div>
     );
 };

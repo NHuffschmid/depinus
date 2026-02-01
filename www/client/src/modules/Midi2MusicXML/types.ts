@@ -5,6 +5,7 @@ export type Note = {
     octave: number;
     duration: number;
     type: string;
+    isRest?: boolean;
 };
 
 export type Measure = {
