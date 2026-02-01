@@ -12,6 +12,7 @@ export type Note = {
 export type Measure = {
     notes: Note[];
     section: Section;
+    keyCandidates: number[];
 };
 
 export type Section = {

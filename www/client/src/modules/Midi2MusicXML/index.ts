@@ -5,8 +5,9 @@ import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeTempo } from './analysis/analyzeTempo';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { scoreToXml } from './render/scoreToXml';
-import { midiNoteToPitch } from './utils/midiNoteToPitch';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
+import { detectKeysForMeasure } from './utils/detectKeysForMeasure';
+import { analyseKey } from './analysis/analyseKey';
 
 export function midi2MusicXML(
   midi: Midi,
@@ -38,10 +39,14 @@ export function midi2MusicXML(
         isRest: true,
       });
     }
-    measures.push({
+    const measure: Measure = {
       notes: measureNotes,
       section: {} as Section, // Placeholder, will be set later
-    });
+      keyCandidates: [],
+    };
+    // Detect key signature(s) for this measure
+    measure.keyCandidates = detectKeysForMeasure(measure);
+    measures.push(measure);
   }
 
   const section: Section = {
@@ -59,6 +64,9 @@ export function midi2MusicXML(
   measures.forEach(measure => {
     (measure as any).section = section;
   });
+
+  const sectionKey = analyseKey(section);
+  console.log('Analyzed section key (fifths):', sectionKey);
 
   // One part with multiple measures
   const part: Part = {
