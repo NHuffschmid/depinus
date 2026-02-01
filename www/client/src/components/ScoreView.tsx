@@ -47,6 +47,26 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         });
     }
 
+    function exportScoreAsMusicXML() {
+        const currentMidi = mode === 'recording' ? liveMidi : midi;
+        if (!currentMidi) {
+            alert('No MIDI data available!');
+            return;
+        }
+        const title = mode === 'recording' ? 'Live Recording' : compositionName;
+        const composer = mode === 'recording' ? 'Depinus' : composerName;
+        const xml = midi2MusicXML(currentMidi, title, composer);
+        
+        // Create Blob and download
+        const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title || 'score'}.musicxml`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     // WebSocket Connection
     const webSocket = useDepinusWebSocket({
         name: 'ScoreView',
@@ -181,6 +201,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         <div>
             <p>Mode: {mode || 'Waiting...'} | {mode === 'recording' ? `Live notes: ${liveMidi?.tracks[0].notes.length ?? 0}` : midi ? `Tracks: ${midi.tracks.length}` : 'No MIDI loaded'}</p>
             <button onClick={exportScoreAsPDF}>Export as PDF</button>
+            <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>Export as MusicXML</button>
             <div ref={osmdContainerRef}></div>
         </div>
     );
