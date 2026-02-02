@@ -6,7 +6,6 @@ import { analyzeTempo } from './analysis/analyzeTempo';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
-import { detectKeysForMeasure } from './utils/detectKeysForMeasure';
 import { analyseKey } from './analysis/analyseKey';
 
 export function midi2MusicXML(
@@ -42,10 +41,7 @@ export function midi2MusicXML(
     const measure: Measure = {
       notes: measureNotes,
       section: {} as Section, // Placeholder, will be set later
-      keyCandidates: [],
     };
-    // Detect key signature(s) for this measure
-    measure.keyCandidates = detectKeysForMeasure(measure);
     measures.push(measure);
   }
 
@@ -53,7 +49,6 @@ export function midi2MusicXML(
     measures,
     attributes: {
       divisions: 1,
-      key: -1,
       time: { beats: 4, beatType: 4 },
       clef: { sign: 'G', line: 2 },
     },
