@@ -18,7 +18,7 @@ export type Section = {
     measures: Measure[];
     attributes?: {
         divisions?: number;
-        key?: number;
+        key?: string;
         time?: { beats: number; beatType: number };
         clef?: { sign: string; line: number };
     };
