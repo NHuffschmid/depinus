@@ -2,19 +2,21 @@
  * Key detection algorithm for MusicXML conversion
  *
  * This module provides a function to automatically determine the most likely key signature (major or minor)
- * for a given section of music, based on the note content. The algorithm works as follows:
+ * for a given section of music, based on the note content. The current algorithm works as follows:
  *
  * 1. All notes in the section are collected and converted to pitch classes (0-11).
  * 2. For each possible key signature (-7 to +7 fifths, covering all major and parallel minor keys):
- *    a. The number of notes matching the diatonic scale of the key is counted.
- *    b. The number of tonic (root) notes for both major and minor is counted and added as a bonus.
- *    c. For minor keys, the number of raised 7th degree (Leitton) notes is counted and multiplied by a bonus factor.
- *    d. The total score for each key is the sum of scale matches, tonic bonus, and Leitton bonus (for minor).
+ *    a. Count the number of notes that do NOT fit the diatonic scale of the key (deviations).
+ *    b. Count the number of tonic (root) notes for both major and minor.
+ *    c. For minor keys, count the number of raised 7th degree (Leitton) notes.
+ *    d. Calculate the score for each key using:
+ *         score = -deviations * DEVIATION_FACTOR + tonicCount + leittonCount * BONUS_FACTOR
+ *       (DEVIATION_FACTOR is much larger than BONUS_FACTOR, so mismatches are strongly penalized.)
  * 3. The key with the highest score is selected as the detected key. If there is a tie, major keys are preferred.
  * 4. The result is returned as a string (e.g. '2M' for D major, '2m' for B minor) and stored in section.attributes.key.
  *
- * This approach improves reliability for both major and minor keys, especially in ambiguous cases, by considering
- * not only the scale but also the musical importance of tonic and Leitton notes.
+ * This approach ensures that keys with many mismatches are not selected, even if tonic or Leitton notes are frequent.
+ * The algorithm balances musical plausibility (few mismatches) with bonus weighting for tonic and Leitton.
  */
 
 import { Section, Note } from '../types';
@@ -80,47 +82,54 @@ export function analyseKey(section: Section): string {
   }
 
 
-  // For each key: count how many notes fit into the scale, plus tonic weighting for both major and parallel minor
-  const keyMatches: Record<string, number> = {};
+  // For each key: calculate score = -deviations + tonic bonus + leitton bonus
+  const keyScores: Record<string, number> = {};
   const tonicCounts: Record<string, number> = {};
-  const BONUS_FACTOR = 3;
   const leittonCounts: Record<string, number> = {};
+  const deviationCounts: Record<string, number> = {};
+  const BONUS_FACTOR = 3;
+  const DEVIATION_FACTOR = 5;
   for (let fifths = -7; fifths <= 7; fifths++) {
     // Major
     const scaleNotesMajor = getScaleNotesForKey(fifths);
-    let matchesMajor = 0;
+    let deviationsMajor = 0;
     for (const pc of notePitchClasses) {
-      if (scaleNotesMajor.has(pc)) matchesMajor++;
+      if (!scaleNotesMajor.has(pc)) deviationsMajor++;
     }
     const tonicMajor = fifthsToTonic[fifths + 7];
     const tonicCountMajor = notePitchClasses.filter(pc => pc === tonicMajor).length;
     const keyMajor = `${fifths}M`;
+    deviationCounts[keyMajor] = deviationsMajor;
     tonicCounts[keyMajor] = tonicCountMajor;
-    keyMatches[keyMajor] = matchesMajor + tonicCountMajor;
+    keyScores[keyMajor] = -deviationsMajor * DEVIATION_FACTOR + tonicCountMajor;
 
     // Parallel minor: tonic is 9 steps below major tonic (relative minor)
     const tonicMinor = (tonicMajor + 9) % 12;
-    // Minor scale: use natural minor scale pattern: [0, 2, 3, 5, 7, 8, 10]
     const naturalMinorPattern = [0, 2, 3, 5, 7, 8, 10];
     const scaleNotesMinor = new Set<number>();
     for (const interval of naturalMinorPattern) {
       scaleNotesMinor.add((tonicMinor + interval) % 12);
     }
-    let matchesMinor = 0;
+    let deviationsMinor = 0;
     for (const pc of notePitchClasses) {
-      if (scaleNotesMinor.has(pc)) matchesMinor++;
+      if (!scaleNotesMinor.has(pc)) deviationsMinor++;
     }
     const tonicCountMinor = notePitchClasses.filter(pc => pc === tonicMinor).length;
     // Leitton for minor: raised 7th degree (tonic + 11) % 12
     const leittonMinor = (tonicMinor + 11) % 12;
     const leittonCountMinor = notePitchClasses.filter(pc => pc === leittonMinor).length;
     const keyMinor = `${fifths}m`;
+    deviationCounts[keyMinor] = deviationsMinor;
     tonicCounts[keyMinor] = tonicCountMinor;
     leittonCounts[keyMinor] = leittonCountMinor;
-    keyMatches[keyMinor] = matchesMinor + tonicCountMinor + leittonCountMinor * BONUS_FACTOR;
+    keyScores[keyMinor] = -deviationsMinor * DEVIATION_FACTOR + tonicCountMinor + leittonCountMinor * BONUS_FACTOR;
   }
 
-  // Log tonic and leitton counts for both major and minor
+  // Log deviations, tonic and leitton counts for both major and minor
+  const deviationLog = Object.entries(deviationCounts)
+    .sort((a, b) => a[1] - b[1])
+    .map(([key, count]) => `${key}: ${count}`)
+    .join(', ');
   const tonicLog = Object.entries(tonicCounts)
     .sort((a, b) => b[1] - a[1])
     .map(([key, count]) => `${key}: ${count}`)
@@ -130,18 +139,18 @@ export function analyseKey(section: Section): string {
     .map(([key, count]) => `${key}: ${count}`)
     .join(', ');
 
-  // Determine the key(s) with the most matches (including tonic bonus)
-  const maxMatches = Math.max(...Object.values(keyMatches));
-  const bestKeys = Object.entries(keyMatches)
-    .filter(([_, count]) => count === maxMatches)
+  // Determine the key(s) with the highest score
+  const maxScore = Math.max(...Object.values(keyScores));
+  const bestKeys = Object.entries(keyScores)
+    .filter(([_, score]) => score === maxScore)
     .map(([key]) => key);
 
   // Log the analysis sorted
-  const sortedCounts = Object.entries(keyMatches)
+  const sortedScores = Object.entries(keyScores)
     .sort((a, b) => b[1] - a[1])
-    .map(([key, count]) => `${key}: ${count}`)
+    .map(([key, score]) => `${key}: ${score}`)
     .join(', ');
-  console.log(`[analyseKey] key matches (with tonic bonus, desc): { ${sortedCounts} }`);
+  console.log(`[analyseKey] key scores (desc): { ${sortedScores} }`);
 
   // Choose the first best key (prefer major if tie, then minor)
   let bestKey = bestKeys.find(k => k.endsWith('M')) ?? bestKeys[0] ?? '0M';
