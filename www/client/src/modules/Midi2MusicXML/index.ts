@@ -1,12 +1,12 @@
-import { Note, Measure, Section, Part, Score } from './types';
+import { Note, Measure, Section, System, Voice, Score } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeTempo } from './analysis/analyzeTempo';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
+import { analyseKey } from './analysis/analyseKey';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
-import { analyseKey } from './analysis/analyseKey';
 
 export function midi2MusicXML(
   midi: Midi,
@@ -21,14 +21,12 @@ export function midi2MusicXML(
 
   // Collect and sort all notes from all tracks
   const notes: Note[] = collectAndSortNotes(midi);
-
   if (notes.length === 0) return '';
 
   // Split notes into groups of 4 (4/4 time, 4 quarter notes per measure)
-  const measures: Measure[] = [];
+  const trebleMeasures: Measure[] = [];
   for (let i = 0; i < notes.length; i += 4) {
     const measureNotes = notes.slice(i, i + 4);
-    // Fill incomplete measures with rests
     while (measureNotes.length < 4) {
       measureNotes.push({
         step: 'C',
@@ -38,43 +36,69 @@ export function midi2MusicXML(
         isRest: true,
       });
     }
-    const measure: Measure = {
-      notes: measureNotes,
-      section: {} as Section, // Placeholder, will be set later
-    };
-    measures.push(measure);
+    trebleMeasures.push({ notes: measureNotes });
   }
 
-  const section: Section = {
-    measures,
+  // Bass measures: same number, all rests
+  const bassMeasures: Measure[] = trebleMeasures.map(measure => ({
+    notes: measure.notes.map(n => ({
+      step: 'C',
+      octave: 2,
+      duration: n.duration,
+      type: n.type,
+      isRest: true,
+    }))
+  }));
+
+  // section for both voices
+  const trebleSection: Section = {
+    measures: trebleMeasures,
     attributes: {
       divisions: 1,
       time: { beats: 4, beatType: 4 },
+      key: undefined,
       clef: { sign: 'G', line: 2 },
     },
     direction: tempo ? { tempo, beatUnit: 'quarter' } : undefined,
     sound: tempo ? { tempo } : undefined,
   };
-
-  measures.forEach(measure => {
-    (measure as any).section = section;
-  });
-
-  const sectionKey = analyseKey(section);
-  console.log('Analyzed section key (fifths):', sectionKey);
-
-  // One part with multiple measures
-  const part: Part = {
-    id: 'P1',
-    sections: [section],
+  const bassSection: Section = {
+    measures: bassMeasures,
+    attributes: {
+      divisions: 1,
+      time: { beats: 4, beatType: 4 },
+      key: undefined,
+      clef: { sign: 'F', line: 4 }, // Bassschlüssel
+    },
+    direction: tempo ? { tempo, beatUnit: 'quarter' } : undefined,
+    sound: tempo ? { tempo } : undefined,
   };
 
-  // Assemble score
+  // Key detection (updates trebleSection.attributes.key)
+  const sectionKey = analyseKey(trebleSection);
+  if (!trebleSection.attributes) trebleSection.attributes = {};
+  trebleSection.attributes.key = sectionKey;
+  if (!bassSection.attributes) bassSection.attributes = {};
+  bassSection.attributes.key = sectionKey;
+  console.log('Analyzed section key (fifths):', sectionKey);
+
+  const trebleVoice: Voice = {
+    clef: 'treble',
+    sections: [trebleSection],
+  };
+  const bassVoice: Voice = {
+    clef: 'bass',
+    sections: [bassSection],
+  };
+  const system: System = {
+    voices: [trebleVoice, bassVoice],
+  };
+
   const score: Score = {
     title: scoreTitle,
     composer: scoreComposer,
     copyright,
-    parts: [part],
+    system,
   };
 
   // Render as MusicXML

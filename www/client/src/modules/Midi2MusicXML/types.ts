@@ -1,4 +1,5 @@
 // MusicXML Model Types
+
 export type Note = {
     step: string;
     alter?: number;
@@ -11,7 +12,6 @@ export type Note = {
 
 export type Measure = {
     notes: Note[];
-    section: Section;
 };
 
 export type Section = {
@@ -31,15 +31,19 @@ export type Section = {
     };
 };
 
-export type Part = {
-    id: string;
+export type Voice = {
+    clef: 'treble' | 'bass';
     sections: Section[];
+};
+
+export type System = {
+    voices: Voice[];
 };
 
 export type Score = {
     title?: string;
     composer?: string;
     copyright?: string;
-    parts: Part[];
+    system: System;
 };
 
