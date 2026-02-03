@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { useMidi2MusicXMLWorker } from '../modules/Midi2MusicXML/useMidi2MusicXMLWorker';
+import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
