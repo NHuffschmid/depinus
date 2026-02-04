@@ -58,8 +58,8 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const xml = await midi2MusicXML(currentMidi, title, composer);
-        
+        const xml = await midi2MusicXML(currentMidi, { title, composer, mode: 'piano' });
+
         // Create Blob and download
         const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
         const url = URL.createObjectURL(blob);
@@ -170,30 +170,36 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const xml = await midi2MusicXML(midi, compositionName, composerName);
+                const xml = await midi2MusicXML(
+                    midi,
+                    {
+                        title: compositionName,
+                        composer: composerName,
+                        mode: 'piano'
+                    });
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
-                
+
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
                     });
                 }
                 osmdRef.current.clear();
-                
+
                 console.log('[OSMD] Starting load() - XML length:', xml.length);
                 const loadStart = performance.now();
                 await osmdRef.current.load(xml);
                 console.log('[OSMD] load() completed in', (performance.now() - loadStart).toFixed(0), 'ms');
-                
+
                 // Give browser a frame before heavy render operation
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
-                
+
                 console.log('[OSMD] Starting render()');
                 const renderStart = performance.now();
                 osmdRef.current.render(); // GUI will freeze here because OSMD is sync
                 console.log('[OSMD] render() completed in', (performance.now() - renderStart).toFixed(0), 'ms');
-                
+
                 // Give browser time to paint the SVG before state update
                 console.log('[OSMD] Waiting for browser to paint...');
                 await new Promise(resolve => setTimeout(() => resolve(undefined), 100));
@@ -218,15 +224,21 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call (no isRendering in live mode to prevent flicker)
         (async () => {
             try {
-                const xml = await midi2MusicXML(liveMidi, 'Live Recording', 'Depinus');
-                
+                const xml = await midi2MusicXML(
+                    liveMidi,
+                    {
+                        title: 'Live Recording',
+                        composer: 'Depinus',
+                        mode: 'piano'
+                    });
+
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
                     });
                 }
                 osmdRef.current.clear();
-                
+
                 await osmdRef.current.load(xml);
                 osmdRef.current.render();
             } catch (error) {
@@ -238,14 +250,14 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     return (
         <div style={{ position: 'relative' }}>
             {isRendering && mode !== 'recording' && (
-                <div style={{ 
-                    position: 'absolute', 
-                    top: 0, 
-                    left: 0, 
-                    width: '100%', 
-                    height: '100%', 
-                    display: 'flex', 
-                    justifyContent: 'center', 
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
                     alignItems: 'center',
                     zIndex: 1000
                 }}>
