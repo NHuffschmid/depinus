@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
-import { ClefType } from '../modules/midi2musicxml/types';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
+import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
+import { ClefType } from '../modules/midi2musicxml/types';
 
 interface ScoreViewProps { }
 
 const ScoreView: React.FC<ScoreViewProps> = () => {
+    const { t } = useTranslation();
     const osmdContainerRef = useRef<HTMLDivElement>(null);
     const [midi, setMidi] = useState<Midi | null>(null);
     const [liveMidi, setLiveMidi] = useState<Midi | null>(null);
@@ -181,7 +183,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     });
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
-                
+
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
@@ -270,20 +272,24 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 {mode !== 'recording' && (
                     <>
                         <div style={{ marginBottom: '12px' }}>
-                            <label htmlFor="clef-select" style={{ marginRight: '10px' }}>Clef:</label>
+                            <label htmlFor="clef-select" style={{ marginRight: '10px' }}>{t('Clef')}:</label>
                             <select
                                 id="clef-select"
                                 value={selectedClef}
                                 onChange={e => setSelectedClef(e.target.value as any)}
                             >
-                                <option value="piano">Piano</option>
-                                <option value="violin">Violin</option>
-                                <option value="viola">Viola</option>
-                                <option value="cello">Cello</option>
+                                <option value="piano">{t('Instrument-Piano')}</option>
+                                <option value="violin">{t('Instrument-Violin')}</option>
+                                <option value="viola">{t('Instrument-Viola')}</option>
+                                <option value="cello">{t('Instrument-Cello')}</option>
                             </select>
                         </div>
-                        <button onClick={exportScoreAsPDF}>Export as PDF</button>
-                        <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>Export as MusicXML</button>
+                        <button onClick={exportScoreAsPDF}>
+                            {t('Export PDF')}
+                        </button>
+                        <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>
+                            {t('Export MusicXML')}
+                        </button>
                     </>
                 )}
             </div>
