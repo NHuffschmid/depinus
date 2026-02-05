@@ -420,8 +420,6 @@ class PianoDaemon:
             self._playlist['compositionId'] = compositionId
 
 
-
-
     async def _on_calculate_play_duration(self, mididata):
         midi_stream = io.BytesIO(bytes(mididata))
         duration = int(mido.MidiFile(file=midi_stream).length)
