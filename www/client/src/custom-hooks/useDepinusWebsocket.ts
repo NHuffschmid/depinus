@@ -12,6 +12,7 @@ export interface DepinusWebsocketOptions {
 	onError?: () => void;
 	onKeyboardMessage?: (note: any, velocity: any) => void;
 	onInfoMessage?: (message: any) => void;
+	onRtcResponseMessage?: (message: any) => void;
 }
 
 export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
@@ -63,6 +64,10 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		webSocket.sendJsonMessage({ commandType: 'control', command: 'gotoPlayTime', value: value });
 	};
 
+	const sendRpcCall = (method: string, params: any = {}) => {
+		webSocket.sendJsonMessage({ commandType: 'rpc', method: method, params: params });
+	};
+
 	webSocket = useWebSocket(webSocketUrl, {
 		shouldReconnect: (closeEvent: CloseEvent) => true,
 		reconnectInterval: 2000,
@@ -84,6 +89,10 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 			else if ((message.messageType === 'info') && (options.onInfoMessage)) {
 				options.onInfoMessage(message);
 			}
+			else if ((message.messageType === 'rtc_response') && (options.onRtcResponseMessage)) {
+				options.onRtcResponseMessage(message);
+			}
+
 		},
 		onError: () => {
 			if (options.onError) {
@@ -95,6 +104,6 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 	return {
 		sendKeyboardCommand, sendStopCommand,
 		sendPlayCommand, sendPauseCommand, sendRecordCommand, sendSettingsCommand, sendPlaylistCommand,
-		sendGotoPlayTimeCommand
+		sendGotoPlayTimeCommand, sendRpcCall
 	};
 }
