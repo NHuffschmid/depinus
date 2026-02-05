@@ -3,6 +3,7 @@
 # Piano daemon - Depinus main loop
 
 import asyncio
+import base64
 import mido
 import io
 import requests
@@ -83,12 +84,14 @@ class PianoDaemon:
             self._websocket_server.register_for_connect_notifications(self._on_connect_notification)
             self._websocket_server.register_for_rpc("PlayComposition", self._on_play_composition)
             self._websocket_server.register_for_rpc("CalculatePlayDuration", self._on_calculate_play_duration)
+            self._websocket_server.register_for_rpc("GetCurrentMidiData", self._on_get_current_midi_data)
 
             self._piano_player.register_for_midi_messages(self._on_midi_message)
             self._piano_player.register_for_play_end(self._on_play_end)
 
             self._piano_recorder.register_for_recording_end(self._on_recording_end)
             self._piano_recorder.register_for_waiting_state(self._on_recording_waiting_state)
+            self._piano_recorder.register_for_midi_messages(self._on_recording_midi_message)
 
             logger.info('Entering main loop...')
             self._mainloop = asyncio.Future()
@@ -424,6 +427,19 @@ class PianoDaemon:
         return duration
 
 
+    async def _on_get_current_midi_data(self):
+        """RPC to get MIDI binary data of currently playing composition (base64 encoded)."""
+        if self._piano_player.current_composition is None:
+            return None
+        midi_data = self._piano_player.current_composition.midi_data
+        midi_base64 = base64.b64encode(midi_data).decode('ascii')
+        return {
+            'midiBase64': midi_base64,
+            'compositionName': self._piano_player.current_composition.name,
+            'composerName': self._piano_player.current_composition.composer
+        }
+
+
     async def _on_midi_message(self, mido_message):
         #logger.info('Piano player has transmitted a midi message: ' + str(mido_message))
         await self._websocket_server.send_keyboard_message(mido_message)
@@ -434,6 +450,13 @@ class PianoDaemon:
         await self._websocket_server.send_info_message({
             'messageType': 'info',
             'isWaiting': is_waiting
+        })
+
+    async def _on_recording_midi_message(self, midi_event_base64):
+        '''Callback for MIDI messages during recording - send raw MIDI bytes (base64).'''
+        await self._websocket_server.send_info_message({
+            'messageType': 'info',
+            'midiEventBytes': midi_event_base64
         })
 
     async def _on_recording_end(self, midi_data):
@@ -621,3 +644,4 @@ class PianoDaemon:
 
 if __name__ == '__main__':
     asyncio.run(PianoDaemon().run())
+

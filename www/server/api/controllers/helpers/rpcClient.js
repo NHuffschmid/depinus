@@ -14,7 +14,7 @@ class RpcClient {
             };
             socket.onmessage = (event) => {
                 const response = JSON.parse(event.data);
-                if (response.messageType === 'rtc_response') {
+                if (response.messageType === 'rpc_response') {
                     if (response.error) {
                         logger.error(`RPC error: ${response.error}`);
                         reject(response.error);
