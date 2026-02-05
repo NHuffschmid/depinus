@@ -38,7 +38,7 @@
     "preview": "vite preview",
     "start": "react-scripts --openssl-legacy-provider start --verbose",
     "copy:assets": "node copy-esbuild-assets.js",
-    "build:es": "npm install && npx esbuild src/index.js --bundle --minify --sourcemap --target=es2020 --format=esm --outdir=dist --define:process.env.NODE_ENV='\"production\"' --inject:./process-shim.js --loader:.js=jsx --loader:.css=css --loader:.png=file --loader:.jpg=file --loader:.svg=file && npm run copy:assets",
+    "build:es": "npm install && vite build && npm run copy:assets",
     "serve": "serve dist",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -71,6 +71,7 @@
     "esbuild": "^0.25.8",
     "serve": "^14.2.4",
     "vite": "^7.1.3",
+    "vite-plugin-electron-renderer": "^0.14.6",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4"
   }
