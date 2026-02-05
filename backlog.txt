@@ -20,3 +20,4 @@ Bugs:
 - analyse "Task exception was never retrieved" errors from piano_daemon log
 - show better error message when user tries to add an already existing composition to the playlist
 - PianoDaemon crashes when plugging out MIDI adapter while playing
+- sync progress bar after score-caused GUI freeze

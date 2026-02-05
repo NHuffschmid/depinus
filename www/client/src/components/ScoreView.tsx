@@ -58,7 +58,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const xml = await midi2MusicXML(currentMidi, { title, composer, mode: 'piano' });
+        const xml = await midi2MusicXML(currentMidi, { title, composer, clef: 'piano' });
 
         // Create Blob and download
         const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
@@ -175,7 +175,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     {
                         title: compositionName,
                         composer: composerName,
-                        mode: 'piano'
+                        clef: 'piano'
                     });
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
@@ -229,7 +229,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     {
                         title: 'Live Recording',
                         composer: 'Depinus',
-                        mode: 'piano'
+                        clef: 'piano'
                     });
 
                 if (!osmdRef.current) {
