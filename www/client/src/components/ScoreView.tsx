@@ -137,7 +137,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 }
             }
         },
-        onRtcResponseMessage: async (message: any) => {
+        onRpcResponseMessage: async (message: any) => {
             console.log('RPC Response:', message);
             if (message.result && message.result.midiBase64) {
                 setMode('playback');
