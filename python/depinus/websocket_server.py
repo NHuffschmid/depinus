@@ -193,12 +193,12 @@ class WebsocketServer:
                     if (err_msg):
                         logger.error(err_msg)
                         message = {
-                            "messageType": "rtc_response",
+                            "messageType": "rpc_response",
                             "error": err_msg
                         }
                     else:
                         message = {
-                            "messageType": "rtc_response",
+                            "messageType": "rpc_response",
                             "result": result
                         }
 

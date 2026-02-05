@@ -12,7 +12,7 @@ export interface DepinusWebsocketOptions {
 	onError?: () => void;
 	onKeyboardMessage?: (note: any, velocity: any) => void;
 	onInfoMessage?: (message: any) => void;
-	onRtcResponseMessage?: (message: any) => void;
+	onRpcResponseMessage?: (message: any) => void;
 }
 
 export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
@@ -89,8 +89,8 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 			else if ((message.messageType === 'info') && (options.onInfoMessage)) {
 				options.onInfoMessage(message);
 			}
-			else if ((message.messageType === 'rtc_response') && (options.onRtcResponseMessage)) {
-				options.onRtcResponseMessage(message);
+			else if ((message.messageType === 'rpc_response') && (options.onRpcResponseMessage)) {
+				options.onRpcResponseMessage(message);
 			}
 
 		},
