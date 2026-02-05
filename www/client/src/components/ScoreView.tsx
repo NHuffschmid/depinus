@@ -4,6 +4,7 @@ import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
+import { ClefType } from '../modules/midi2musicxml/types';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
@@ -22,6 +23,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const [isWebSocketReady, setIsWebSocketReady] = useState(false);
     const [currentCompositionId, setCurrentCompositionId] = useState<string | null>(null);
     const [isRendering, setIsRendering] = useState(false);
+    const [selectedClef, setSelectedClef] = useState<ClefType>('piano');
 
     const osmdRef = useRef<OpenSheetMusicDisplay>();
     const midi2MusicXML = useMidi2MusicXMLWorker();
@@ -58,7 +60,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const xml = await midi2MusicXML(currentMidi, { title, composer, clef: 'piano' });
+        const xml = await midi2MusicXML(currentMidi, { title, composer, clef: selectedClef });
 
         // Create Blob and download
         const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
@@ -175,11 +177,11 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     {
                         title: compositionName,
                         composer: composerName,
-                        clef: 'piano'
+                        clef: selectedClef
                     });
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
-
+                
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
@@ -210,7 +212,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 setIsRendering(false);
             }
         })();
-    }, [midi, compositionName, composerName]);
+    }, [midi, compositionName, composerName, selectedClef]);
 
     // Live recording: display liveMidi as score
     useEffect(() => {
@@ -229,7 +231,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     {
                         title: 'Live Recording',
                         composer: 'Depinus',
-                        clef: 'piano'
+                        clef: selectedClef
                     });
 
                 if (!osmdRef.current) {
@@ -245,7 +247,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 console.error('Error rendering live MIDI:', error);
             }
         })();
-    }, [liveMidi, mode]);
+    }, [liveMidi, mode, selectedClef]);
 
     return (
         <div style={{ position: 'relative' }}>
@@ -267,6 +269,19 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             <div style={{ visibility: isRendering ? 'hidden' : 'visible' }}>
                 {mode !== 'recording' && (
                     <>
+                        <div style={{ marginBottom: '12px' }}>
+                            <label htmlFor="clef-select" style={{ marginRight: '10px' }}>Clef:</label>
+                            <select
+                                id="clef-select"
+                                value={selectedClef}
+                                onChange={e => setSelectedClef(e.target.value as any)}
+                            >
+                                <option value="piano">Piano</option>
+                                <option value="violin">Violin</option>
+                                <option value="viola">Viola</option>
+                                <option value="cello">Cello</option>
+                            </select>
+                        </div>
                         <button onClick={exportScoreAsPDF}>Export as PDF</button>
                         <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>Export as MusicXML</button>
                     </>
