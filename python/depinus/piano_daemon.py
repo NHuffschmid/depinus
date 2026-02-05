@@ -646,3 +646,4 @@ class PianoDaemon:
 
 if __name__ == '__main__':
     asyncio.run(PianoDaemon().run())
+
