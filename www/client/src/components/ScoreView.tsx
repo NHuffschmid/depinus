@@ -17,8 +17,9 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     const osmdContainerRef = useRef<HTMLDivElement>(null);
     const [midi, setMidi] = useState<Midi | null>(null);
     const [liveMidi, setLiveMidi] = useState<Midi | null>(null);
-    const liveActiveNotesRef = useRef<Map<number, { startTick: number, velocity: number }>>(new Map());
+    const liveActiveNotesRef = useRef<Map<number, { startTick: number, velocity: number, startTimeMs?: number }>>(new Map());
     const liveTickRef = useRef<number>(0);
+    const lastEventTimeRef = useRef<number | null>(null);
     const [compositionName, setCompositionName] = useState<string>('');
     const [composerName, setComposerName] = useState<string>('');
     const [mode, setMode] = useState<'playback' | 'recording' | null>(null);
@@ -92,6 +93,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 setLiveMidi(midi);
                 liveActiveNotesRef.current = new Map();
                 liveTickRef.current = 0;
+                lastEventTimeRef.current = null;
             }
             else if (message.composition && message.composition.compositionId) {
                 const newId = message.composition.compositionId;
@@ -115,23 +117,46 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     const velocity = bytes[2];
                     if (liveMidi) {
                         const track = liveMidi.tracks[0];
-                        const tick = liveTickRef.current;
+                        // Time measurement for correct tick calculation
+                        const now = performance.now();
+                        const pulsesPerQuarterNote = liveMidi.header.ppq || 480;
+                        const tempo = (liveMidi.header.tempos && liveMidi.header.tempos.length > 0)
+                            ? liveMidi.header.tempos[0].bpm
+                            : 120;
+                        const msPerQuarter = 60000 / tempo;
+
+                        let tick = liveTickRef.current;
                         if (status === 0x90 && velocity > 0) {
-                            liveActiveNotesRef.current.set(note, { startTick: tick, velocity });
+                            // Note-On: remember time
+                            liveActiveNotesRef.current.set(note, {
+                                startTick: tick,
+                                velocity,
+                                startTimeMs: now
+                            });
                         } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
+                            // Note-Off: calculate duration from time difference
                             const active = liveActiveNotesRef.current.get(note);
-                            if (active) {
-                                const duration = Math.max(1, tick - active.startTick);
+                            if (active && typeof active.startTimeMs === 'number') {
+                                const msSinceOn = now - active.startTimeMs;
+                                const durationTicks = Math.round((msSinceOn / msPerQuarter) * pulsesPerQuarterNote);
                                 track.addNote({
                                     midi: note,
-                                    time: active.startTick,
-                                    duration,
+                                    ticks: active.startTick,
+                                    durationTicks: Math.max(1, durationTicks),
                                     velocity: active.velocity / 127,
                                 });
                                 liveActiveNotesRef.current.delete(note);
+                            } else {
+                                console.warn(`[LIVE] Note-Off without Note-On: note=${note}`);
                             }
                         }
-                        liveTickRef.current += 1;
+                        // Increment tick counter for event time (for note time property)
+                        if (lastEventTimeRef.current !== null) {
+                            const msSinceLast = now - lastEventTimeRef.current;
+                            const ticksSinceLast = Math.round((msSinceLast / msPerQuarter) * pulsesPerQuarterNote);
+                            liveTickRef.current += ticksSinceLast;
+                        }
+                        lastEventTimeRef.current = now;
                         setLiveMidi(liveMidi.clone());
                     }
                 }
