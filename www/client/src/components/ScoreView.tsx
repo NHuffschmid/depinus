@@ -98,7 +98,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             else if (message.composition && message.composition.compositionId) {
                 const newId = message.composition.compositionId;
                 if (newId !== currentCompositionId) {
-                    console.log('New composition detected:', newId);
+                    //console.log('New composition detected:', newId);
                     setCurrentCompositionId(newId);
                     if (webSocket.sendRpcCall) {
                         console.log('Requesting MIDI data via RPC for new composition...');
@@ -216,23 +216,23 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 }
                 osmdRef.current.clear();
 
-                console.log('[OSMD] Starting load() - XML length:', xml.length);
+                //console.log('[OSMD] Starting load() - XML length:', xml.length);
                 const loadStart = performance.now();
                 await osmdRef.current.load(xml);
-                console.log('[OSMD] load() completed in', (performance.now() - loadStart).toFixed(0), 'ms');
+                //console.log('[OSMD] load() completed in', (performance.now() - loadStart).toFixed(0), 'ms');
 
                 // Give browser a frame before heavy render operation
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
 
-                console.log('[OSMD] Starting render()');
+                //console.log('[OSMD] Starting render()');
                 const renderStart = performance.now();
                 osmdRef.current.render(); // GUI will freeze here because OSMD is sync
-                console.log('[OSMD] render() completed in', (performance.now() - renderStart).toFixed(0), 'ms');
+                //console.log('[OSMD] render() completed in', (performance.now() - renderStart).toFixed(0), 'ms');
 
                 // Give browser time to paint the SVG before state update
-                console.log('[OSMD] Waiting for browser to paint...');
+                //console.log('[OSMD] Waiting for browser to paint...');
                 await new Promise(resolve => setTimeout(() => resolve(undefined), 100));
-                console.log('[OSMD] SVG painting done!');
+                //console.log('[OSMD] SVG painting done!');
                 setIsRendering(false);
             } catch (error) {
                 console.error('Error rendering MIDI:', error);
