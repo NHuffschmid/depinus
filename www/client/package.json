@@ -36,6 +36,7 @@
     "svg2pdf.js": "^2.7.0",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4",
+    "xml-formatter": "^3.6.7",
     "xmldom": "^0.6.0"
   },
   "scripts": {
