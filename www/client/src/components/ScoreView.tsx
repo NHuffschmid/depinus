@@ -87,8 +87,9 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         function tick() {
             if (!isPlaybackActiveRef.current) return;
 
-            const currentTick = getCurrentTick();
-            const ticks       = noteCursorTicksRef.current;
+            const currentTick  = getCurrentTick();
+            const ticks        = noteCursorTicksRef.current;
+            const indexBefore  = cursorIndexRef.current;
 
             // Advance once for each note-boundary that has been passed.
             // Using ticks[cursorIndexRef.current + 1] means: stay on current
@@ -99,6 +100,12 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             ) {
                 osmd!.cursor.next();
                 cursorIndexRef.current++;
+            }
+
+            // Scroll the cursor into view whenever it moved.
+            if (cursorIndexRef.current !== indexBefore) {
+                const cursorEl = (osmd!.cursor as any).cursorElement as HTMLElement | undefined;
+                cursorEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
             cursorAnimFrameRef.current = requestAnimationFrame(tick);
