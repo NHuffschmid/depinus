@@ -146,10 +146,10 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const { xml } = await midi2MusicXML(currentMidi, { title, composer, clef: selectedClef });
+        const { musicxml } = await midi2MusicXML(currentMidi, { title, composer, clef: selectedClef });
 
         // Create Blob and download
-        const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
+        const blob = new Blob([musicxml], { type: 'application/vnd.recordare.musicxml+xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -312,7 +312,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const { xml, noteCursorTicks } = await midi2MusicXML(
+                const { musicxml, noteCursorTicks } = await midi2MusicXML(
                     midi,
                     {
                         title: compositionName,
@@ -335,7 +335,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 osmdRef.current.clear();
 
                 const loadStart = performance.now();
-                await osmdRef.current.load(xml);
+                await osmdRef.current.load(musicxml);
 
                 // Give browser a frame before heavy render operation
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
@@ -367,7 +367,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call (no isRendering in live mode to prevent flicker)
         (async () => {
             try {
-                const { xml } = await midi2MusicXML(
+                const { musicxml } = await midi2MusicXML(
                     liveMidi,
                     {
                         title: 'Live Recording',
@@ -383,7 +383,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 }
                 osmdRef.current.clear();
 
-                await osmdRef.current.load(xml);
+                await osmdRef.current.load(musicxml);
                 osmdRef.current.render();
             } catch (error) {
                 console.error('Error rendering live MIDI:', error);
