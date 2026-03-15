@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCookies } from 'react-cookie';
 import jsPDF from 'jspdf';
 import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
@@ -9,12 +10,12 @@ import WaitingIndicator from './WaitingIndicator';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
 import { ClefType } from '../modules/midi2musicxml/types';
-import type { MeasureTickInfo } from '../modules/midi2musicxml/index';
 
 interface ScoreViewProps { }
 
 const ScoreView: React.FC<ScoreViewProps> = () => {
     const { t } = useTranslation();
+    const [cookies] = useCookies(['color']);
     const osmdContainerRef = useRef<HTMLDivElement>(null);
     const [midi, setMidi] = useState<Midi | null>(null);
     const [liveMidi, setLiveMidi] = useState<Midi | null>(null);
@@ -301,6 +302,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
+                        cursorsOptions: [{ type: 0, color: cookies.color ?? '#007ACC', alpha: 0.5, follow: true }]
                     });
                 }
                 osmdRef.current.clear();
@@ -349,6 +351,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 if (!osmdRef.current) {
                     osmdRef.current = new OpenSheetMusicDisplay(osmdContainerRef.current!, {
                         drawingParameters: "default",
+                        cursorsOptions: [{ type: 0, color: cookies.color ?? '#007ACC', alpha: 0.5, follow: true }]
                     });
                 }
                 osmdRef.current.clear();
