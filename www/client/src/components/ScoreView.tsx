@@ -188,6 +188,26 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     }
                 }
             }
+
+            // Playback stopped or ended: reset cursor to note 0
+            if (message.isStoppable === false && message.isPlayable === true) {
+                currentPlayTimeSecondsRef.current = 0;
+                stopCursorLoop();
+                if (osmdRef.current && noteCursorTicksRef.current.length > 0) {
+                    osmdRef.current.cursor.reset();
+                    osmdRef.current.cursor.show();
+                }
+            }
+
+            // Playback started or resumed: (re)start cursor loop if OSMD is ready.
+            // Guard against new-composition messages (those carry compositionId and
+            // will trigger a full re-render via GetCurrentMidiData instead).
+            if (message.isStoppable === true && message.isPauseable === true &&
+                !message.composition?.compositionId) {
+                if (osmdRef.current && noteCursorTicksRef.current.length > 0) {
+                    startCursorLoop();
+                }
+            }
             // Receive live MIDI event as base64 bytes
             if (message.midiEventBytes && mode === 'recording') {
                 const bytes = Base64.toUint8Array(message.midiEventBytes);
