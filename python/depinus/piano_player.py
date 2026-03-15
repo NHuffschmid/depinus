@@ -308,8 +308,9 @@ class PianoPlayer:
 
                         if (self._midi_output is not None):
                             self._midi_output.send(message)
-                            for callback in self._midi_messages_callbacks:
-                                await callback(message)
+
+                        for callback in self._midi_messages_callbacks:
+                            await callback(message)
                     else:
                         if (message.type == 'control_change'):
                             if ((message.control == 64) or # sustain pedal

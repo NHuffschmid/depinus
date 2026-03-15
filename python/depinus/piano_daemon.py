@@ -444,7 +444,7 @@ class PianoDaemon:
 
     async def _on_midi_message(self, mido_message):
         #logger.info('Piano player has transmitted a midi message: ' + str(mido_message))
-        await self._websocket_server.send_keyboard_message(mido_message)
+        await self._websocket_server.send_keyboard_message(mido_message, self._piano_player.play_time)
 
 
     async def _on_recording_waiting_state(self, is_waiting):

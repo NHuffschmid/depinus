@@ -10,7 +10,7 @@ export interface DepinusWebsocketOptions {
 	onClose?: () => void;
 	onMessage?: (e: MessageEvent) => void;
 	onError?: () => void;
-	onKeyboardMessage?: (note: any, velocity: any) => void;
+	onKeyboardMessage?: (note: any, velocity: any, playTime?: number) => void;
 	onInfoMessage?: (message: any) => void;
 	onRpcResponseMessage?: (message: any) => void;
 }
@@ -84,7 +84,7 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		onMessage: (e: MessageEvent) => {
 			let message = JSON.parse(e.data);
 			if ((message.messageType === 'keyboard') && (options.onKeyboardMessage)) {
-				options.onKeyboardMessage(message.note, message.velocity);
+				options.onKeyboardMessage(message.note, message.velocity, message.playTime);
 			}
 			else if ((message.messageType === 'info') && (options.onInfoMessage)) {
 				options.onInfoMessage(message);

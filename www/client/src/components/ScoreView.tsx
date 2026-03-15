@@ -9,6 +9,7 @@ import WaitingIndicator from './WaitingIndicator';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
 import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
 import { ClefType } from '../modules/midi2musicxml/types';
+import type { MeasureTickInfo } from '../modules/midi2musicxml/index';
 
 interface ScoreViewProps { }
 
@@ -30,6 +31,80 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
 
     const osmdRef = useRef<OpenSheetMusicDisplay>();
     const midi2MusicXML = useMidi2MusicXMLWorker();
+
+    // ── Playback cursor ──────────────────────────────────────────────────────
+    /** Last playTime (seconds) received from the server via keyboard message. */
+    const currentPlayTimeSecondsRef = useRef<number>(0);
+    /** @tonejs/midi object — kept in a ref for secondsToTicks() in the cursor loop. */
+    const midiObjRef               = useRef<Midi | null>(null);
+    const cursorAnimFrameRef       = useRef<number | null>(null);   // rAF handle
+    const isPlaybackActiveRef      = useRef<boolean>(false);        // cursor loop guard
+    /** Sorted unique startTicks (non-chord notes) — one entry per OSMD cursor step. */
+    const noteCursorTicksRef       = useRef<number[]>([]);
+    /** Index into noteCursorTicksRef that the OSMD cursor currently sits at. */
+    const cursorIndexRef           = useRef<number>(0);
+    // ────────────────────────────────────────────────────────────────────────
+
+    /** Stop the cursor animation loop. Does NOT hide the cursor (caller's responsibility). */
+    function stopCursorLoop() {
+        isPlaybackActiveRef.current = false;
+        if (cursorAnimFrameRef.current !== null) {
+            cancelAnimationFrame(cursorAnimFrameRef.current);
+            cursorAnimFrameRef.current = null;
+        }
+        cursorIndexRef.current = 0;
+    }
+
+    /**
+     * Return the current playback tick, derived from the last server-reported
+     * playTime (seconds) converted via the full MIDI tempo map.
+     * Accurate across all tempo changes and unaffected by user tempo-multiplier.
+     */
+    function getCurrentTick(): number {
+        const midiObj = midiObjRef.current;
+        if (!midiObj) return 0;
+        return midiObj.header.secondsToTicks(currentPlayTimeSecondsRef.current);
+    }
+
+    /**
+     * Start the requestAnimationFrame cursor loop.
+     * Moves cursor.next() incrementally — never resets during playback.
+     * O(1) per frame: just compares currentTick to the next trigger tick.
+     */
+    function startCursorLoop() {
+        stopCursorLoop(); // Cancel any running loop; resets cursorIndexRef
+        isPlaybackActiveRef.current = true;
+
+        const osmd = osmdRef.current;
+        if (!osmd) return;
+
+        // Position cursor at note 0 and make it visible.
+        osmd.cursor.reset();
+        osmd.cursor.show();
+        cursorIndexRef.current = 0;
+
+        function tick() {
+            if (!isPlaybackActiveRef.current) return;
+
+            const currentTick = getCurrentTick();
+            const ticks       = noteCursorTicksRef.current;
+
+            // Advance once for each note-boundary that has been passed.
+            // Using ticks[cursorIndexRef.current + 1] means: stay on current
+            // note until the *next* note's tick has been reached, then step.
+            while (
+                cursorIndexRef.current < ticks.length - 1 &&
+                currentTick >= ticks[cursorIndexRef.current + 1]
+            ) {
+                osmd!.cursor.next();
+                cursorIndexRef.current++;
+            }
+
+            cursorAnimFrameRef.current = requestAnimationFrame(tick);
+        }
+
+        cursorAnimFrameRef.current = requestAnimationFrame(tick);
+    }
 
     function exportScoreAsPDF() {
         if (!osmdContainerRef.current) {
@@ -63,7 +138,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
         const title = mode === 'recording' ? 'Live Recording' : compositionName;
         const composer = mode === 'recording' ? 'Depinus' : composerName;
-        const xml = await midi2MusicXML(currentMidi, { title, composer, clef: selectedClef });
+        const { xml } = await midi2MusicXML(currentMidi, { title, composer, clef: selectedClef });
 
         // Create Blob and download
         const blob = new Blob([xml], { type: 'application/vnd.recordare.musicxml+xml' });
@@ -80,6 +155,12 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         name: 'ScoreView',
         onOpen: () => {
             setIsWebSocketReady(true);
+        },
+        onKeyboardMessage: (_note: any, _velocity: any, playTime?: number) => {
+            // Keep current playback position up to date for cursor synchronisation.
+            if (playTime !== undefined) {
+                currentPlayTimeSecondsRef.current = playTime;
+            }
         },
         onInfoMessage: (message: any) => {
             if (message.isRecording === true) {
@@ -173,6 +254,9 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     const midiBytes = Base64.toUint8Array(message.result.midiBase64);
                     // Parse MIDI
                     const midiObj = new Midi(midiBytes);
+                    // Store in ref for secondsToTicks() in cursor loop
+                    midiObjRef.current = midiObj;
+                    currentPlayTimeSecondsRef.current = 0;
                     setMidi(midiObj);
                 } catch (e) {
                     console.error('Error parsing MIDI data:', e);
@@ -196,16 +280,21 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         if (!osmdContainerRef.current) return;
         if (!midi) return;
         setIsRendering(true);
+        stopCursorLoop();
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const xml = await midi2MusicXML(
+                const { xml, measureTickMap, noteCursorTicks } = await midi2MusicXML(
                     midi,
                     {
                         title: compositionName,
                         composer: composerName,
                         clef: selectedClef
                     });
+
+                // Store tick lists for cursor animation
+                noteCursorTicksRef.current = noteCursorTicks;
+
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
 
@@ -216,24 +305,20 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 }
                 osmdRef.current.clear();
 
-                //console.log('[OSMD] Starting load() - XML length:', xml.length);
                 const loadStart = performance.now();
                 await osmdRef.current.load(xml);
-                //console.log('[OSMD] load() completed in', (performance.now() - loadStart).toFixed(0), 'ms');
 
                 // Give browser a frame before heavy render operation
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
 
-                //console.log('[OSMD] Starting render()');
-                const renderStart = performance.now();
                 osmdRef.current.render(); // GUI will freeze here because OSMD is sync
-                //console.log('[OSMD] render() completed in', (performance.now() - renderStart).toFixed(0), 'ms');
 
                 // Give browser time to paint the SVG before state update
-                //console.log('[OSMD] Waiting for browser to paint...');
                 await new Promise(resolve => setTimeout(() => resolve(undefined), 100));
-                //console.log('[OSMD] SVG painting done!');
                 setIsRendering(false);
+
+                // Start cursor animation loop (resets + shows cursor internally)
+                startCursorLoop();
             } catch (error) {
                 console.error('Error rendering MIDI:', error);
                 setIsRendering(false);
@@ -253,7 +338,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call (no isRendering in live mode to prevent flicker)
         (async () => {
             try {
-                const xml = await midi2MusicXML(
+                const { xml } = await midi2MusicXML(
                     liveMidi,
                     {
                         title: 'Live Recording',
@@ -275,6 +360,11 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             }
         })();
     }, [liveMidi, mode, selectedClef]);
+
+    // Cleanup: stop cursor loop on unmount
+    useEffect(() => {
+        return () => { stopCursorLoop(); };
+    }, []);
 
     return (
         <div style={{ position: 'relative' }}>
