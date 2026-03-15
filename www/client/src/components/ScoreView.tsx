@@ -312,7 +312,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const { xml, measureTickMap, noteCursorTicks } = await midi2MusicXML(
+                const { xml, noteCursorTicks } = await midi2MusicXML(
                     midi,
                     {
                         title: compositionName,
