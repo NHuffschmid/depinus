@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCookies } from 'react-cookie';
-import jsPDF from 'jspdf';
-import 'svg2pdf.js';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
+// import { exportScoreAsPDF } from './exportScoreAsPDF';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
@@ -112,30 +111,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         }
 
         cursorAnimFrameRef.current = requestAnimationFrame(tick);
-    }
-
-    function exportScoreAsPDF() {
-        if (!osmdContainerRef.current) {
-            alert('No OSMD container found!');
-            return;
-        }
-        const svg = osmdContainerRef.current.querySelector('svg');
-        if (!svg) {
-            alert('No SVG found!');
-            return;
-        }
-        // Read SVG size
-        const bbox = svg.getBBox();
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'pt',
-            format: [bbox.width, bbox.height]
-        });
-        // svg2pdf.js expects an SVGElement
-        // @ts-ignore
-        pdf.svg(svg, { x: 0, y: 0, width: bbox.width, height: bbox.height }).then(() => {
-            pdf.save('score.pdf');
-        });
     }
 
     async function exportScoreAsMusicXML() {
@@ -429,9 +404,11 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                                 <option value="cello">{t('Instrument-Cello')}</option>
                             </select>
                         </div>
-                        <button onClick={exportScoreAsPDF}>
+                        {/* PDF export temporarily disabled — see exportScoreAsPDF.ts
+                        <button onClick={() => exportScoreAsPDF(osmdContainerRef.current!)}>
                             {t('Export PDF')}
                         </button>
+                        */}
                         <button onClick={exportScoreAsMusicXML} style={{ marginLeft: '10px' }}>
                             {t('Export MusicXML')}
                         </button>
