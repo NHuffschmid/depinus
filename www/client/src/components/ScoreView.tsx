@@ -67,6 +67,22 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     }
 
     /**
+     * Advance the OSMD cursor past any positions that contain only rests.
+     * Rest notes are generated from MusicXML <forward> elements (voice-gap
+     * fillers) and must not count as real cursor stops during playback.
+     */
+    function skipRestCursorPositions(osmd: OpenSheetMusicDisplay) {
+        while (!osmd.cursor.Iterator.EndReached) {
+            const notes = osmd.cursor.NotesUnderCursor();
+            if (notes.length > 0 && notes.every(n => n.isRest())) {
+                osmd.cursor.next();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /**
      * Start the requestAnimationFrame cursor loop.
      * Moves cursor.next() incrementally — never resets during playback.
      * O(1) per frame: just compares currentTick to the next trigger tick.
@@ -79,8 +95,10 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         if (!osmd) return;
 
         // Position cursor at note 0 and make it visible.
+        // Skip any leading rest-only positions (generated from forward elements).
         osmd.cursor.reset();
         osmd.cursor.show();
+        skipRestCursorPositions(osmd);
         cursorIndexRef.current = 0;
 
         function tick() {
@@ -93,11 +111,15 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             // Advance once for each note-boundary that has been passed.
             // Using ticks[cursorIndexRef.current + 1] means: stay on current
             // note until the *next* note's tick has been reached, then step.
+            // After each cursor.next(), skip over rest-only positions caused
+            // by the forward→rest replacement so the OSMD step count stays in
+            // sync with noteCursorTicks.
             while (
                 cursorIndexRef.current < ticks.length - 1 &&
                 currentTick >= ticks[cursorIndexRef.current + 1]
             ) {
                 osmd!.cursor.next();
+                skipRestCursorPositions(osmd!);
                 cursorIndexRef.current++;
             }
 
