@@ -21,7 +21,6 @@ Bugs:
 - show better error message when user tries to add an already existing composition to the playlist
 - PianoDaemon crashes when plugging out MIDI adapter while playing
 - sync progress bar after score-caused GUI freeze
-- OSMD crashes with 'Beams can only be applied to notes shorter than a quarter note' on "I dont like mondays"
 - OSMD live cursor has a small delay in
   - Schumann's Reverie
   - Schubert's Wanderer 1
