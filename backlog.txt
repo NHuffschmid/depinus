@@ -21,6 +21,7 @@ Bugs:
 - show better error message when user tries to add an already existing composition to the playlist
 - PianoDaemon crashes when plugging out MIDI adapter while playing
 - sync progress bar after score-caused GUI freeze
+- update ScoreView after played piece has changed
 - OSMD live cursor has a small delay in
   - Schumann's Reverie
   - Schubert's Wanderer 1
