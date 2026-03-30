@@ -35,13 +35,11 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     // ── Playback cursor ──────────────────────────────────────────────────────
     /** Last playTime (seconds) received from the server via keyboard message. */
     const currentPlayTimeSecondsRef = useRef<number>(0);
-    /** @tonejs/midi object — kept in a ref for secondsToTicks() in the cursor loop. */
-    const midiObjRef               = useRef<Midi | null>(null);
     const cursorAnimFrameRef       = useRef<number | null>(null);   // rAF handle
     const isPlaybackActiveRef      = useRef<boolean>(false);        // cursor loop guard
-    /** Sorted unique startTicks (non-chord notes) — one entry per OSMD cursor step. */
-    const noteCursorTicksRef       = useRef<number[]>([]);
-    /** Index into noteCursorTicksRef that the OSMD cursor currently sits at. */
+    /** Sorted unique onset times in seconds (non-chord notes) — one entry per OSMD cursor step. */
+    const noteCursorTimesRef       = useRef<number[]>([]);
+    /** Index into noteCursorTimesRef that the OSMD cursor currently sits at. */
     const cursorIndexRef           = useRef<number>(0);
     // ────────────────────────────────────────────────────────────────────────
 
@@ -53,17 +51,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             cursorAnimFrameRef.current = null;
         }
         cursorIndexRef.current = 0;
-    }
-
-    /**
-     * Return the current playback tick, derived from the last server-reported
-     * playTime (seconds) converted via the full MIDI tempo map.
-     * Accurate across all tempo changes and unaffected by user tempo-multiplier.
-     */
-    function getCurrentTick(): number {
-        const midiObj = midiObjRef.current;
-        if (!midiObj) return 0;
-        return midiObj.header.secondsToTicks(currentPlayTimeSecondsRef.current);
     }
 
     /**
@@ -104,19 +91,19 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         function tick() {
             if (!isPlaybackActiveRef.current) return;
 
-            const currentTick  = getCurrentTick();
-            const ticks        = noteCursorTicksRef.current;
+            const currentTime  = currentPlayTimeSecondsRef.current;
+            const times        = noteCursorTimesRef.current;
             const indexBefore  = cursorIndexRef.current;
 
             // Advance once for each note-boundary that has been passed.
-            // Using ticks[cursorIndexRef.current + 1] means: stay on current
-            // note until the *next* note's tick has been reached, then step.
+            // Using times[cursorIndexRef.current + 1] means: stay on current
+            // note until the *next* note's onset time (seconds) has been reached.
             // After each cursor.next(), skip over rest-only positions caused
             // by the forward→rest replacement so the OSMD step count stays in
-            // sync with noteCursorTicks.
+            // sync with noteCursorTimes.
             while (
-                cursorIndexRef.current < ticks.length - 1 &&
-                currentTick >= ticks[cursorIndexRef.current + 1]
+                cursorIndexRef.current < times.length - 1 &&
+                currentTime >= times[cursorIndexRef.current + 1]
             ) {
                 osmd!.cursor.next();
                 skipRestCursorPositions(osmd!);
@@ -197,7 +184,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             if (message.isStoppable === false && message.isPlayable === true) {
                 currentPlayTimeSecondsRef.current = 0;
                 stopCursorLoop();
-                if (osmdRef.current && noteCursorTicksRef.current.length > 0) {
+                if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
                     osmdRef.current.cursor.reset();
                     osmdRef.current.cursor.show();
                 }
@@ -208,7 +195,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             // will trigger a full re-render via GetCurrentMidiData instead).
             if (message.isStoppable === true && message.isPauseable === true &&
                 !message.composition?.compositionId) {
-                if (osmdRef.current && noteCursorTicksRef.current.length > 0) {
+                if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
                     startCursorLoop();
                 }
             }
@@ -279,8 +266,6 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     const midiBytes = Base64.toUint8Array(message.result.midiBase64);
                     // Parse MIDI
                     const midiObj = new Midi(midiBytes);
-                    // Store in ref for secondsToTicks() in cursor loop
-                    midiObjRef.current = midiObj;
                     currentPlayTimeSecondsRef.current = 0;
                     setMidi(midiObj);
                 } catch (e) {
@@ -309,7 +294,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const { musicxml, noteCursorTicks } = await midi2MusicXML(
+                const { musicxml, noteCursorTimes } = await midi2MusicXML(
                     midi,
                     {
                         title: compositionName,
@@ -317,8 +302,8 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                         clef: selectedClef
                     });
 
-                // Store tick lists for cursor animation
-                noteCursorTicksRef.current = noteCursorTicks;
+                // Store onset times (seconds) for cursor animation
+                noteCursorTimesRef.current = noteCursorTimes;
 
                 // Give browser a frame to update UI
                 await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)));
