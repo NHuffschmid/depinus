@@ -45,7 +45,7 @@ function play(req, res) {
               logger.debug(`Sending RPC request to play ${compositionName}...`);
               const rpcPayload = {
                 name: compositionName,
-                compositionId: compositionId,
+                compositionId: id,
                 composer: composer,
                 duration: duration,
                 mididata: Array.from(midifile)
