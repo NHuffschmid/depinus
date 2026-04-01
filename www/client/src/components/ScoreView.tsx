@@ -7,7 +7,7 @@ import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
 import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
-import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/useMidi2MusicXMLWorker';
+import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/react';
 import { ClefType } from '../modules/midi2musicxml/types';
 
 interface ScoreViewProps { }
@@ -294,13 +294,17 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         // Use async IIFE to handle worker call
         (async () => {
             try {
-                const { musicxml, noteCursorTimes } = await midi2MusicXML(
+                const { musicxml, noteCursorTimes, debug } = await midi2MusicXML(
                     midi,
                     {
                         title: compositionName,
                         composer: composerName,
-                        clef: selectedClef
+                        clef: selectedClef,
+                        debug: false // Set to true to get dumps and pretty-prints of internal models for debugging
                     });
+
+                //console.log(debug?.layout.prettyPrint);
+                //console.log(debug?.notation.dump);
 
                 // Store onset times (seconds) for cursor animation
                 noteCursorTimesRef.current = noteCursorTimes;
