@@ -156,7 +156,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
         },
         onInfoMessage: (message: any) => {
             if (message.isRecording === true) {
-                console.log('Recording started - clearing score');
+                //console.log('Recording started - clearing score');
                 setMode('recording');
                 setMidi(null);
                 setCurrentCompositionId(null);
