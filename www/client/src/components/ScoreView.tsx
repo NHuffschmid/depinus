@@ -174,7 +174,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                     //console.log('New composition detected:', newId);
                     setCurrentCompositionId(newId);
                     if (webSocket.sendRpcCall) {
-                        console.log('Requesting MIDI data via RPC for new composition...');
+                        //console.log('Requesting MIDI data via RPC for new composition...');
                         webSocket.sendRpcCall('GetCurrentMidiData', {});
                     }
                 }
@@ -256,7 +256,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
             }
         },
         onRpcResponseMessage: async (message: any) => {
-            console.log('RPC Response:', message);
+            //console.log('RPC Response:', message);
             if (message.result && message.result.midiBase64) {
                 setMode('playback');
                 setCompositionName(message.result.compositionName || '');
@@ -280,7 +280,7 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
     // Request MIDI data on mount if composition is playing
     useEffect(() => {
         if (isWebSocketReady && webSocket.sendRpcCall) {
-            console.log('Requesting current MIDI data via RPC...');
+            //console.log('Requesting current MIDI data via RPC...');
             webSocket.sendRpcCall('GetCurrentMidiData', {});
         }
     }, [isWebSocketReady]);
