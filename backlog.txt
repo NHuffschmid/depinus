@@ -23,6 +23,7 @@ Bugs:
 - OSMD live cursor has a small delay in
   - Schumann's Reverie
   - Schubert's Wanderer 1
+  - and many other midi files...
 - ScoreView improvement:
   - Do not display staccato while pedal is pressed (Granados - Danzas españolas, Nr. 2)
   - Show fermata, triller
