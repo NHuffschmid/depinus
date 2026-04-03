@@ -3,10 +3,7 @@ const path = require('path');
 
 const sourceDir = path.resolve(__dirname, 'public');
 const targetDir = path.resolve(__dirname, 'dist');
-
-const additionalFiles = [
-  path.resolve(__dirname, 'esbuild/index.html')
-];
+const additionalFiles = [];
 
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) return;

@@ -11,8 +11,27 @@ const ProgressBar: React.FC = () => {
     const [isWaiting, setIsWaiting] = useState(false);
     const tickInterval = useRef<NodeJS.Timeout | null>(null);
 
+    // Wall-clock anchors: instead of counting +1 per tick we compute real elapsed time.
+    // This ensures the progress bar is correct even after the GUI thread was paused.
+    const playTimeAtStart = useRef<number>(0);
+    const startTimestamp = useRef<number>(0);
+    const tempoRef = useRef<number>(1.0);
+
     const tick = () => {
-        setPlayTime(playTime => playTime + 1);
+        const elapsed = (Date.now() - startTimestamp.current) / 1000;
+        setPlayTime(playTimeAtStart.current + elapsed * tempoRef.current);
+    }
+
+    // Anchors the wall-clock reference to a given play-time position.
+    const resetAnchor = (fromPlayTime: number) => {
+        playTimeAtStart.current = fromPlayTime;
+        startTimestamp.current = Date.now();
+    }
+
+    // Returns the play time computed from anchors (safe to call inside callbacks).
+    const computePlayTime = (): number => {
+        const elapsed = (Date.now() - startTimestamp.current) / 1000;
+        return playTimeAtStart.current + elapsed * tempoRef.current;
     }
 
     const webSocket = useDepinusWebSocket({
@@ -21,13 +40,19 @@ const ProgressBar: React.FC = () => {
             //console.log('ProgressBar received Info message: ' + JSON.stringify(message));
             if ('composition' in message) {
                 setTotalTime(message['composition']['duration']);
-                setPlayTime(message['composition']['playTime']);
+                const pt: number = message['composition']['playTime'];
+                setPlayTime(pt);
+                resetAnchor(pt);  // authoritative server position → re-anchor
             }
             if ('tempo' in message) {
-                setTempo(message['tempo']);
+                const newTempo: number = message['tempo'];
+                tempoRef.current = newTempo;
+                setTempo(newTempo);
                 if (tickInterval.current) {
+                    const currentPt = computePlayTime();
                     clearInterval(tickInterval.current);
-                    tickInterval.current = setInterval(tick, 1000 / message['tempo']);
+                    resetAnchor(currentPt);
+                    tickInterval.current = setInterval(tick, 1000 / newTempo);
                 }
             }
             if ('isPauseable' in message) {
@@ -37,7 +62,9 @@ const ProgressBar: React.FC = () => {
                     tickInterval.current = null;
                 }
                 if (message['isPauseable']) {
-                    tickInterval.current = setInterval(tick, 1000 / tempo);
+                    // startTimestamp is reset so elapsed time counts from now
+                    resetAnchor(playTimeAtStart.current);
+                    tickInterval.current = setInterval(tick, 1000 / tempoRef.current);
                 }
             }
             if ('isWaiting' in message) {
@@ -48,6 +75,7 @@ const ProgressBar: React.FC = () => {
 
     const sliderChanged = (value: number) => {
         setPlayTime(value);
+        resetAnchor(value);
         if (tickInterval.current) {
             clearInterval(tickInterval.current);
             tickInterval.current = null;

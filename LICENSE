@@ -1,8 +1,4 @@
-# DEPINUS License
-
-## Source Code
-
-The source code of this project is licensed under the **MIT License**.
+MIT License
 
 Copyright (c) 2026 Norbert Huffschmid
 
@@ -23,12 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Disclaimer
-This license does not cover any third-party components or dependencies used in this project. Those components are subject to their own licenses.
-
-## MIDI Files
-
-The majority of MIDI files included in this project are provided by **Bernd Krüger**. For more information, visit his homepage: [http://piano-midi.de/](http://piano-midi.de/).
-
-These MIDI files are licensed under the **Creative Commons Attribution-ShareAlike (CC BY-SA) Germany License**. This means you may use and adapt the files, as long as you attribute the copyright holder (Bernd Krüger, http://www.piano-midi.de) and distribute any derived works under the same license conditions.

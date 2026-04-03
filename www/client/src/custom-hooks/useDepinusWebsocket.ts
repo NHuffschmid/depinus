@@ -10,8 +10,9 @@ export interface DepinusWebsocketOptions {
 	onClose?: () => void;
 	onMessage?: (e: MessageEvent) => void;
 	onError?: () => void;
-	onKeyboardMessage?: (note: any, velocity: any) => void;
+	onKeyboardMessage?: (note: any, velocity: any, playTime?: number) => void;
 	onInfoMessage?: (message: any) => void;
+	onRpcResponseMessage?: (message: any) => void;
 }
 
 export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
@@ -63,6 +64,10 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		webSocket.sendJsonMessage({ commandType: 'control', command: 'gotoPlayTime', value: value });
 	};
 
+	const sendRpcCall = (method: string, params: any = {}) => {
+		webSocket.sendJsonMessage({ commandType: 'rpc', method: method, params: params });
+	};
+
 	webSocket = useWebSocket(webSocketUrl, {
 		shouldReconnect: (closeEvent: CloseEvent) => true,
 		reconnectInterval: 2000,
@@ -79,11 +84,15 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		onMessage: (e: MessageEvent) => {
 			let message = JSON.parse(e.data);
 			if ((message.messageType === 'keyboard') && (options.onKeyboardMessage)) {
-				options.onKeyboardMessage(message.note, message.velocity);
+				options.onKeyboardMessage(message.note, message.velocity, message.playTime);
 			}
 			else if ((message.messageType === 'info') && (options.onInfoMessage)) {
 				options.onInfoMessage(message);
 			}
+			else if ((message.messageType === 'rpc_response') && (options.onRpcResponseMessage)) {
+				options.onRpcResponseMessage(message);
+			}
+
 		},
 		onError: () => {
 			if (options.onError) {
@@ -95,6 +104,6 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 	return {
 		sendKeyboardCommand, sendStopCommand,
 		sendPlayCommand, sendPauseCommand, sendRecordCommand, sendSettingsCommand, sendPlaylistCommand,
-		sendGotoPlayTimeCommand
+		sendGotoPlayTimeCommand, sendRpcCall
 	};
 }

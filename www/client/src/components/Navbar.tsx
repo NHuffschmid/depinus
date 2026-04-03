@@ -12,10 +12,11 @@ const Navbar: React.FC = () => {
         <nav className="nav">
             <ul>
                 <CustomLink to="/">Depinus</CustomLink>
-                <CustomLink to="/archive">{t('Archive')}</CustomLink>
-                <CustomLink to="/playlist">{t('Playlist')}</CustomLink>
-                <CustomLink to="/settings">{t('Settings')}</CustomLink>
-                <CustomLink to="/about">{t('About')}</CustomLink>
+                <CustomLink to="/Archive">{t('Archive')}</CustomLink>
+                <CustomLink to="/Playlist">{t('Playlist')}</CustomLink>
+                <CustomLink to="/Score">{t('Score')}</CustomLink>
+                <CustomLink to="/Settings">{t('Settings')}</CustomLink>
+                <CustomLink to="/About">{t('About')}</CustomLink>
             </ul>
         </nav>
     )

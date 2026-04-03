@@ -81,7 +81,7 @@ class WebsocketServer:
         self._rpc_methods[name] = callback
 
 
-    async def send_keyboard_message(self, mido_message):
+    async def send_keyboard_message(self, mido_message, play_time=None):
 
         try:
 
@@ -89,11 +89,14 @@ class WebsocketServer:
 
                 if (mido_message.type.startswith('note_o')):
                     velocity = 0 if (mido_message.type == 'note_off') else mido_message.velocity
-                    ws_message = json.dumps({
+                    msg = {
                         'messageType': 'keyboard',
                         'note': mido_message.note,
                         'velocity': velocity
-                    })
+                    }
+                    if play_time is not None:
+                        msg['playTime'] = play_time
+                    ws_message = json.dumps(msg)
                     #logger.debug('JSON Message: ' + ws_message)
                     await websocket.send(ws_message)
 
@@ -193,12 +196,12 @@ class WebsocketServer:
                     if (err_msg):
                         logger.error(err_msg)
                         message = {
-                            "messageType": "rtc_response",
+                            "messageType": "rpc_response",
                             "error": err_msg
                         }
                     else:
                         message = {
-                            "messageType": "rtc_response",
+                            "messageType": "rpc_response",
                             "result": result
                         }
 
