@@ -9,6 +9,7 @@ import Archive from "./Pages/Archive";
 import Playlist from "./Pages/Playlist";
 import Settings from "./Pages/Settings";
 import About from "./Pages/About";
+import Score from "./Pages/Score";
 import Navbar from "./components/Navbar";
 import Dashboard from "./components/Dashboard";
 import ProgressBar from "./components/ProgressBar";
@@ -137,6 +138,7 @@ function App(): JSX.Element {
                 <Route path="/Playlist" element={<Playlist />} />
                 <Route path="/Settings" element={<Settings />} />
                 <Route path="/About" element={<About />} />
+                <Route path="/Score" element={<Score />} />
               </Routes>
             </BrowserRouter>
             <Overlay />

@@ -299,7 +299,8 @@ class PianoDaemon:
                     'isPauseable': self._piano_player.is_pauseable,
                     'isWaiting': False,
                     'composition': {
-                        'name': self._piano_player.current_composition.name, 
+                        'name': self._piano_player.current_composition.name,
+                        'compositionId': self._piano_player.current_composition.composition_id,
                         'composerName': self._piano_player.current_composition.composer, 
                         'duration': self._piano_player.current_composition.duration,
                         'playTime': cmd.value
@@ -372,7 +373,8 @@ class PianoDaemon:
         composition = self._piano_player.current_composition
         if composition:
             info['composition'] = {
-                'name': composition.name, 
+                'name': composition.name,
+                'compositionId': composition.composition_id,
                 'composerName': composition.composer, 
                 'duration': composition.duration,
                 'playTime': self._piano_player.play_time
@@ -399,7 +401,7 @@ class PianoDaemon:
 
     async def _on_play_composition(self, name, compositionId, composer, duration, mididata, playlistId=None):
         logger.info('Going to play: %s...' % name)
-        composition = Composition(name, composer, duration, bytes(mididata))
+        composition = Composition(name, composer, duration, bytes(mididata), composition_id=compositionId)
         await self._piano_player.play(composition)
         info_msg = {
             'messageType': 'info',
@@ -418,6 +420,8 @@ class PianoDaemon:
         await self._websocket_server.send_info_message(info_msg)
         if (self._playlist is not None):
             self._playlist['compositionId'] = compositionId
+
+
 
 
     async def _on_calculate_play_duration(self, mididata):
@@ -442,7 +446,7 @@ class PianoDaemon:
 
     async def _on_midi_message(self, mido_message):
         #logger.info('Piano player has transmitted a midi message: ' + str(mido_message))
-        await self._websocket_server.send_keyboard_message(mido_message)
+        await self._websocket_server.send_keyboard_message(mido_message, self._piano_player.play_time)
 
 
     async def _on_recording_waiting_state(self, is_waiting):
@@ -585,7 +589,8 @@ class PianoDaemon:
                 'isRecordable': bool(self._midi_in_ports_available),
                 'wasCancelled': cancelled,
                 'composition': {
-                    'name': self._piano_player.current_composition.name, 
+                    'name': self._piano_player.current_composition.name,
+                    'compositionId': self._piano_player.current_composition.composition_id,
                     'composerName': self._piano_player.current_composition.composer, 
                     'duration': self._piano_player.current_composition.duration,
                     'playTime': 0

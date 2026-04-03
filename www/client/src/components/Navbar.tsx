@@ -14,6 +14,7 @@ const Navbar: React.FC = () => {
                 <CustomLink to="/">Depinus</CustomLink>
                 <CustomLink to="/archive">{t('Archive')}</CustomLink>
                 <CustomLink to="/playlist">{t('Playlist')}</CustomLink>
+                <CustomLink to="/score">{t('Score')}</CustomLink>
                 <CustomLink to="/settings">{t('Settings')}</CustomLink>
                 <CustomLink to="/about">{t('About')}</CustomLink>
             </ul>
