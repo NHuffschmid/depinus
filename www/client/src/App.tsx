@@ -136,9 +136,9 @@ function App(): JSX.Element {
                 <Route path="/" element={<Home />} />
                 <Route path="/Archive" element={<Archive />} />
                 <Route path="/Playlist" element={<Playlist />} />
+                <Route path="/Score" element={<Score />} />
                 <Route path="/Settings" element={<Settings />} />
                 <Route path="/About" element={<About />} />
-                <Route path="/Score" element={<Score />} />
               </Routes>
             </BrowserRouter>
             <Overlay />
