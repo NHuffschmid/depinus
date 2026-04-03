@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.9.5] - Arezzo
+
+### Features
+- Added score view
+
+
 ## [0.9.4] - Bach
 
 ### Features
