@@ -14,5 +14,8 @@ export default defineConfig({
   },
   define: {
     __MIDI2MUSICXML_VERSION__: JSON.stringify(midi2musicxmlPkg.version)
+  },
+  optimizeDeps: {
+    include: ['@spotify/basic-pitch', '@tensorflow/tfjs', '@tensorflow/tfjs-core', '@tensorflow/tfjs-backend-webgl', '@tensorflow/tfjs-backend-cpu']
   }
 })

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { MessageDialog } from "../MessageBox";
 import UploadCompositionDialog from './UploadCompositionDialog';
+import ImportAudioDialog from './ImportAudioDialog';
 import { backendUrl } from '../../config';
 
 interface UploadCompositionPanelProps {
@@ -11,6 +12,7 @@ interface UploadCompositionPanelProps {
 
 const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) => {
     const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
+    const [importAudioDialogIsOpen, setImportAudioDialogIsOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const { t } = useTranslation();
 
@@ -46,6 +48,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
 
     const uploadFinished = (error?: any) => {
         setUploadDialogIsOpen(false);
+        setImportAudioDialogIsOpen(false);
         if (error) {
             setErrorMessage(error.toString());
         }
@@ -56,7 +59,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
         <div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
-                <button onClick={() => { alert(t('Import of audio files is not implemented yet')) }}>{t('Import audio file to archive')}</button>
+                <button onClick={() => { setImportAudioDialogIsOpen(true) }}>{t('Import audio file to archive')}</button>
             </div>
             <UploadCompositionDialog
                 open={uploadDialogIsOpen}
@@ -64,6 +67,12 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
                 title={''}
                 composerId={props.composerId}
                 midifileIsMandatory={true}
+                upload={uploadComposition}
+                finished={uploadFinished}
+            />
+            <ImportAudioDialog
+                open={importAudioDialogIsOpen}
+                composerId={props.composerId}
                 upload={uploadComposition}
                 finished={uploadFinished}
             />
