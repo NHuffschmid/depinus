@@ -54,7 +54,10 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
 
     return (
         <div>
-            <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
+                <button onClick={() => { alert(t('Import of audio files is not implemented yet')) }}>{t('Import audio file to archive')}</button>
+            </div>
             <UploadCompositionDialog
                 open={uploadDialogIsOpen}
                 header={t('Add midifile to archive')}
