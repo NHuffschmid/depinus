@@ -94,6 +94,6 @@ the [project page](https://github.com/NHuffschmid/depinus) or by [email](mailto:
 
 ## Additional Info
 
-[DEPINUS license](DEPINUS_LICENSE.md)
+[DEPINUS license](LICENSE_DEPINUS.md)
 
 [How to Build DEPINUS](HowToBuild.md)

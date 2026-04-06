@@ -32,7 +32,7 @@ if (fs.existsSync(existingLicenseFile)) {
     logger.info(`Existing LICENSE file renamed to ${renamedLicenseFile}`);
 }
 
-const licenseFile = 'DEPINUS_LICENSE.md';
+const licenseFile = 'LICENSE_DEPINUS.md';
 const origLicenseFile = path.join(appDir, licenseFile);
 const newLicenseFile = path.join(rootDir, licenseFile);
 if (fs.existsSync(origLicenseFile)) {

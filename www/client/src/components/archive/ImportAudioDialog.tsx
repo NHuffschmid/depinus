@@ -1,3 +1,7 @@
+// This file uses Basic Pitch (https://github.com/spotify/basic-pitch) for audio-to-MIDI conversion.
+// Basic Pitch is licensed under the Apache License 2.0.
+// Copyright 2022 Spotify AB.
+
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
 import Modal from 'react-modal';
