@@ -2,7 +2,7 @@
 // Basic Pitch is licensed under the Apache License 2.0.
 // Copyright 2022 Spotify AB.
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from "react-i18next";
 import Modal from 'react-modal';
 import { useCookies } from 'react-cookie';
@@ -34,7 +34,11 @@ interface NoteEventTime {
     amplitude: number;
 }
 
-function buildMidiFile(notes: NoteEventTime[], bpm = 120): Uint8Array {
+class ConversionCancelledError extends Error {
+    constructor() { super('ConversionCancelled'); this.name = 'ConversionCancelledError'; }
+}
+
+function buildMidiFile(notes: NoteEventTime[], bpm = 120, sourceFilename = ''): Uint8Array {
     const TICKS_PER_BEAT = 480;
     const microsecondsPerBeat = Math.round(60_000_000 / bpm);
     const secondsToTicks = (s: number) => Math.round(s * TICKS_PER_BEAT * bpm / 60);
@@ -56,6 +60,11 @@ function buildMidiFile(notes: NoteEventTime[], bpm = 120): Uint8Array {
         (microsecondsPerBeat >> 16) & 0xFF,
         (microsecondsPerBeat >> 8) & 0xFF,
         microsecondsPerBeat & 0xFF] });
+
+    // Text meta event (0x01) with provenance info
+    const provenanceText = `Converted by Depinus and Basic Pitch from ${sourceFilename} to MIDI format.`;
+    const provenanceBytes = Array.from(new TextEncoder().encode(provenanceText));
+    events.push({ tick: 0, data: [0xFF, 0x01, ...varLen(provenanceBytes.length), ...provenanceBytes] });
 
     for (const note of notes) {
         const vel = Math.max(1, Math.min(127, Math.round(note.amplitude * 127)));
@@ -104,10 +113,13 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
     const [isAudioFile, setIsAudioFile] = useState(false);
     const [composerId, setComposerId] = useState<number | undefined>(props.composerId);
     const [converting, setConverting] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [composers, setComposers] = useState<Composer[]>([]);
+    const [copyrightAcknowledged, setCopyrightAcknowledged] = useState(false);
+    const cancelledRef = useRef(false);
     const { t } = useTranslation();
     const [cookies] = useCookies(['color']);
 
@@ -122,14 +134,18 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             setIsAudioFile(false);
             setComposerId(props.composerId);
             setConverting(false);
+            setCancelling(false);
             setUploading(false);
             setProgress(0);
             setIsTranscribing(false);
+            setCopyrightAcknowledged(false);
+            cancelledRef.current = false;
         }
     }, [props.open, props.composerId]);
 
     const onFileSelected = (selectedFile: File | undefined) => {
         setFile(selectedFile);
+        setCopyrightAcknowledged(false);
         if (selectedFile) {
             const ext = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
             setIsAudioFile(AUDIO_EXTENSIONS.has(ext));
@@ -160,11 +176,13 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
 
     const convertAndUpload = async () => {
         if (!file || !title) return;
+        cancelledRef.current = false;
         setConverting(true);
         setProgress(0);
         try {
             // 1. Decode audio file
             const arrayBuffer = await file.arrayBuffer();
+            if (cancelledRef.current) throw new ConversionCancelledError();
             const audioCtx = new AudioContext();
             let audioBuffer: AudioBuffer;
             try {
@@ -172,9 +190,11 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             } finally {
                 audioCtx.close();
             }
+            if (cancelledRef.current) throw new ConversionCancelledError();
 
             // 2. Resample to 22050 Hz mono
             const resampledBuffer = await resampleToMono(audioBuffer);
+            if (cancelledRef.current) throw new ConversionCancelledError();
 
             // 3. Load Basic Pitch and run inference (lazy import to keep initial bundle small)
             const {
@@ -183,8 +203,10 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
                 addPitchBendsToNoteEvents,
                 outputToNotesPoly,
             } = await import('@spotify/basic-pitch');
+            if (cancelledRef.current) throw new ConversionCancelledError();
 
             const basicPitch = new BasicPitch(BASIC_PITCH_MODEL_URL);
+            if (cancelledRef.current) throw new ConversionCancelledError();
 
             // 4. Run inference
             setIsTranscribing(true);
@@ -195,13 +217,18 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             await basicPitch.evaluateModel(
                 resampledBuffer,
                 (f: number[][], o: number[][], c: number[][]) => {
+                    if (cancelledRef.current) throw new ConversionCancelledError();
                     frames.push(...f);
                     onsets.push(...o);
                     contours.push(...c);
                 },
-                (p: number) => { setProgress(p); },
+                (p: number) => {
+                    if (cancelledRef.current) throw new ConversionCancelledError();
+                    setProgress(p);
+                },
             );
             setIsTranscribing(false);
+            if (cancelledRef.current) throw new ConversionCancelledError();
 
             // 5. Convert raw model output to timed note events
             const noteEvents = outputToNotesPoly(frames, onsets, 0.6, 0.35, 7, false);
@@ -209,7 +236,7 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             const notes = noteFramesToTime(noteEventsWithBends);
 
             // 6. Build MIDI file
-            const midiBytes = buildMidiFile(notes);
+            const midiBytes = buildMidiFile(notes, 120, file.name);
             const midiFile = new File(
                 [new Blob([midiBytes.buffer as ArrayBuffer], { type: 'audio/midi' })],
                 `${title}.mid`,
@@ -220,14 +247,27 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             await props.upload(title, midiFile, composerId);
             props.finished();
         } catch (error: any) {
-            props.finished(error);
+            if (!(error instanceof ConversionCancelledError)) {
+                props.finished(error);
+            }
         } finally {
             setConverting(false);
+            setCancelling(false);
             setIsTranscribing(false);
+            cancelledRef.current = false;
         }
     };
 
     const busy = converting || uploading;
+
+    const handleCancel = () => {
+        if (converting) {
+            cancelledRef.current = true;
+            setCancelling(true);
+        } else {
+            props.finished();
+        }
+    };
 
     return React.createElement(
         Modal as any,
@@ -284,6 +324,18 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
                     disabled={busy}
                     onChange={(e) => onFileSelected(e.target.files?.[0])}
                 />
+                {isAudioFile && (
+                    <label style={{ gridColumn: '1 / 3', display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', marginTop: '0.25rem' }}>
+                        <input
+                            type='checkbox'
+                            checked={copyrightAcknowledged}
+                            onChange={(e) => setCopyrightAcknowledged(e.target.checked)}
+                            disabled={busy}
+                            style={{ width: 'auto', marginTop: '0.2rem', flexShrink: 0 }}
+                        />
+                        <span style={{ minWidth: 0 }}>{t('I acknowledge that the converted MIDI file may be subject to copyright.')}</span>
+                    </label>
+                )}
                 {converting && isTranscribing && (
                     <div style={{ gridColumn: '1 / 3' }}>
                         <div style={{ marginBottom: '0.25rem' }}>{t('Converting audio to MIDI...')}</div>
@@ -293,18 +345,18 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             </div>
             <div>
                 <button
-                    disabled={!title || !file || busy}
+                    disabled={!title || !file || busy || (isAudioFile && !copyrightAcknowledged)}
                     onClick={importFile}
                 >
                     {isAudioFile ? t('Convert and import') : t('Save')}
                 </button>
                 {busy ? <WaitingIndicator width='4rem' height='2rem' /> : null}
                 <button
-                    disabled={busy}
+                    disabled={uploading || cancelling}
                     style={{ float: 'right' }}
-                    onClick={() => props.finished()}
+                    onClick={handleCancel}
                 >
-                    {t('Cancel')}
+                    {cancelling ? t('Aborting...') : converting ? t('Abort conversion') : t('Cancel')}
                 </button>
             </div>
         </div>,
