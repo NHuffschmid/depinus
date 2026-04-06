@@ -26,6 +26,7 @@
     "Export PDF": "Exporter PDF",
     "First name": "Prénom",
     "Import archive": "Importer l'archive",
+    "Import file to archive": "Importer un fichier dans l'archive",
     "Import audio file to archive": "Importer un fichier audio dans l'archive",
     "Convert and import": "Convertir et importer",
     "Converting audio to MIDI...": "Conversion du fichier audio en MIDI... (avec l'aimable autorisation de Basic Pitch - Spotify)",

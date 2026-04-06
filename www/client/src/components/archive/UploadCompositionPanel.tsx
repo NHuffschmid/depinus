@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { MessageDialog } from "../MessageBox";
-import UploadCompositionDialog from './UploadCompositionDialog';
-import ImportAudioDialog from './ImportAudioDialog';
+import ImportCompositionDialog from './ImportCompositionDialog';
 import { backendUrl } from '../../config';
 
 interface UploadCompositionPanelProps {
@@ -11,8 +10,7 @@ interface UploadCompositionPanelProps {
 }
 
 const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) => {
-    const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
-    const [importAudioDialogIsOpen, setImportAudioDialogIsOpen] = useState(false);
+    const [dialogIsOpen, setDialogIsOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const { t } = useTranslation();
 
@@ -47,8 +45,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
     };
 
     const uploadFinished = (error?: any) => {
-        setUploadDialogIsOpen(false);
-        setImportAudioDialogIsOpen(false);
+        setDialogIsOpen(false);
         if (error) {
             setErrorMessage(error.toString());
         }
@@ -57,21 +54,12 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
 
     return (
         <div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
-                <button onClick={() => { setImportAudioDialogIsOpen(true) }}>{t('Import audio file to archive')}</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button onClick={() => { setDialogIsOpen(true) }}>{t('Import file to archive')}</button>
+                <span style={{ color: 'gray', fontSize: '0.85em' }}>MIDI, MP3, WAV</span>
             </div>
-            <UploadCompositionDialog
-                open={uploadDialogIsOpen}
-                header={t('Add midifile to archive')}
-                title={''}
-                composerId={props.composerId}
-                midifileIsMandatory={true}
-                upload={uploadComposition}
-                finished={uploadFinished}
-            />
-            <ImportAudioDialog
-                open={importAudioDialogIsOpen}
+            <ImportCompositionDialog
+                open={dialogIsOpen}
                 composerId={props.composerId}
                 upload={uploadComposition}
                 finished={uploadFinished}

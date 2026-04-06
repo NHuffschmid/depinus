@@ -12,6 +12,7 @@ import { KeyboardProgressBar } from '../react-piano-keyboard/src';
 
 const BASIC_PITCH_MODEL_URL = 'https://unpkg.com/@spotify/basic-pitch@1.0.1/model/model.json';
 const TARGET_SAMPLE_RATE = 22050;
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a']);
 
 interface Composer {
     id: number;
@@ -19,7 +20,7 @@ interface Composer {
     surname: string;
 }
 
-interface ImportAudioDialogProps {
+interface ImportCompositionDialogProps {
     open: boolean;
     composerId?: number;
     upload: (title: string, midifile: File, composerId?: number) => Promise<void>;
@@ -97,11 +98,13 @@ async function resampleToMono(audioBuffer: AudioBuffer): Promise<AudioBuffer> {
     return await offlineCtx.startRendering();
 }
 
-const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
+const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) => {
     const [title, setTitle] = useState('');
-    const [audioFile, setAudioFile] = useState<File | undefined>();
+    const [file, setFile] = useState<File | undefined>();
+    const [isAudioFile, setIsAudioFile] = useState(false);
     const [composerId, setComposerId] = useState<number | undefined>(props.composerId);
     const [converting, setConverting] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [composers, setComposers] = useState<Composer[]>([]);
@@ -115,23 +118,53 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                 .then(data => setComposers(data))
                 .catch(() => setComposers([]));
             setTitle('');
-            setAudioFile(undefined);
+            setFile(undefined);
+            setIsAudioFile(false);
             setComposerId(props.composerId);
             setConverting(false);
+            setUploading(false);
             setProgress(0);
             setIsTranscribing(false);
         }
     }, [props.open, props.composerId]);
 
-    const convertAndUpload = async () => {
-        if (!audioFile || !title) return;
+    const onFileSelected = (selectedFile: File | undefined) => {
+        setFile(selectedFile);
+        if (selectedFile) {
+            const ext = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+            setIsAudioFile(AUDIO_EXTENSIONS.has(ext));
+            if (!title) {
+                setTitle(selectedFile.name.replace(/\.[^.]+$/, ''));
+            }
+        } else {
+            setIsAudioFile(false);
+        }
+    };
 
+    const importFile = async () => {
+        if (!file || !title) return;
+        if (isAudioFile) {
+            await convertAndUpload();
+        } else {
+            setUploading(true);
+            try {
+                await props.upload(title, file, composerId);
+                props.finished();
+            } catch (error: any) {
+                props.finished(error);
+            } finally {
+                setUploading(false);
+            }
+        }
+    };
+
+    const convertAndUpload = async () => {
+        if (!file || !title) return;
         setConverting(true);
         setProgress(0);
-
         try {
             // 1. Decode audio file
-            const arrayBuffer = await audioFile.arrayBuffer();
+            const arrayBuffer = await file.arrayBuffer();
             const audioCtx = new AudioContext();
             let audioBuffer: AudioBuffer;
             try {
@@ -166,9 +199,7 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                     onsets.push(...o);
                     contours.push(...c);
                 },
-                (p: number) => {
-                    setProgress(p);
-                },
+                (p: number) => { setProgress(p); },
             );
             setIsTranscribing(false);
 
@@ -196,6 +227,8 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
         }
     };
 
+    const busy = converting || uploading;
+
     return React.createElement(
         Modal as any,
         {
@@ -207,7 +240,7 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             },
         },
         <div className='dialog'>
-            <div className='menu-header'>{t('Import audio file to archive')}</div>
+            <div className='menu-header'>{t('Import file to archive')}</div>
             <div
                 className='dialog-form'
                 style={{
@@ -224,16 +257,14 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
-                    disabled={converting}
+                    disabled={busy}
                 />
                 <label>{t('Composer')}:</label>
                 <select
                     value={composerId ?? ''}
-                    onChange={(e) =>
-                        setComposerId(e.target.value ? parseInt(e.target.value) : undefined)
-                    }
+                    onChange={(e) => setComposerId(e.target.value ? parseInt(e.target.value) : undefined)}
                     style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
-                    disabled={converting}
+                    disabled={busy}
                 >
                     {composers.map((composer) => (
                         <option key={composer.id} value={composer.id}>
@@ -249,17 +280,9 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                         boxSizing: 'border-box',
                     }}
                     type='file'
-                    accept='.mp3,.wav,.ogg,.flac,.aac,.m4a'
-                    disabled={converting}
-                    onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                            if (!title) {
-                                setTitle(file.name.replace(/\.[^.]+$/, ''));
-                            }
-                            setAudioFile(file);
-                        }
-                    }}
+                    accept='.mid,.midi,.mp3,.wav,.ogg,.flac,.aac,.m4a'
+                    disabled={busy}
+                    onChange={(e) => onFileSelected(e.target.files?.[0])}
                 />
                 {converting && isTranscribing && (
                     <div style={{ gridColumn: '1 / 3' }}>
@@ -270,14 +293,14 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             </div>
             <div>
                 <button
-                    disabled={!title || !audioFile || converting}
-                    onClick={convertAndUpload}
+                    disabled={!title || !file || busy}
+                    onClick={importFile}
                 >
-                    {t('Convert and import')}
+                    {isAudioFile ? t('Convert and import') : t('Save')}
                 </button>
-                {converting ? <WaitingIndicator width='4rem' height='2rem' /> : null}
+                {busy ? <WaitingIndicator width='4rem' height='2rem' /> : null}
                 <button
-                    disabled={converting}
+                    disabled={busy}
                     style={{ float: 'right' }}
                     onClick={() => props.finished()}
                 >
@@ -288,4 +311,4 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
     );
 };
 
-export default ImportAudioDialog;
+export default ImportCompositionDialog;
