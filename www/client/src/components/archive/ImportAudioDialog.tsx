@@ -173,7 +173,7 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             setIsTranscribing(false);
 
             // 5. Convert raw model output to timed note events
-            const noteEvents = outputToNotesPoly(frames, onsets, 0.6, 0.35, 11, false);
+            const noteEvents = outputToNotesPoly(frames, onsets, 0.6, 0.35, 7, false);
             const noteEventsWithBends = addPitchBendsToNoteEvents(contours, noteEvents);
             const notes = noteFramesToTime(noteEventsWithBends);
 
