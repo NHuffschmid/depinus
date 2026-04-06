@@ -5,8 +5,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
 import Modal from 'react-modal';
+import { useCookies } from 'react-cookie';
 import { backendUrl } from '../../config';
 import WaitingIndicator from '../WaitingIndicator';
+import { KeyboardProgressBar } from '../react-piano-keyboard/src';
 
 const BASIC_PITCH_MODEL_URL = 'https://unpkg.com/@spotify/basic-pitch@1.0.1/model/model.json';
 const TARGET_SAMPLE_RATE = 22050;
@@ -101,9 +103,10 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
     const [composerId, setComposerId] = useState<number | undefined>(props.composerId);
     const [converting, setConverting] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [statusMessage, setStatusMessage] = useState('');
+    const [isTranscribing, setIsTranscribing] = useState(false);
     const [composers, setComposers] = useState<Composer[]>([]);
     const { t } = useTranslation();
+    const [cookies] = useCookies(['color']);
 
     useEffect(() => {
         if (props.open) {
@@ -116,7 +119,7 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             setComposerId(props.composerId);
             setConverting(false);
             setProgress(0);
-            setStatusMessage('');
+            setIsTranscribing(false);
         }
     }, [props.open, props.composerId]);
 
@@ -128,7 +131,6 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
 
         try {
             // 1. Decode audio file
-            setStatusMessage(t('Decoding audio...'));
             const arrayBuffer = await audioFile.arrayBuffer();
             const audioCtx = new AudioContext();
             let audioBuffer: AudioBuffer;
@@ -139,11 +141,9 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             }
 
             // 2. Resample to 22050 Hz mono
-            setStatusMessage(t('Resampling audio...'));
             const resampledBuffer = await resampleToMono(audioBuffer);
 
             // 3. Load Basic Pitch and run inference (lazy import to keep initial bundle small)
-            setStatusMessage(t('Loading transcription model...'));
             const {
                 BasicPitch,
                 noteFramesToTime,
@@ -154,7 +154,7 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             const basicPitch = new BasicPitch(BASIC_PITCH_MODEL_URL);
 
             // 4. Run inference
-            setStatusMessage(t('Transcribing audio...'));
+            setIsTranscribing(true);
             const frames: number[][] = [];
             const onsets: number[][] = [];
             const contours: number[][] = [];
@@ -170,9 +170,9 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                     setProgress(p);
                 },
             );
+            setIsTranscribing(false);
 
             // 5. Convert raw model output to timed note events
-            setStatusMessage(t('Generating MIDI...'));
             const noteEvents = outputToNotesPoly(frames, onsets, 0.5, 0.3, 11, false);
             const noteEventsWithBends = addPitchBendsToNoteEvents(contours, noteEvents);
             const notes = noteFramesToTime(noteEventsWithBends);
@@ -186,13 +186,13 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
             );
 
             // 7. Upload via existing mechanism
-            setStatusMessage(t('Uploading...'));
             await props.upload(title, midiFile, composerId);
             props.finished();
         } catch (error: any) {
             props.finished(error);
         } finally {
             setConverting(false);
+            setIsTranscribing(false);
         }
     };
 
@@ -261,10 +261,10 @@ const ImportAudioDialog: React.FC<ImportAudioDialogProps> = (props) => {
                         }
                     }}
                 />
-                {converting && (
+                {converting && isTranscribing && (
                     <div style={{ gridColumn: '1 / 3' }}>
-                        <div style={{ marginBottom: '0.25rem' }}>{statusMessage}</div>
-                        <progress value={progress} max={1} style={{ width: '100%' }} />
+                        <div style={{ marginBottom: '0.25rem' }}>{t('Converting audio to MIDI...')}</div>
+                        <KeyboardProgressBar value={progress} max={1} color={cookies.color} style={{ width: '100%' }} />
                     </div>
                 )}
             </div>
