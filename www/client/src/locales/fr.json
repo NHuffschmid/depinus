@@ -32,6 +32,7 @@
     "Abort conversion": "Abandonner la conversion",
     "Aborting...": "Annulation en cours...",
     "Converting audio to MIDI...": "Conversion du fichier audio en MIDI... (avec l'aimable autorisation de Basic Pitch - Spotify)",
+    "The Basic Pitch model could not be loaded. Please check your internet connection.": "Le modèle Basic Pitch n'a pas pu être chargé. Veuillez vérifier votre connexion internet.",
     "I acknowledge that the converted MIDI file may be subject to copyright.": "Je reconnais que le fichier MIDI converti peut être soumis à des droits d'auteur.",
     "Instrument-Piano": "Piano",
     "Instrument-Violin": "Violon",

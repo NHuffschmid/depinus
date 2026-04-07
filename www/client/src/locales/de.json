@@ -32,6 +32,7 @@
     "Abort conversion": "Konvertierung abbrechen",
     "Aborting...": "Wird abgebrochen...",
     "Converting audio to MIDI...": "Es wird versucht die Audio-Datei nach MIDI zu konvertieren... (mit freundlicher Unterstützung von Basic Pitch - Spotify)",
+    "The Basic Pitch model could not be loaded. Please check your internet connection.": "Das Basic Pitch Modell konnte nicht geladen werden. Bitte überprüfen Sie Ihre Internetverbindung.",
     "I acknowledge that the converted MIDI file may be subject to copyright.": "Ich bestätige, dass die konvertierte MIDI-Datei möglicherweise einem Copyright unterliegt.",
     "Instrument-Piano": "Klavier",
     "Instrument-Violin": "Violine",

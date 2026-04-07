@@ -30,6 +30,7 @@
     "Abort conversion": "Abortar conversão",
     "Aborting...": "Abortando...",
     "Converting audio to MIDI...": "Tentando converter arquivo de áudio para MIDI... (cortesia de Basic Pitch - Spotify)",
+    "The Basic Pitch model could not be loaded. Please check your internet connection.": "O modelo Basic Pitch não pôde ser carregado. Verifique a sua ligação à internet.",
     "I acknowledge that the converted MIDI file may be subject to copyright.": "Reconheço que o arquivo MIDI convertido pode estar sujeito a direitos autorais.",
     "Import archive": "Importar arquivo",
     "Import file to archive": "Importar arquivo para o arquivo",

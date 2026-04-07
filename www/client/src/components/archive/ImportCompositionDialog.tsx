@@ -214,19 +214,30 @@ const ImportCompositionDialog: React.FC<ImportCompositionDialogProps> = (props) 
             const onsets: number[][] = [];
             const contours: number[][] = [];
 
-            await basicPitch.evaluateModel(
-                resampledBuffer,
-                (f: number[][], o: number[][], c: number[][]) => {
-                    if (cancelledRef.current) throw new ConversionCancelledError();
-                    frames.push(...f);
-                    onsets.push(...o);
-                    contours.push(...c);
-                },
-                (p: number) => {
-                    if (cancelledRef.current) throw new ConversionCancelledError();
-                    setProgress(p);
-                },
-            );
+            try {
+                await basicPitch.evaluateModel(
+                    resampledBuffer,
+                    (f: number[][], o: number[][], c: number[][]) => {
+                        if (cancelledRef.current) throw new ConversionCancelledError();
+                        frames.push(...f);
+                        onsets.push(...o);
+                        contours.push(...c);
+                    },
+                    (p: number) => {
+                        if (cancelledRef.current) throw new ConversionCancelledError();
+                        setProgress(p);
+                    },
+                );
+            } catch (err) {
+                if (err instanceof ConversionCancelledError) throw err;
+                if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+                    throw new Error(
+                        t('The Basic Pitch model could not be loaded. Please check your internet connection.') +
+                        `\n(${BASIC_PITCH_MODEL_URL})`,
+                    );
+                }
+                throw err;
+            }
             setIsTranscribing(false);
             if (cancelledRef.current) throw new ConversionCancelledError();
 
