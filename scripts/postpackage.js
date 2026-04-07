@@ -23,24 +23,6 @@ function determinePackageFolder(packageDir) {
 const packageFolder = determinePackageFolder(path.join(__dirname, '../package'));
 const rootDir = path.join(__dirname, `../package/${packageFolder}`);
 const resourcesDir = path.join(rootDir, 'resources');
-const appDir = path.join(resourcesDir, 'app');
-
-const existingLicenseFile = path.join(rootDir, 'LICENSE');
-const renamedLicenseFile = path.join(rootDir, 'LICENSE.electron.txt');
-if (fs.existsSync(existingLicenseFile)) {
-    fs.renameSync(existingLicenseFile, renamedLicenseFile);
-    logger.info(`Existing LICENSE file renamed to ${renamedLicenseFile}`);
-}
-
-const licenseFile = 'LICENSE_DEPINUS.md';
-const origLicenseFile = path.join(appDir, licenseFile);
-const newLicenseFile = path.join(rootDir, licenseFile);
-if (fs.existsSync(origLicenseFile)) {
-    fs.renameSync(origLicenseFile, newLicenseFile);
-    logger.info(`DEPINUS license file moved to ${newLicenseFile}`);
-} else {
-    logger.warn(`DEPINUS license file not found at ${origLicenseFile}`);
-}
 
 const depinusExecutable = path.join(rootDir, 'depinus');
 if (fs.existsSync(depinusExecutable)) {
