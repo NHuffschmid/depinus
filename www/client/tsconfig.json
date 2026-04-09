@@ -13,14 +13,16 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "preserve",
-    "ignoreDeprecations": "6.0"
+    "jsx": "preserve"
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/**/example"
   ]
 }
