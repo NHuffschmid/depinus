@@ -56,7 +56,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
         <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
                 <button onClick={() => { setDialogIsOpen(true) }}>{t('Import file to archive')}</button>
-                <span style={{ color: 'gray', fontSize: '0.85em' }}>MIDI, MP3, WAV</span>
+                <span style={{ color: 'gray', fontSize: '0.85em' }}>MIDI, MP3, WAV, ...</span>
             </div>
             <ImportCompositionDialog
                 open={dialogIsOpen}
