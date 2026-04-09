@@ -23,7 +23,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
             }
             const formData = new FormData();
             formData.append('name', title);
-            formData.append('composerId', String(props.composerId));
+            formData.append('composerId', String(composerId ?? props.composerId));
             formData.append('midifile', midifile);
             fetch(backendUrl + '/archive/composition', {
                 method: 'POST',
