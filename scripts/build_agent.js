@@ -40,7 +40,13 @@ process.stdin.once('data', () => {
 			process.exit(1);
 		}
 		const { user, path } = buildAgents[platform];
-		const sshCmd = `ssh ${user} "bash -l -c 'cd ${path} && git fetch && git checkout ${branch} && git pull && git submodule update --init --recursive && ${buildCmd}'"`;
+		const sshCmd = `ssh ${user} "bash -l -c 'cd ${path} \
+							&& git fetch \
+							&& git restore www/client/package-lock.json \
+							&& git checkout ${branch} \
+							&& git pull \
+							&& git submodule update --init --recursive \
+							&& ${buildCmd}'"`;
 		execSync(sshCmd, { stdio: 'inherit' });
 	}
 
