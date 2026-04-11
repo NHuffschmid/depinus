@@ -11,7 +11,9 @@ const serverTargetDir = path.resolve(__dirname, 'dist/www/server/dist');
 const targetDir = path.resolve(__dirname, 'dist');
 
 const additionalFiles = [
-  path.resolve(__dirname, 'DEPINUS_LICENSE.md'),
+  path.resolve(__dirname, 'LICENSE'),
+  path.resolve(__dirname, 'LICENSE_DEPINUS.md'),
+  path.resolve(__dirname, 'LICENSE_BASIC_PITCH.md'),
   path.resolve(__dirname, 'depinus.conf'),
   path.resolve(__dirname, 'depinus.db'),
   path.resolve(__dirname, 'startup_jingle.mid'),

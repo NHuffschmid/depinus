@@ -2,9 +2,11 @@
 
 **DE**tachable **PI**a**N**o **U**n**S**ilencer
 
-*(C) Norbert Huffschmid - 2025*
+*(C) Norbert Huffschmid - 2026*
 
 DEPINUS is a software for playing and recording piano music on MIDI devices (e-pianos, keyboards, computers, etc.). It is ideal for self-learning, practice, or accompaniment. The program features a large, expandable archive of piano music. You can add your own MIDI files to build a personal music collection. Archives are easy to edit, export, and import, making music sharing between users simple and convenient.
+
+In addition to MIDI files, Depinus also allows the import of audio files in MP3 format and other encodings. The audio file is converted into a MIDI file using AI (Spotify Basic Pitch).
 
 ## Installation
 
@@ -94,6 +96,6 @@ the [project page](https://github.com/NHuffschmid/depinus) or by [email](mailto:
 
 ## Additional Info
 
-[DEPINUS license](DEPINUS_LICENSE.md)
+[DEPINUS license](LICENSE_DEPINUS.md)
 
 [How to Build DEPINUS](HowToBuild.md)

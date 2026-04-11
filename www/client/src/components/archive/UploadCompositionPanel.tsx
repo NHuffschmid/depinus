@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
 import { MessageDialog } from "../MessageBox";
-import UploadCompositionDialog from './UploadCompositionDialog';
+import ImportCompositionDialog from './ImportCompositionDialog';
 import { backendUrl } from '../../config';
 
 interface UploadCompositionPanelProps {
@@ -10,7 +10,7 @@ interface UploadCompositionPanelProps {
 }
 
 const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) => {
-    const [uploadDialogIsOpen, setUploadDialogIsOpen] = useState(false);
+    const [dialogIsOpen, setDialogIsOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | undefined>();
     const { t } = useTranslation();
 
@@ -23,7 +23,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
             }
             const formData = new FormData();
             formData.append('name', title);
-            formData.append('composerId', String(props.composerId));
+            formData.append('composerId', String(composerId ?? props.composerId));
             formData.append('midifile', midifile);
             fetch(backendUrl + '/archive/composition', {
                 method: 'POST',
@@ -45,7 +45,7 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
     };
 
     const uploadFinished = (error?: any) => {
-        setUploadDialogIsOpen(false);
+        setDialogIsOpen(false);
         if (error) {
             setErrorMessage(error.toString());
         }
@@ -54,13 +54,13 @@ const UploadCompositionPanel: React.FC<UploadCompositionPanelProps> = (props) =>
 
     return (
         <div>
-            <button onClick={() => { setUploadDialogIsOpen(true) }}>{t('Add midifile to archive')}</button>
-            <UploadCompositionDialog
-                open={uploadDialogIsOpen}
-                header={t('Add midifile to archive')}
-                title={''}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button onClick={() => { setDialogIsOpen(true) }}>{t('Import file to archive')}</button>
+                <span style={{ color: 'gray', fontSize: '0.85em' }}>MIDI, MP3, WAV, ...</span>
+            </div>
+            <ImportCompositionDialog
+                open={dialogIsOpen}
                 composerId={props.composerId}
-                midifileIsMandatory={true}
                 upload={uploadComposition}
                 finished={uploadFinished}
             />
