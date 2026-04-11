@@ -8,6 +8,8 @@ DEPINUS is a software for playing and recording piano music on MIDI devices (e-p
 
 In addition to MIDI files, Depinus also allows the import of audio files in MP3 format and other encodings. The audio file is converted into a MIDI file using AI (Spotify Basic Pitch).
 
+Depinus can generate sheet music from MIDI files and displays it live during playback. [Midi2MusicXML](https://github.com/NHuffschmid/midi2musicxml)
+
 ## Installation
 
 Download the software package for your computer (Windows, Linux, Raspberry Pi) and unzip it to a folder of your choice. Connect your computer to your MIDI device, e.g., using a USB MIDI cable converter. (You can purchase this adapter for around $20 at any electronics store)
