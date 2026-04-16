@@ -1,12 +1,6 @@
 # CHANGELOG
 
-## [0.9.6] - Händel
-
-### Features
-- Added Basic Pitch support (conversion of audio files into MIDI format)
-
-### Tech stuff
-- Upgraded from TypeScript 4.9.5 to 5.8.3
+## [0.9.7] - To be defined
 
 
 ## [0.9.5] - Arezzo
