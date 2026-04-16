@@ -2,7 +2,73 @@ import { useState, useEffect } from 'react';
 import useWebSocket from 'react-use-websocket';
 import { backendUrl } from '../config';
 
-type RepeatMode = 'off' | 'playlist' | 'composition';
+export interface CompositionInfo {
+	name: string;
+	compositionId?: number;
+	composerName: string;
+	duration: number;
+	playTime: number;
+}
+
+export interface PlaylistInfo {
+	id?: number;
+	shuffle?: boolean;
+	repeatMode?: string;
+	forwardable?: boolean;
+	backwardable?: boolean;
+	compositionId?: number;
+}
+
+export interface PlayStateMessage {
+	messageType: 'info';
+	infoType: 'playState';
+	isStoppable?: boolean;
+	isPlayable?: boolean;
+	isPauseable?: boolean;
+	isRecordable?: boolean;
+	isRecording?: boolean;
+	isWaiting?: boolean;
+	wasCancelled?: boolean;
+	recordingSaved?: boolean;
+	composition?: CompositionInfo;
+}
+
+export interface SettingsMessage {
+	messageType: 'info';
+	infoType: 'settings';
+	tempo?: number;
+	dynamics?: number;
+	transposition?: number;
+}
+
+export interface MidiPortsMessage {
+	messageType: 'info';
+	infoType: 'midiPorts';
+	availableMidiOutPorts: string[];
+	selectedMidiOutPort: string | null;
+	availableMidiInPorts: string[];
+	selectedMidiInPort: string | null;
+	isRecordable?: boolean;
+}
+
+export interface PlaylistMessage {
+	messageType: 'info';
+	infoType: 'playlist';
+	playlist: PlaylistInfo;
+}
+
+export interface RecordingMidiMessage {
+	messageType: 'info';
+	infoType: 'recordingMidi';
+	midiEventBytes: string;
+}
+
+export type DepinusInfoMessage =
+	| PlayStateMessage
+	| SettingsMessage
+	| MidiPortsMessage
+	| PlaylistMessage
+	| RecordingMidiMessage;
 
 export interface DepinusWebsocketOptions {
 	name: string;
@@ -10,8 +76,8 @@ export interface DepinusWebsocketOptions {
 	onClose?: () => void;
 	onMessage?: (e: MessageEvent) => void;
 	onError?: () => void;
-	onKeyboardMessage?: (note: any, velocity: any, playTime?: number) => void;
-	onInfoMessage?: (message: any) => void;
+	onKeyboardMessage?: (note: number, velocity: number, playTime?: number) => void;
+	onInfoMessage?: (message: DepinusInfoMessage) => void;
 	onRpcResponseMessage?: (message: any) => void;
 }
 
@@ -82,17 +148,16 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 			}
 		},
 		onMessage: (e: MessageEvent) => {
-			let message = JSON.parse(e.data);
-			if ((message.messageType === 'keyboard') && (options.onKeyboardMessage)) {
-				options.onKeyboardMessage(message.note, message.velocity, message.playTime);
-			}
-			else if ((message.messageType === 'info') && (options.onInfoMessage)) {
-				options.onInfoMessage(message);
-			}
-			else if ((message.messageType === 'rpc_response') && (options.onRpcResponseMessage)) {
+			const message = JSON.parse(e.data);
+			if (message.messageType === 'info') {
+				if (message.infoType === 'keyboard' && options.onKeyboardMessage) {
+					options.onKeyboardMessage(message.note, message.velocity, message.playTime);
+				} else if (options.onInfoMessage) {
+					options.onInfoMessage(message as DepinusInfoMessage);
+				}
+			} else if (message.messageType === 'rpc_response' && options.onRpcResponseMessage) {
 				options.onRpcResponseMessage(message);
 			}
-
 		},
 		onError: () => {
 			if (options.onError) {

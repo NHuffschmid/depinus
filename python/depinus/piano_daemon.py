@@ -111,6 +111,7 @@ class PianoDaemon:
                 await self._websocket_server.send_info_message(
                     {
                         'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable': True, 
                         'isPlayable': False, 
                         'isPauseable': True, 
@@ -122,7 +123,8 @@ class PianoDaemon:
                 await self._piano_player.play()
                 await self._websocket_server.send_info_message(
                     { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable' : True, 
                         'isPlayable' : False, 
                         'isPauseable' : True, 
@@ -137,7 +139,8 @@ class PianoDaemon:
                 self._piano_recorder.pause_recording()
                 await self._websocket_server.send_info_message(
                     { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable' : True, 
                         'isPlayable' : True, 
                         'isPauseable' : not self._piano_recorder.is_paused, 
@@ -150,7 +153,8 @@ class PianoDaemon:
                 self._piano_player.pause()
                 await self._websocket_server.send_info_message(
                     { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable' : True, 
                         'isPlayable' : True, 
                         'isPauseable' : False, 
@@ -165,7 +169,8 @@ class PianoDaemon:
                 await self._piano_recorder.stop_recording()
                 await self._websocket_server.send_info_message(
                     { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable' : False, 
                         'isPlayable' : (self._piano_player.current_composition is not None), 
                         'isPauseable' : False, 
@@ -178,7 +183,8 @@ class PianoDaemon:
                 await self._piano_player.stop()
                 await self._websocket_server.send_info_message(
                     { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable' : False, 
                         'isPlayable' : True, 
                         'isPauseable' : False, 
@@ -194,7 +200,8 @@ class PianoDaemon:
             persist_config_setting('Settings', 'tempo', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 
-                    'messageType': 'info', 
+                    'messageType': 'info',
+                    'infoType': 'settings',
                     'tempo' : cmd.value 
                 }
             )
@@ -205,7 +212,8 @@ class PianoDaemon:
             persist_config_setting('Settings', 'dynamics', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 
-                    'messageType': 'info', 
+                    'messageType': 'info',
+                    'infoType': 'settings',
                     'dynamics' : cmd.value 
                 }
             )
@@ -216,7 +224,8 @@ class PianoDaemon:
             persist_config_setting('Settings', 'transposition', str(cmd.value))
             await self._websocket_server.send_info_message(
                 { 
-                    'messageType': 'info', 
+                    'messageType': 'info',
+                    'infoType': 'settings',
                     'transposition' : cmd.value 
                 }
             )
@@ -230,9 +239,13 @@ class PianoDaemon:
             await self._piano_player.set_midi_out_port(cmd.value)
             persist_config_setting('Midi', 'midi_out_port', cmd.value)
             await self._websocket_server.send_info_message(
-                { 
-                    'messageType': 'info', 
-                    'selectedMidiOutPort' : cmd.value 
+                {
+                    'messageType': 'info',
+                    'infoType': 'midiPorts',
+                    'availableMidiOutPorts': self._midi_out_ports_available,
+                    'selectedMidiOutPort': cmd.value,
+                    'availableMidiInPorts': self._midi_in_ports_available,
+                    'selectedMidiInPort': self._midi_in_ports_selected
                 }
             )
         elif (cmd.command == 'selectedMidiInPort'):
@@ -241,9 +254,13 @@ class PianoDaemon:
             await self._piano_recorder.set_midi_in_port(cmd.value)
             persist_config_setting('Midi', 'midi_in_port', cmd.value)
             await self._websocket_server.send_info_message(
-                { 
-                    'messageType': 'info', 
-                    'selectedMidiInPort' : cmd.value 
+                {
+                    'messageType': 'info',
+                    'infoType': 'midiPorts',
+                    'availableMidiOutPorts': self._midi_out_ports_available,
+                    'selectedMidiOutPort': self._midi_out_ports_selected,
+                    'availableMidiInPorts': self._midi_in_ports_available,
+                    'selectedMidiInPort': cmd.value
                 }
             )
         elif (cmd.command == 'record'):
@@ -252,6 +269,7 @@ class PianoDaemon:
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
+                    'infoType': 'playState',
                     'isStoppable' : True,
                     'isPlayable' : False, 
                     'isPauseable' : True,
@@ -281,6 +299,7 @@ class PianoDaemon:
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
+                    'infoType': 'playState',
                     'isStoppable': False,
                     'isPlayable': False,
                     'isPauseable': False,
@@ -294,6 +313,7 @@ class PianoDaemon:
             await self._websocket_server.send_info_message(
                 {
                     'messageType': 'info',
+                    'infoType': 'playState',
                     'isStoppable': self._piano_player.is_stoppable,
                     'isPlayable': self._piano_player.is_playable,
                     'isPauseable': self._piano_player.is_pauseable,
@@ -312,7 +332,8 @@ class PianoDaemon:
                 # new client wants to receive the current playlist info (if any)
                 if (self._playlist != None):
                     info_msg = { 
-                        'messageType': 'info', 
+                        'messageType': 'info',
+                        'infoType': 'playlist',
                         'playlist': self._playlist 
                     }
                     logger.info('Sending playlist info to client: ' + str(info_msg))
@@ -334,6 +355,7 @@ class PianoDaemon:
                     self._playlist['backwardable'] = cmd.value['backwardable']
                 info_msg = {
                     'messageType': 'info',
+                    'infoType': 'playlist',
                     'playlist': cmd.value
                 }
                 await self._websocket_server.send_info_message(info_msg)
@@ -363,40 +385,51 @@ class PianoDaemon:
 
 
     async def _on_connect_notification(self, websocket):
-        #logger.info('New websocket client has connected.')
-        info = {
+        # 1. Settings
+        await self._websocket_server.send_info_message({
             'messageType': 'info',
+            'infoType': 'settings',
             'tempo': self._piano_player.tempo,
             'dynamics': self._piano_player.dynamics,
             'transposition': self._piano_player.transposition
+        }, websocket)
+
+        # 2. Play state (with optional composition)
+        play_state = {
+            'messageType': 'info',
+            'infoType': 'playState',
+            'isRecording': self._piano_recorder.is_recording,
+            'isRecordable': bool(self._midi_in_ports_available) and
+                            not self._piano_player.is_stoppable and
+                            not self._piano_recorder.is_recording,
         }
         composition = self._piano_player.current_composition
         if composition:
-            info['composition'] = {
+            play_state['composition'] = {
                 'name': composition.name,
                 'compositionId': composition.composition_id,
-                'composerName': composition.composer, 
+                'composerName': composition.composer,
                 'duration': composition.duration,
                 'playTime': self._piano_player.play_time
             }
-            info['isStoppable'] = self._piano_player.is_stoppable
-            info['isPlayable'] = self._piano_player.is_playable
-            info['isPauseable'] = self._piano_player.is_pauseable
+            play_state['isStoppable'] = self._piano_player.is_stoppable
+            play_state['isPlayable'] = self._piano_player.is_playable
+            play_state['isPauseable'] = self._piano_player.is_pauseable
         else:
-            info['isStoppable'] = False
-            info['isPlayable'] = False
-            info['isPauseable'] = False
-        
-        info['isRecordable'] = bool(self._midi_in_ports_available) and \
-                                not self._piano_player.is_stoppable and \
-                                not self._piano_recorder.is_recording
-        
-        info['availableMidiOutPorts'] = self._midi_out_ports_available
-        info['selectedMidiOutPort'] = self._midi_out_ports_selected
-        info['availableMidiInPorts'] = self._midi_in_ports_available
-        info['selectedMidiInPort'] = self._midi_in_ports_selected
+            play_state['isStoppable'] = False
+            play_state['isPlayable'] = False
+            play_state['isPauseable'] = False
+        await self._websocket_server.send_info_message(play_state, websocket)
 
-        await self._websocket_server.send_info_message(info, websocket)
+        # 3. MIDI ports
+        await self._websocket_server.send_info_message({
+            'messageType': 'info',
+            'infoType': 'midiPorts',
+            'availableMidiOutPorts': self._midi_out_ports_available,
+            'selectedMidiOutPort': self._midi_out_ports_selected,
+            'availableMidiInPorts': self._midi_in_ports_available,
+            'selectedMidiInPort': self._midi_in_ports_selected
+        }, websocket)
 
 
     async def _on_play_composition(self, name, compositionId, composer, duration, mididata, playlistId=None):
@@ -405,6 +438,7 @@ class PianoDaemon:
         await self._piano_player.play(composition)
         info_msg = {
             'messageType': 'info',
+            'infoType': 'playState',
             'isStoppable': True,
             'isPlayable': False,
             'isPauseable': True,
@@ -453,6 +487,7 @@ class PianoDaemon:
         '''Callback when recording preparation state changes.'''
         await self._websocket_server.send_info_message({
             'messageType': 'info',
+            'infoType': 'playState',
             'isWaiting': is_waiting
         })
 
@@ -460,6 +495,7 @@ class PianoDaemon:
         '''Callback for MIDI messages during recording - send raw MIDI bytes (base64).'''
         await self._websocket_server.send_info_message({
             'messageType': 'info',
+            'infoType': 'recordingMidi',
             'midiEventBytes': midi_event_base64
         })
 
@@ -469,6 +505,7 @@ class PianoDaemon:
             # Nothing was recorded
             await self._websocket_server.send_info_message({
                 'messageType': 'info',
+                'infoType': 'playState',
                 'isStoppable': False,
                 'isPlayable': False,
                 'isPauseable': False,
@@ -555,6 +592,7 @@ class PianoDaemon:
                     # Notify all clients about the new composition
                     await self._websocket_server.send_info_message({
                         'messageType': 'info',
+                        'infoType': 'playState',
                         'isStoppable': False,
                         'isPlayable': True,
                         'isPauseable': False,
@@ -583,6 +621,7 @@ class PianoDaemon:
         await self._websocket_server.send_info_message(
             {
                 'messageType': 'info',
+                'infoType': 'playState',
                 'isStoppable': False,
                 'isPlayable': True,
                 'isPauseable': False,
@@ -636,6 +675,7 @@ class PianoDaemon:
         await self._websocket_server.send_info_message(
             {
                 'messageType': 'info',
+                'infoType': 'midiPorts',
                 'availableMidiOutPorts': self._midi_out_ports_available,
                 'selectedMidiOutPort': self._midi_out_ports_selected,
                 'availableMidiInPorts': self._midi_in_ports_available,

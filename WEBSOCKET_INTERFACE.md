@@ -1,0 +1,279 @@
+# Depinus WebSocket Interface
+
+The PianoDaemon exposes a WebSocket server. The React frontend connects to it and exchanges JSON messages in both directions.
+
+---
+
+## General structure
+
+Every message is a JSON object with a `messageType` field as the top-level discriminator.
+
+| `messageType` | Direction | Description |
+|---|---|---|
+| `info` | Server → Client | All state and event notifications |
+| `rpc_response` | Server → Client | Response to an RPC call |
+| `keyboard` | Client → Server | Key press/release from the on-screen keyboard |
+| `control` | Client → Server | Transport and settings commands |
+| `rpc` | Client → Server | Remote procedure call |
+
+---
+
+## Server → Client messages
+
+### `info` messages
+
+All server notifications share `messageType: "info"` and are further distinguished by `infoType`.
+
+#### `infoType: "keyboard"`
+
+Sent for every MIDI note event produced by the piano player or the physical keyboard.
+High frequency (one message per note event).
+
+```json
+{
+  "messageType": "info",
+  "infoType": "keyboard",
+  "note": 64,
+  "velocity": 80,
+  "playTime": 12.34
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `note` | `number` (0–127) | yes | MIDI note number |
+| `velocity` | `number` (0–127) | yes | 0 = note off |
+| `playTime` | `number` | no | Current playback position in seconds (only present during playback) |
+
+> A `note: 0, velocity: 0` message means "all notes off" (keyboard reset).
+
+---
+
+#### `infoType: "playState"`
+
+Sent whenever the transport state changes (play, pause, stop, record, seek, …).
+Fields are sent partially – only changed fields are included, except on initial connect.
+
+```json
+{
+  "messageType": "info",
+  "infoType": "playState",
+  "isStoppable": true,
+  "isPlayable": false,
+  "isPauseable": true,
+  "isRecordable": false,
+  "isRecording": false,
+  "isWaiting": false,
+  "wasCancelled": false,
+  "recordingSaved": false,
+  "composition": {
+    "name": "Moonlight Sonata",
+    "compositionId": 42,
+    "composerName": "Beethoven",
+    "duration": 360,
+    "playTime": 0.0
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `isStoppable` | `boolean` | Stop button enabled |
+| `isPlayable` | `boolean` | Play button enabled |
+| `isPauseable` | `boolean` | Pause button enabled; also used to start/stop the progress bar tick |
+| `isRecordable` | `boolean` | Record button enabled |
+| `isRecording` | `boolean` | Recording is currently active |
+| `isWaiting` | `boolean` | Server is busy (e.g. seeking); all buttons should be disabled |
+| `wasCancelled` | `boolean` | Playback ended because it was stopped, not because it finished naturally |
+| `recordingSaved` | `boolean` | A recording was successfully saved; clients should refresh the archive |
+| `composition` | `object` | Currently loaded composition (see below) |
+
+**`composition` object:**
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Composition title |
+| `compositionId` | `number` | Database ID (absent for live recordings) |
+| `composerName` | `string` | Composer name |
+| `duration` | `number` | Total duration in seconds |
+| `playTime` | `number` | Current playback position in seconds |
+
+---
+
+#### `infoType: "settings"`
+
+Sent when a setting changes. Each change sends exactly one field.
+
+```json
+{ "messageType": "info", "infoType": "settings", "tempo": 1.25 }
+{ "messageType": "info", "infoType": "settings", "dynamics": 70 }
+{ "messageType": "info", "infoType": "settings", "transposition": -2 }
+```
+
+| Field | Type | Range | Description |
+|---|---|---|---|
+| `tempo` | `number` | > 0 | Playback speed factor (1.0 = normal) |
+| `dynamics` | `number` | 0–127 | Volume level |
+| `transposition` | `number` | –12 … +12 | Semitone offset |
+
+On initial connect all three fields are sent together in one message.
+
+---
+
+#### `infoType: "midiPorts"`
+
+Sent on connect, when the MIDI interface configuration changes, or when the user selects a port.
+
+```json
+{
+  "messageType": "info",
+  "infoType": "midiPorts",
+  "availableMidiOutPorts": ["Microsoft GS Wavetable Synth 0", "USB Midi Cable 1"],
+  "selectedMidiOutPort": "USB Midi Cable 1",
+  "availableMidiInPorts": ["USB Midi Cable 0"],
+  "selectedMidiInPort": "USB Midi Cable 0",
+  "isRecordable": true
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `availableMidiOutPorts` | `string[]` | All detected MIDI output ports |
+| `selectedMidiOutPort` | `string \| null` | Currently active MIDI output |
+| `availableMidiInPorts` | `string[]` | All detected MIDI input ports |
+| `selectedMidiInPort` | `string \| null` | Currently active MIDI input |
+| `isRecordable` | `boolean` | Whether recording is possible (input port available) |
+
+---
+
+#### `infoType: "playlist"`
+
+Sent to synchronise playlist state across all connected clients.
+
+```json
+{
+  "messageType": "info",
+  "infoType": "playlist",
+  "playlist": {
+    "id": 3,
+    "shuffle": false,
+    "repeatMode": "playlist",
+    "forwardable": true,
+    "backwardable": false,
+    "compositionId": 42
+  }
+}
+```
+
+**`playlist` object:**
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `number` | Database ID of the active playlist |
+| `shuffle` | `boolean` | Shuffle mode active |
+| `repeatMode` | `"off" \| "playlist" \| "composition"` | Repeat mode |
+| `forwardable` | `boolean` | A next track exists |
+| `backwardable` | `boolean` | A previous track exists |
+| `compositionId` | `number` | ID of the currently playing composition |
+
+---
+
+#### `infoType: "recordingMidi"`
+
+Sent during a live recording for each incoming MIDI event. High frequency (one message per MIDI event).
+
+```json
+{
+  "messageType": "info",
+  "infoType": "recordingMidi",
+  "midiEventBytes": "kEBA"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `midiEventBytes` | `string` | Raw MIDI event bytes, Base64-encoded |
+
+---
+
+### `rpc_response` messages
+
+Response to a client RPC call.
+
+**Success:**
+```json
+{ "messageType": "rpc_response", "result": { ... } }
+```
+
+**Error:**
+```json
+{ "messageType": "rpc_response", "error": "Unknown method 'Foo'" }
+```
+
+---
+
+### Initial connect sequence
+
+When a client connects, the server sends three messages in order:
+
+1. `infoType: "settings"` – current tempo, dynamics, transposition
+2. `infoType: "playState"` – full transport state including composition (if any)
+3. `infoType: "midiPorts"` – available and selected MIDI ports
+
+---
+
+## Client → Server messages
+
+### `keyboard` – on-screen key press/release
+
+```json
+{ "commandType": "keyboard", "note": 60, "pressed": true }
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `note` | `number` (0–127) | MIDI note number |
+| `pressed` | `boolean` | `true` = note on, `false` = note off |
+
+---
+
+### `control` – transport and settings
+
+```json
+{ "commandType": "control", "command": "<command>", "value": <optional> }
+```
+
+| `command` | `value` | Description |
+|---|---|---|
+| `play` | – | Start or resume playback / resume recording |
+| `pause` | – | Pause playback or recording |
+| `stop` | – | Stop playback or save and stop recording |
+| `record` | – | Start recording |
+| `tempo` | `number` | Set playback speed |
+| `dynamics` | `number` | Set volume level |
+| `transposition` | `number` | Set semitone offset |
+| `selectedMidiOutPort` | `string` | Select MIDI output port |
+| `selectedMidiInPort` | `string` | Select MIDI input port |
+| `gotoPlayTime` | `number` | Seek to position in seconds |
+| `playlist` | `object` | Update or request playlist state (see below) |
+| `shutdown` | – | Shut down the piano daemon |
+| `play_startup_jingle` | – | Play the startup jingle |
+
+**`playlist` value:**
+
+- `{ "id": 0 }` – request current playlist state from server
+- `{ "id": N, "shuffle": bool, "repeatMode": string, ... }` – update playlist state
+
+---
+
+### `rpc` – remote procedure call
+
+```json
+{ "commandType": "rpc", "method": "<method>", "params": { ... } }
+```
+
+| Method | Params | Returns | Description |
+|---|---|---|---|
+| `PlayComposition` | `name`, `compositionId`, `composer`, `duration`, `mididata`, `playlistId?` | – | Load and play a composition |
+| `CalculatePlayDuration` | `mididata` | `number` | Calculate duration of a MIDI file in seconds |
+| `GetCurrentMidiData` | – | `{ midiBase64, compositionName, composerName }` | Get MIDI data of the currently loaded composition |

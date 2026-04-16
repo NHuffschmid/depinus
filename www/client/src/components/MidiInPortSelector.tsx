@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from "react-i18next";
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 
 const MidiInPortSelector: React.FC = () => {
 	const { t } = useTranslation();
@@ -9,12 +9,12 @@ const MidiInPortSelector: React.FC = () => {
 
 	const webSocket = useDepinusWebSocket({
 		name: 'MidiInPortSelector',
-		onInfoMessage: (message: any) => {
-			if ('availableMidiInPorts' in message) {
-				setAvailableMidiInPorts(message['availableMidiInPorts']);
-			}
-			if ('selectedMidiInPort' in message) {
-				setSelectedPort(message['selectedMidiInPort']);
+		onInfoMessage: (message: DepinusInfoMessage) => {
+			if (message.infoType === 'midiPorts') {
+				setAvailableMidiInPorts(message.availableMidiInPorts);
+				if (message.selectedMidiInPort !== null) {
+					setSelectedPort(message.selectedMidiInPort);
+				}
 			}
 		}
 	});

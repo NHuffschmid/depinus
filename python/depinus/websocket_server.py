@@ -90,7 +90,8 @@ class WebsocketServer:
                 if (mido_message.type.startswith('note_o')):
                     velocity = 0 if (mido_message.type == 'note_off') else mido_message.velocity
                     msg = {
-                        'messageType': 'keyboard',
+                        'messageType': 'info',
+                        'infoType': 'keyboard',
                         'note': mido_message.note,
                         'velocity': velocity
                     }
@@ -103,7 +104,7 @@ class WebsocketServer:
                 if (mido_message.type == 'control_change'):
                     if (mido_message.control == 123):
                         # all notes off - send special message to release all keys
-                        ws_message = json.dumps({'messageType': 'keyboard', 'note': 0, 'velocity': 0})
+                        ws_message = json.dumps({'messageType': 'info', 'infoType': 'keyboard', 'note': 0, 'velocity': 0})
                         await websocket.send(ws_message)
 
 
