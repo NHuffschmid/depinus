@@ -2,6 +2,8 @@
 
 ## [0.9.7] - To be defined
 
+### Tech stuff
+- Redesigned websocket interface
 
 ## [0.9.5] - Arezzo
 
