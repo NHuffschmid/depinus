@@ -10,10 +10,12 @@ export interface CompositionInfo {
 	playTime: number;
 }
 
+export type RepeatMode = 'off' | 'playlist' | 'composition';
+
 export interface PlaylistInfo {
 	id?: number;
 	shuffle?: boolean;
-	repeatMode?: string;
+	repeatMode?: RepeatMode;
 	forwardable?: boolean;
 	backwardable?: boolean;
 	compositionId?: number;

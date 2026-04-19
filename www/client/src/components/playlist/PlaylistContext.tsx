@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import useDepinusWebSocket, { DepinusInfoMessage } from '../../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage, RepeatMode } from '../../custom-hooks/useDepinusWebsocket';
 import { backendUrl } from '../../config';
 
 export interface Playlist {
@@ -15,8 +15,6 @@ export interface Track {
     composerFirstname: string;
     composerSurname: string;
 }
-
-type RepeatMode = 'off' | 'playlist' | 'composition';
 
 interface PlaylistContextType {
     playlists: Playlist[];
