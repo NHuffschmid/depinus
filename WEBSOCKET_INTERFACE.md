@@ -6,7 +6,7 @@ The PianoDaemon exposes a WebSocket server. The React frontend connects to it an
 
 ## General structure
 
-Every message is a JSON object. The `infoType` field is the sole discriminator for all messages.
+Messages sent from the server to the client are JSON objects discriminated by the `infoType` field. Commands sent from the client to the server are JSON objects discriminated by the `commandType` field.
 
 ### Server → Client
 
@@ -227,7 +227,7 @@ When a client connects, the server sends three messages in order:
 
 ---
 
-## Client → Server messages
+## Client → Server commands
 
 ### `keyboard` – on-screen key press/release
 
