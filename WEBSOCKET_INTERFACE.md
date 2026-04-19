@@ -6,23 +6,33 @@ The PianoDaemon exposes a WebSocket server. The React frontend connects to it an
 
 ## General structure
 
-Every message is a JSON object with a `messageType` field as the top-level discriminator.
+Every message is a JSON object. The `infoType` field is the sole discriminator for all messages.
 
-| `messageType` | Direction | Description |
-|---|---|---|
-| `info` | Server → Client | All state and event notifications |
-| `rpc_response` | Server → Client | Response to an RPC call |
-| `keyboard` | Client → Server | Key press/release from the on-screen keyboard |
-| `control` | Client → Server | Transport and settings commands |
-| `rpc` | Client → Server | Remote procedure call |
+### Server → Client
+
+| `infoType` | Description |
+|---|---|
+| `keyboard` | MIDI note event from player or physical keyboard |
+| `playState` | Transport state change |
+| `settings` | Settings change (tempo, dynamics, transposition) |
+| `midiPorts` | MIDI port configuration |
+| `playlist` | Playlist state sync |
+| `recordingMidi` | Raw MIDI event during live recording |
+| `rpcResponse` | Response to an RPC call |
+
+### Client → Server
+
+| `commandType` | Description |
+|---|---|
+| `keyboard` | Key press/release from the on-screen keyboard |
+| `control` | Transport and settings commands |
+| `rpc` | Remote procedure call |
 
 ---
 
 ## Server → Client messages
 
-### `info` messages
-
-All server notifications share `messageType: "info"` and are further distinguished by `infoType`.
+All server notifications are distinguished solely by `infoType`.
 
 #### `infoType: "keyboard"`
 
@@ -31,7 +41,6 @@ High frequency (one message per note event).
 
 ```json
 {
-  "messageType": "info",
   "infoType": "keyboard",
   "note": 64,
   "velocity": 80,
@@ -56,7 +65,6 @@ Fields are sent partially – only changed fields are included, except on initia
 
 ```json
 {
-  "messageType": "info",
   "infoType": "playState",
   "isStoppable": true,
   "isPlayable": false,
@@ -105,9 +113,9 @@ Fields are sent partially – only changed fields are included, except on initia
 Sent when a setting changes. Each change sends exactly one field.
 
 ```json
-{ "messageType": "info", "infoType": "settings", "tempo": 1.25 }
-{ "messageType": "info", "infoType": "settings", "dynamics": 70 }
-{ "messageType": "info", "infoType": "settings", "transposition": -2 }
+{ "infoType": "settings", "tempo": 1.25 }
+{ "infoType": "settings", "dynamics": 70 }
+{ "infoType": "settings", "transposition": -2 }
 ```
 
 | Field | Type | Range | Description |
@@ -126,7 +134,6 @@ Sent on connect, when the MIDI interface configuration changes, or when the user
 
 ```json
 {
-  "messageType": "info",
   "infoType": "midiPorts",
   "availableMidiOutPorts": ["Microsoft GS Wavetable Synth 0", "USB Midi Cable 1"],
   "selectedMidiOutPort": "USB Midi Cable 1",
@@ -152,7 +159,6 @@ Sent to synchronise playlist state across all connected clients.
 
 ```json
 {
-  "messageType": "info",
   "infoType": "playlist",
   "playlist": {
     "id": 3,
@@ -184,7 +190,6 @@ Sent during a live recording for each incoming MIDI event. High frequency (one m
 
 ```json
 {
-  "messageType": "info",
   "infoType": "recordingMidi",
   "midiEventBytes": "kEBA"
 }
@@ -196,18 +201,18 @@ Sent during a live recording for each incoming MIDI event. High frequency (one m
 
 ---
 
-### `rpc_response` messages
+#### `infoType: "rpcResponse"`
 
 Response to a client RPC call.
 
 **Success:**
 ```json
-{ "messageType": "rpc_response", "result": { ... } }
+{ "infoType": "rpcResponse", "result": { ... } }
 ```
 
 **Error:**
 ```json
-{ "messageType": "rpc_response", "error": "Unknown method 'Foo'" }
+{ "infoType": "rpcResponse", "error": "Unknown method 'Foo'" }
 ```
 
 ---

@@ -20,7 +20,6 @@ export interface PlaylistInfo {
 }
 
 export interface PlayStateMessage {
-	messageType: 'info';
 	infoType: 'playState';
 	isStoppable?: boolean;
 	isPlayable?: boolean;
@@ -34,7 +33,6 @@ export interface PlayStateMessage {
 }
 
 export interface SettingsMessage {
-	messageType: 'info';
 	infoType: 'settings';
 	tempo?: number;
 	dynamics?: number;
@@ -42,7 +40,6 @@ export interface SettingsMessage {
 }
 
 export interface MidiPortsMessage {
-	messageType: 'info';
 	infoType: 'midiPorts';
 	availableMidiOutPorts: string[];
 	selectedMidiOutPort: string | null;
@@ -52,13 +49,11 @@ export interface MidiPortsMessage {
 }
 
 export interface PlaylistMessage {
-	messageType: 'info';
 	infoType: 'playlist';
 	playlist: PlaylistInfo;
 }
 
 export interface RecordingMidiMessage {
-	messageType: 'info';
 	infoType: 'recordingMidi';
 	midiEventBytes: string;
 }
@@ -149,14 +144,12 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		},
 		onMessage: (e: MessageEvent) => {
 			const message = JSON.parse(e.data);
-			if (message.messageType === 'info') {
-				if (message.infoType === 'keyboard' && options.onKeyboardMessage) {
-					options.onKeyboardMessage(message.note, message.velocity, message.playTime);
-				} else if (options.onInfoMessage) {
-					options.onInfoMessage(message as DepinusInfoMessage);
-				}
-			} else if (message.messageType === 'rpc_response' && options.onRpcResponseMessage) {
+			if (message.infoType === 'keyboard' && options.onKeyboardMessage) {
+				options.onKeyboardMessage(message.note, message.velocity, message.playTime);
+			} else if (message.infoType === 'rpcResponse' && options.onRpcResponseMessage) {
 				options.onRpcResponseMessage(message);
+			} else if (options.onInfoMessage) {
+				options.onInfoMessage(message as DepinusInfoMessage);
 			}
 		},
 		onError: () => {
