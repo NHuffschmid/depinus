@@ -8,7 +8,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 import { usePlaylistContext } from './playlist/PlaylistContext';
 
 interface DashboardProps { }
@@ -29,29 +29,23 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     const webSocket = useDepinusWebSocket({
         name: 'Dashboard',
-        onInfoMessage: (message: any) => {
-            if ('composition' in message) {
-                setComposition(message['composition']['name']);
-                setComposer(message['composition']['composerName']);
-            }
-            if ('isStoppable' in message) {
-                setIsStoppable(message['isStoppable']);
-            }
-            if ('isPlayable' in message) {
-                setIsPlayable(message['isPlayable']);
-            }
-            if ('isPauseable' in message) {
-                setIsPauseable(message['isPauseable']);
-            }
-            if ('isRecordable' in message) {
-                setIsRecordable(message['isRecordable']);
-            }
-            if ('isRecording' in message) {
-                setIsRecording(message['isRecording']);
-            }
-            if ('recordingSaved' in message && message.recordingSaved) {
-                // Navigate to Archive view to show the saved recording
-                navigate('/Archive', { state: { selectComposer: 'Depinus' } });
+        onInfoMessage: (message: DepinusInfoMessage) => {
+            if (message.infoType === 'playState') {
+                if (message.composition) {
+                    setComposition(message.composition.name);
+                    setComposer(message.composition.composerName);
+                }
+                if (message.isStoppable !== undefined) setIsStoppable(message.isStoppable);
+                if (message.isPlayable !== undefined) setIsPlayable(message.isPlayable);
+                if (message.isPauseable !== undefined) setIsPauseable(message.isPauseable);
+                if (message.isRecordable !== undefined) setIsRecordable(message.isRecordable);
+                if (message.isRecording !== undefined) setIsRecording(message.isRecording);
+                if (message.recordingSaved) {
+                    // Navigate to Archive view to show the saved recording
+                    navigate('/Archive', { state: { selectComposer: 'Depinus' } });
+                }
+            } else if (message.infoType === 'midiPorts') {
+                if (message.isRecordable !== undefined) setIsRecordable(message.isRecordable);
             }
         }
     });

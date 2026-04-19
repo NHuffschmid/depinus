@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 import { backendUrl } from '../config';
 
 const Overlay: React.FC = () => {
@@ -8,13 +8,15 @@ const Overlay: React.FC = () => {
 
     useDepinusWebSocket({
         name: 'Overlay',
-        onInfoMessage: (message: any) => {
-            if ('composition' in message) {
-                setComposerImageUrl(backendUrl +
-                    "/archive/composerImage?composerName=" + message['composition']['composerName']);
-            }
-            if ('isPauseable' in message) {
-                setIsPauseable(message['isPauseable']);
+        onInfoMessage: (message: DepinusInfoMessage) => {
+            if (message.infoType === 'playState') {
+                if (message.composition) {
+                    setComposerImageUrl(backendUrl +
+                        "/archive/composerImage?composerName=" + message.composition.composerName);
+                }
+                if (message.isPauseable !== undefined) {
+                    setIsPauseable(message.isPauseable);
+                }
             }
         }
     });
