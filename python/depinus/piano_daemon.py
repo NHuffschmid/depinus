@@ -235,7 +235,8 @@ class PianoDaemon:
                     'availableMidiOutPorts': self._midi_out_ports_available,
                     'selectedMidiOutPort': cmd.value,
                     'availableMidiInPorts': self._midi_in_ports_available,
-                    'selectedMidiInPort': self._midi_in_ports_selected
+                    'selectedMidiInPort': self._midi_in_ports_selected,
+                    'isRecordable': bool(self._midi_in_ports_available)
                 }
             )
         elif (cmd.command == 'selectedMidiInPort'):
@@ -249,7 +250,8 @@ class PianoDaemon:
                     'availableMidiOutPorts': self._midi_out_ports_available,
                     'selectedMidiOutPort': self._midi_out_ports_selected,
                     'availableMidiInPorts': self._midi_in_ports_available,
-                    'selectedMidiInPort': cmd.value
+                    'selectedMidiInPort': cmd.value,
+                    'isRecordable': bool(self._midi_in_ports_available)
                 }
             )
         elif (cmd.command == 'record'):
@@ -409,7 +411,8 @@ class PianoDaemon:
             'availableMidiOutPorts': self._midi_out_ports_available,
             'selectedMidiOutPort': self._midi_out_ports_selected,
             'availableMidiInPorts': self._midi_in_ports_available,
-            'selectedMidiInPort': self._midi_in_ports_selected
+            'selectedMidiInPort': self._midi_in_ports_selected,
+            'isRecordable': bool(self._midi_in_ports_available)
         }, websocket)
 
 
