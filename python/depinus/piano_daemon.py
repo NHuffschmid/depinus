@@ -92,6 +92,7 @@ class PianoDaemon:
             self._piano_recorder.register_for_recording_end(self._on_recording_end)
             self._piano_recorder.register_for_waiting_state(self._on_recording_waiting_state)
             self._piano_recorder.register_for_midi_messages(self._on_recording_midi_message)
+            self._piano_recorder.register_for_live_midi_messages(self._on_live_midi_message)
 
             logger.info('Entering main loop...')
             self._mainloop = asyncio.Future()
@@ -464,6 +465,11 @@ class PianoDaemon:
     async def _on_midi_message(self, mido_message):
         #logger.info('Piano player has transmitted a midi message: ' + str(mido_message))
         await self._websocket_server.send_keyboard_message(mido_message, self._piano_player.play_time)
+
+
+    async def _on_live_midi_message(self, mido_message):
+        '''Callback for live MIDI input messages - forwards to UI for keyboard visualization.'''
+        await self._websocket_server.send_keyboard_message(mido_message)
 
 
     async def _on_recording_waiting_state(self, is_waiting):
