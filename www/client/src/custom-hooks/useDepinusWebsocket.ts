@@ -144,10 +144,14 @@ export default function useDepinusWebSocket(options: DepinusWebsocketOptions) {
 		},
 		onMessage: (e: MessageEvent) => {
 			const message = JSON.parse(e.data);
-			if (message.infoType === 'keyboard' && options.onKeyboardMessage) {
-				options.onKeyboardMessage(message.note, message.velocity, message.playTime);
-			} else if (message.infoType === 'rpcResponse' && options.onRpcResponseMessage) {
-				options.onRpcResponseMessage(message);
+			if (message.infoType === 'keyboard') {
+				if (options.onKeyboardMessage) {
+					options.onKeyboardMessage(message.note, message.velocity, message.playTime);
+				}
+			} else if (message.infoType === 'rpcResponse') {
+				if (options.onRpcResponseMessage) {
+					options.onRpcResponseMessage(message);
+				}
 			} else if (options.onInfoMessage) {
 				options.onInfoMessage(message as DepinusInfoMessage);
 			}
