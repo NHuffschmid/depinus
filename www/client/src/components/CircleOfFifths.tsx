@@ -181,7 +181,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             <text
                                 x={tx(majMidR)} y={ty(majMidR)}
                                 textAnchor="middle" dominantBaseline="central"
-                                fontSize={majSel ? 15 : 13}
+                                fontSize={majSel ? 30 : 26}
                                 fontWeight={majSel ? 'bold' : 'normal'}
                                 fill={majSel ? '#fff' : '#eee'}
                                 opacity={majOpacity}
@@ -193,7 +193,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             <text
                                 x={tx(minMidR)} y={ty(minMidR)}
                                 textAnchor="middle" dominantBaseline="central"
-                                fontSize={minSel ? 12 : 10}
+                                fontSize={minSel ? 24 : 20}
                                 fontWeight={minSel ? 'bold' : 'normal'}
                                 fill={minSel ? '#fff' : '#ccc'}
                                 opacity={minOpacity}
@@ -206,7 +206,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 <text
                                     x={tx(accMidR)} y={ty(accMidR)}
                                     textAnchor="middle" dominantBaseline="central"
-                                    fontSize={9}
+                                    fontSize={18}
                                     fill="#bbb"
                                     opacity={accOpacity}
                                     style={{ userSelect: 'none' }}
