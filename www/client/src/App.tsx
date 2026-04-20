@@ -13,6 +13,7 @@ import Score from "./Pages/Score";
 import Navbar from "./components/Navbar";
 import Dashboard from "./components/Dashboard";
 import ProgressBar from "./components/ProgressBar";
+import CircleOfFifths from './components/CircleOfFifths';
 import Overlay from "./components/Overlay";
 import WaitingIndicator from './components/WaitingIndicator';
 import { useCookies } from 'react-cookie';
@@ -132,14 +133,17 @@ function App(): JSX.Element {
               <Navbar />
               <Dashboard />
               <ProgressBar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/Archive" element={<Archive />} />
-                <Route path="/Playlist" element={<Playlist />} />
-                <Route path="/Score" element={<Score />} />
-                <Route path="/Settings" element={<Settings />} />
-                <Route path="/About" element={<About />} />
-              </Routes>
+              <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+                <CircleOfFifths />
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/Archive" element={<Archive />} />
+                  <Route path="/Playlist" element={<Playlist />} />
+                  <Route path="/Score" element={<Score />} />
+                  <Route path="/Settings" element={<Settings />} />
+                  <Route path="/About" element={<About />} />
+                </Routes>
+              </div>
             </BrowserRouter>
             <Overlay />
             <img src='../../images/shutdown.png' alt='for cache only' height='0px' />
