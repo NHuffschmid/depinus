@@ -134,7 +134,7 @@ function App(): JSX.Element {
               <Dashboard />
               <ProgressBar />
               <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-                <CircleOfFifths />
+                <CircleOfFifths selectedMajorKeys={[3]} />
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/Archive" element={<Archive />} />

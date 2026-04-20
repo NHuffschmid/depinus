@@ -1,15 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface CircleOfFifthsProps {
-    /** Externally controlled selected major key indices (0 = C, clockwise). */
+    /** Selected major key indices (0 = C, clockwise). Display-only – no click interaction. */
     selectedMajorKeys?: number[];
-    /** Externally controlled selected minor key indices (0 = Am, clockwise). */
+    /** Selected minor key indices (0 = am, clockwise). Display-only – no click interaction. */
     selectedMinorKeys?: number[];
-    /** Called when a major key segment is clicked (receives index 0–11). */
-    onMajorKeyClick?: (index: number) => void;
-    /** Called when a minor key segment is clicked (receives index 0–11). */
-    onMinorKeyClick?: (index: number) => void;
 }
 
 // ── Circle of Fifths pitch data ──────────────────────────────────────────────
@@ -82,49 +78,30 @@ function segmentFill(index: number, selected: boolean, dim = false): string {
 /** Centre angle (degrees) for segment i: C at 12 o'clock (−90°), clockwise. */
 const segAngle = (i: number) => -90 + i * 30;
 
+// ── Opacity constants (adjust to taste) ─────────────────────────────────────
+/** Overall opacity when nothing is selected (watermark look). */
+const OPACITY_IDLE = 0.40;
+/** Opacity of a selected segment. */
+const OPACITY_SELECTED = 1.0;
+/** Opacity of a non-selected segment when a selection is active. */
+const OPACITY_DIMMED = 0.20;
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
-    selectedMajorKeys: extMajor,
-    selectedMinorKeys: extMinor,
-    onMajorKeyClick: extMajorClick,
-    onMinorKeyClick: extMinorClick,
+    selectedMajorKeys,
+    selectedMinorKeys,
 }) => {
-    const { t, i18n } = useTranslation();
+    const { i18n } = useTranslation();
     const baseLang = i18n.language.split('-')[0];
     const lang = SUPPORTED_LANGS.includes(baseLang) ? baseLang : 'en';
 
     const majorKeys = MAJOR_KEYS[lang];
     const minorKeys = MINOR_KEYS[lang];
 
-    // Internal selection state (used when no external state is provided).
-    const [intMajor, setIntMajor] = useState<number[]>([]);
-    const [intMinor, setIntMinor] = useState<number[]>([]);
-
-    const isControlled = extMajor !== undefined || extMinor !== undefined;
-    const selMajor = isControlled ? (extMajor ?? []) : intMajor;
-    const selMinor = isControlled ? (extMinor ?? []) : intMinor;
-
-    const [hovMajor, setHovMajor] = useState<number | null>(null);
-    const [hovMinor, setHovMinor] = useState<number | null>(null);
-
-    const handleMajorClick = (i: number) => {
-        if (extMajorClick) {
-            extMajorClick(i);
-        } else {
-            setIntMajor(prev => prev.includes(i) ? prev.filter(k => k !== i) : [...prev, i]);
-        }
-    };
-
-    const handleMinorClick = (i: number) => {
-        if (extMinorClick) {
-            extMinorClick(i);
-        } else {
-            setIntMinor(prev => prev.includes(i) ? prev.filter(k => k !== i) : [...prev, i]);
-        }
-    };
-
-    const ariaLabel = t('Circle of fifths');
+    const selMajor = selectedMajorKeys ?? [];
+    const selMinor = selectedMinorKeys ?? [];
+    const hasSelection = selMajor.length > 0 || selMinor.length > 0;
 
     return (
         <div style={{
@@ -138,12 +115,11 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
         }}>
             <svg
                 viewBox="0 0 400 400"
-                aria-label={ariaLabel}
                 style={{
                     width: '100%',
                     height: '100%',
-                    pointerEvents: 'auto',
-                    opacity: 0.88,
+                    pointerEvents: 'none',
+                    opacity: hasSelection ? 1 : OPACITY_IDLE,
                 }}
             >
                 {Array.from({ length: 12 }, (_, i) => {
@@ -151,8 +127,12 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                     const rad   = toRad(angle);
                     const majSel = selMajor.includes(i);
                     const minSel = selMinor.includes(i);
-                    const majHov = hovMajor === i;
-                    const minHov = hovMinor === i;
+
+                    // When a selection exists, dim non-selected segments strongly.
+                    const majOpacity = hasSelection ? (majSel ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
+                    const minOpacity = hasSelection ? (minSel ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
+                    // Accidentals ring: major and relative minor share the same key signature.
+                    const accOpacity = hasSelection ? ((majSel || minSel) ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
 
                     const majMidR = (R_MAJOR_INNER + R_MAJOR_OUTER) / 2;
                     const minMidR = (R_MINOR_INNER + R_MINOR_OUTER) / 2;
@@ -168,11 +148,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 fill={segmentFill(i, majSel)}
                                 stroke={majSel ? 'white' : '#111'}
                                 strokeWidth={majSel ? 2.5 : 0.8}
-                                opacity={majHov && !majSel ? 0.75 : 1}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleMajorClick(i)}
-                                onMouseEnter={() => setHovMajor(i)}
-                                onMouseLeave={() => setHovMajor(null)}
+                                opacity={majOpacity}
                             />
                             {/* ── Minor key segment ── */}
                             <path
@@ -180,11 +156,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 fill={segmentFill(i, minSel, true)}
                                 stroke={minSel ? 'white' : '#111'}
                                 strokeWidth={minSel ? 2.5 : 0.8}
-                                opacity={minHov && !minSel ? 0.75 : 1}
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleMinorClick(i)}
-                                onMouseEnter={() => setHovMinor(i)}
-                                onMouseLeave={() => setHovMinor(null)}
+                                opacity={minOpacity}
                             />
                             {/* ── Accidentals segment ── */}
                             {ACCIDENTALS[i] && (
@@ -193,7 +165,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                     fill={segmentFill(i, false, true)}
                                     stroke="#111"
                                     strokeWidth={0.8}
-                                    style={{ pointerEvents: 'none' }}
+                                    opacity={accOpacity}
                                 />
                             )}
                             {/* ── Major key label ── */}
@@ -203,7 +175,8 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 fontSize={majSel ? 15 : 13}
                                 fontWeight={majSel ? 'bold' : 'normal'}
                                 fill={majSel ? '#fff' : '#eee'}
-                                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                opacity={majOpacity}
+                                style={{ userSelect: 'none' }}
                             >
                                 {majorKeys[i]}
                             </text>
@@ -214,7 +187,8 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 fontSize={minSel ? 12 : 10}
                                 fontWeight={minSel ? 'bold' : 'normal'}
                                 fill={minSel ? '#fff' : '#ccc'}
-                                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                opacity={minOpacity}
+                                style={{ userSelect: 'none' }}
                             >
                                 {minorKeys[i]}
                             </text>
@@ -225,7 +199,8 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                     textAnchor="middle" dominantBaseline="central"
                                     fontSize={9}
                                     fill="#bbb"
-                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                    opacity={accOpacity}
+                                    style={{ userSelect: 'none' }}
                                 >
                                     {ACCIDENTALS[i]}
                                 </text>
@@ -234,18 +209,6 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                     );
                 })}
 
-                {/* ── Centre circle ── */}
-                <circle cx={CX} cy={CY} r={R_CENTER} fill="#1e1e1e" stroke="#555" strokeWidth={1.5} />
-                <text
-                    x={CX} y={CY - 7}
-                    textAnchor="middle" dominantBaseline="central"
-                    fontSize={7.5} fill="#888"
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                    {ariaLabel.split(' ').map((word, wi) => (
-                        <tspan key={wi} x={CX} dy={wi === 0 ? 0 : 10}>{word}</tspan>
-                    ))}
-                </text>
             </svg>
         </div>
     );
