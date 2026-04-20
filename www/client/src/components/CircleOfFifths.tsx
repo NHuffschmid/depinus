@@ -91,7 +91,7 @@ const segAngle = (i: number) => -90 + i * 30;
 /** Overall opacity when nothing is selected (watermark look). */
 const OPACITY_IDLE = 0.40;
 /** Opacity of a selected segment. */
-const OPACITY_SELECTED = 1.0;
+const OPACITY_SELECTED = 0.9;
 /** Opacity of a non-selected segment when a selection is active. */
 const OPACITY_DIMMED = 0.20;
 
