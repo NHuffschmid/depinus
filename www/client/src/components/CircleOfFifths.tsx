@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { skrjabinColors } from './react-piano-keyboard/src/Keyboard';
 
 export interface CircleOfFifthsProps {
     /** Selected major key indices (0 = C, clockwise). Display-only – no click interaction. */
@@ -54,7 +55,23 @@ const SEGMENT_SPAN_DEG = 28;
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 
-/** Build the SVG path for an annular segment (ring slice). */
+/**
+ * Maps a Circle-of-Fifths index (0=C, 1=G, 2=D, …) to a chromatic index (0=C, 1=C#, …).
+ * Required because skrjabinColors is indexed chromatically.
+ */
+const FIFTHS_TO_CHROMATIC = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+
+/** Returns the Skrjabin colour for a circle-of-fifths segment index. */
+const skrjabinFill = (index: number) => skrjabinColors[FIFTHS_TO_CHROMATIC[index]] ?? '#888888';
+
+/** Darkened (50% brightness) version of the Skrjabin colour for the minor/accidentals ring. */
+function skrjabinFillDim(index: number): string {
+    const hex = skrjabinFill(index).replace('#', '');
+    const r = Math.round(parseInt(hex.slice(0, 2), 16) * 0.45);
+    const g = Math.round(parseInt(hex.slice(2, 4), 16) * 0.45);
+    const b = Math.round(parseInt(hex.slice(4, 6), 16) * 0.45);
+    return `rgb(${r},${g},${b})`;
+}
 function arcPath(rInner: number, rOuter: number, centerDeg: number): string {
     const half = SEGMENT_SPAN_DEG / 2;
     const a1 = toRad(centerDeg - half);
@@ -65,14 +82,6 @@ function arcPath(rInner: number, rOuter: number, centerDeg: number): string {
     const xo2 = CX + rOuter * Math.cos(a2), yo2 = CY + rOuter * Math.sin(a2);
     return `M ${xi1} ${yi1} A ${rInner} ${rInner} 0 0 1 ${xi2} ${yi2} ` +
            `L ${xo2} ${yo2} A ${rOuter} ${rOuter} 0 0 0 ${xo1} ${yo1} Z`;
-}
-
-/** HSL fill colour for a segment, with different treatment for selected state. */
-function segmentFill(index: number, selected: boolean, dim = false): string {
-    const hue = (index * 30) % 360;
-    if (selected) return `hsl(${hue}, 100%, 64%)`;
-    if (dim)      return `hsl(${hue}, 40%, 26%)`;
-    return              `hsl(${hue}, 58%, 38%)`;
 }
 
 /** Centre angle (degrees) for segment i: C at 12 o'clock (−90°), clockwise. */
@@ -145,7 +154,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             {/* ── Major key segment ── */}
                             <path
                                 d={arcPath(R_MAJOR_INNER, R_MAJOR_OUTER, angle)}
-                                fill={segmentFill(i, majSel)}
+                                fill={skrjabinFill(i)}
                                 stroke={majSel ? 'white' : '#111'}
                                 strokeWidth={majSel ? 2.5 : 0.8}
                                 opacity={majOpacity}
@@ -153,7 +162,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             {/* ── Minor key segment ── */}
                             <path
                                 d={arcPath(R_MINOR_INNER, R_MINOR_OUTER, angle)}
-                                fill={segmentFill(i, minSel, true)}
+                                fill={skrjabinFillDim(i)}
                                 stroke={minSel ? 'white' : '#111'}
                                 strokeWidth={minSel ? 2.5 : 0.8}
                                 opacity={minOpacity}
@@ -162,7 +171,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             {ACCIDENTALS[i] && (
                                 <path
                                     d={arcPath(R_ACC_INNER, R_ACC_OUTER, angle)}
-                                    fill={segmentFill(i, false, true)}
+                                    fill={skrjabinFillDim(i)}
                                     stroke="#111"
                                     strokeWidth={0.8}
                                     opacity={accOpacity}
