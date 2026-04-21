@@ -19,6 +19,7 @@ import WaitingIndicator from './components/WaitingIndicator';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next";
 import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
+import { useKeyDetection } from './custom-hooks/useKeyDetection';
 import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
@@ -31,9 +32,11 @@ function App(): JSX.Element {
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [bgColor, setBgColor] = useState<string>("#444");
+  const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
+  const { selectedMajorKeys, selectedMinorKeys } = useKeyDetection(pressedNotes);
 
   const checkBackendConnection = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -66,18 +69,20 @@ function App(): JSX.Element {
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
         keyboardRef.current?.setKeyPressed(note, velocity);
+        if (velocity > 0) {
+          pressedNotesRef.current.add(note);
+        } else {
+          pressedNotesRef.current.delete(note);
+        }
         if (cookies.skrjabinMode === 'true') {
-          if (velocity > 0) {
-            pressedNotesRef.current.add(note);
-          } else {
-            pressedNotesRef.current.delete(note);
-          }
           setBgColor(computeAvgSkrjabinColor(pressedNotesRef.current));
         }
+        setPressedNotes(new Set(pressedNotesRef.current));
       } else {
         keyboardRef.current?.reset();
         pressedNotesRef.current.clear();
         setBgColor("#444");
+        setPressedNotes(new Set());
       }
     },
     onClose: (): void => {
@@ -134,7 +139,7 @@ function App(): JSX.Element {
               <Dashboard />
               <ProgressBar />
               <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <CircleOfFifths selectedMajorKeys={[3]} />
+                <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} />
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/Archive" element={<Archive />} />
