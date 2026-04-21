@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-// ── Constants ────────────────────────────────────────────────────────────────
+/** Duration in ms of the sliding note-accumulation window. */
+const WINDOW_MS = 2000;
 
-/** Unique pitch classes needed to use diatonic-scale detection (passage mode). */
+/** Minimum unique pitch classes to enter passage mode (diatonic overlap). */
 const MIN_DIATONIC_PCS = 5;
 
 /** Minimum diatonic overlap score required in passage mode. */
@@ -68,64 +69,85 @@ export interface KeyDetectionResult {
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
- * Hybrid key detection from a sliding 2-second window of MIDI note-on events.
+ * Accepts the instantaneous set of pressed MIDI notes and derives the current
+ * key(s) using a sliding 2-second accumulation window.
  *
- * Mode A — Chord (3–4 unique pitch classes):
- *   Tonic-triad matching. The root must be present and ALL pressed pitch classes
- *   must fit the tonic triad. This uniquely identifies C-E-G → C major.
+ * The hook owns all window logic — App only needs to pass its live pressedNotes.
  *
- * Mode B — Passage (5+ unique pitch classes):
- *   Diatonic scale overlap. Returns every key whose scale contains at least
- *   MIN_DIATONIC_SCORE of the pressed pitch classes, provided that score equals
- *   the maximum across all 24 keys. Works well during playback of real pieces.
+ * Mode A — Chord (3–4 unique pitch classes in the window):
+ *   Tonic-triad matching. Root must be present and ALL pitch classes must fit
+ *   the tonic triad. Uniquely identifies C-E-G → C major.
+ *
+ * Mode B — Passage (5+ unique pitch classes in the window):
+ *   Diatonic scale overlap. Returns key(s) with the highest overlap score,
+ *   provided it reaches MIN_DIATONIC_SCORE. Works during real-piece playback.
  */
 export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
-    return useMemo(() => {
-        if (pressedNotes.size === 0) {
-            return { selectedMajorKeys: [], selectedMinorKeys: [] };
-        }
+    const windowRef = useRef<Array<{ note: number; time: number }>>([]);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevNotesRef = useRef<Set<number>>(new Set());
+    const [windowNotes, setWindowNotes] = useState<Set<number>>(new Set());
 
-        // Reduce to unique pitch-classes.
-        const pcs = new Set<number>();
-        for (const note of pressedNotes) pcs.add(note % 12);
+    useEffect(() => {
+        const prev = prevNotesRef.current;
+        const now = Date.now();
+        let newNoteOn = false;
 
-        const selectedMajorKeys: number[] = [];
-        const selectedMinorKeys: number[] = [];
-
-        if (pcs.size >= MIN_DIATONIC_PCS) {
-            // ── Passage mode: diatonic overlap ───────────────────────────────
-            const majorScores = MAJOR_SCALE_SETS.map(scale => {
-                let n = 0;
-                for (const pc of pcs) if (scale.has(pc)) n++;
-                return n;
-            });
-            const minorScores = MINOR_SCALE_SETS.map(scale => {
-                let n = 0;
-                for (const pc of pcs) if (scale.has(pc)) n++;
-                return n;
-            });
-
-            const maxMajor = Math.max(...majorScores);
-            const maxMinor = Math.max(...minorScores);
-
-            if (maxMajor >= MIN_DIATONIC_SCORE) {
-                majorScores.forEach((s, i) => { if (s === maxMajor) selectedMajorKeys.push(i); });
-            }
-            if (maxMinor >= MIN_DIATONIC_SCORE) {
-                minorScores.forEach((s, i) => { if (s === maxMinor) selectedMinorKeys.push(i); });
-            }
-        } else if (pcs.size >= 3) {
-            // ── Chord mode: tonic-triad matching ─────────────────────────────
-            for (let i = 0; i < 12; i++) {
-                if (pcs.has(MAJOR_ROOTS[i]) && [...pcs].every(pc => MAJOR_TONIC_SETS[i].has(pc))) {
-                    selectedMajorKeys.push(i);
-                }
-                if (pcs.has(MINOR_ROOTS[i]) && [...pcs].every(pc => MINOR_TONIC_SETS[i].has(pc))) {
-                    selectedMinorKeys.push(i);
-                }
+        // Detect new note-on events (notes added since last render).
+        for (const note of pressedNotes) {
+            if (!prev.has(note)) {
+                windowRef.current.push({ note, time: now });
+                newNoteOn = true;
             }
         }
 
-        return { selectedMajorKeys, selectedMinorKeys };
+        if (newNoteOn) {
+            // Prune events outside the window.
+            windowRef.current = windowRef.current.filter(e => now - e.time < WINDOW_MS);
+            setWindowNotes(new Set(windowRef.current.map(e => e.note)));
+            // Restart expiry timer: clear 2 s after the last note-on.
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => {
+                windowRef.current = [];
+                setWindowNotes(new Set());
+            }, WINDOW_MS);
+        }
+
+        prevNotesRef.current = new Set(pressedNotes);
     }, [pressedNotes]);
+
+    return useMemo(() => computeKeyDetection(windowNotes), [windowNotes]);
+}
+
+// ── Core detection (pure, no React) ──────────────────────────────────────────
+
+function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
+    if (windowNotes.size === 0) {
+        return { selectedMajorKeys: [], selectedMinorKeys: [] };
+    }
+
+    // Reduce to unique pitch-classes.
+    const pcs = new Set<number>();
+    for (const note of windowNotes) pcs.add(note % 12);
+
+    const selectedMajorKeys: number[] = [];
+    const selectedMinorKeys: number[] = [];
+
+    if (pcs.size >= MIN_DIATONIC_PCS) {
+        // ── Passage mode: diatonic overlap ───────────────────────────────────
+        const majorScores = MAJOR_SCALE_SETS.map(scale => { let n = 0; for (const pc of pcs) if (scale.has(pc)) n++; return n; });
+        const minorScores = MINOR_SCALE_SETS.map(scale => { let n = 0; for (const pc of pcs) if (scale.has(pc)) n++; return n; });
+        const maxMajor = Math.max(...majorScores);
+        const maxMinor = Math.max(...minorScores);
+        if (maxMajor >= MIN_DIATONIC_SCORE) majorScores.forEach((s, i) => { if (s === maxMajor) selectedMajorKeys.push(i); });
+        if (maxMinor >= MIN_DIATONIC_SCORE) minorScores.forEach((s, i) => { if (s === maxMinor) selectedMinorKeys.push(i); });
+    } else if (pcs.size >= 3) {
+        // ── Chord mode: tonic-triad matching ─────────────────────────────────
+        for (let i = 0; i < 12; i++) {
+            if (pcs.has(MAJOR_ROOTS[i]) && [...pcs].every(pc => MAJOR_TONIC_SETS[i].has(pc))) selectedMajorKeys.push(i);
+            if (pcs.has(MINOR_ROOTS[i]) && [...pcs].every(pc => MINOR_TONIC_SETS[i].has(pc))) selectedMinorKeys.push(i);
+        }
+    }
+
+    return { selectedMajorKeys, selectedMinorKeys };
 }

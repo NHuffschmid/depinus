@@ -33,12 +33,10 @@ function App(): JSX.Element {
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [bgColor, setBgColor] = useState<string>("#444");
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
-  const recentNoteEventsRef = React.useRef<Array<{ note: number; time: number }>>([]);
-  const recentNotesTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [recentNotes, setRecentNotes] = useState<Set<number>>(new Set());
+  const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
-  const { selectedMajorKeys, selectedMinorKeys } = useKeyDetection(recentNotes);
+  const { selectedMajorKeys, selectedMinorKeys } = useKeyDetection(pressedNotes);
 
   const checkBackendConnection = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -73,31 +71,18 @@ function App(): JSX.Element {
         keyboardRef.current?.setKeyPressed(note, velocity);
         if (velocity > 0) {
           pressedNotesRef.current.add(note);
-          // Sliding 2s window: add event, prune old entries, update state.
-          const WINDOW_MS = 2000;
-          const now = Date.now();
-          recentNoteEventsRef.current.push({ note, time: now });
-          recentNoteEventsRef.current = recentNoteEventsRef.current.filter(e => now - e.time < WINDOW_MS);
-          setRecentNotes(new Set(recentNoteEventsRef.current.map(e => e.note)));
-          // Cleanup timer: clear display 2 s after the last note.
-          if (recentNotesTimerRef.current) clearTimeout(recentNotesTimerRef.current);
-          recentNotesTimerRef.current = setTimeout(() => {
-            recentNoteEventsRef.current = [];
-            setRecentNotes(new Set());
-          }, WINDOW_MS);
         } else {
           pressedNotesRef.current.delete(note);
         }
         if (cookies.skrjabinMode === 'true') {
           setBgColor(computeAvgSkrjabinColor(pressedNotesRef.current));
         }
+        setPressedNotes(new Set(pressedNotesRef.current));
       } else {
         keyboardRef.current?.reset();
         pressedNotesRef.current.clear();
         setBgColor("#444");
-        if (recentNotesTimerRef.current) clearTimeout(recentNotesTimerRef.current);
-        recentNoteEventsRef.current = [];
-        setRecentNotes(new Set());
+        setPressedNotes(new Set());
       }
     },
     onClose: (): void => {
