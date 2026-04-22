@@ -64,6 +64,19 @@ const FIFTHS_TO_CHROMATIC = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
 /** Returns the Skrjabin colour for a circle-of-fifths segment index. */
 const skrjabinFill = (index: number) => skrjabinColors[FIFTHS_TO_CHROMATIC[index]] ?? '#888888';
 
+/**
+ * Returns '#000' for light backgrounds and '#fff' for dark ones (WCAG luminance threshold).
+ * Input must be a 6-digit hex color string starting with '#'.
+ */
+function labelColor(hex: string): string {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const toLinear = (c: number) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    return L > 0.179 ? '#000' : '#fff';
+}
+
 /** Darkened (50% brightness) version of the Skrjabin colour for the minor/accidentals ring. */
 function skrjabinFillDim(index: number): string {
     const hex = skrjabinFill(index).replace('#', '');
@@ -89,7 +102,7 @@ const segAngle = (i: number) => -90 + i * 30;
 
 // ── Opacity constants (adjust to taste) ─────────────────────────────────────
 /** Overall opacity when nothing is selected (watermark look). */
-const OPACITY_IDLE = 0.40;
+const OPACITY_IDLE = 0.10;
 /** Opacity of a selected segment. */
 const OPACITY_SELECTED = 0.9;
 /** Opacity of a non-selected segment when a selection is active. */
@@ -183,7 +196,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 textAnchor="middle" dominantBaseline="central"
                                 fontSize={majSel ? 30 : 26}
                                 fontWeight={majSel ? 'bold' : 'normal'}
-                                fill={majSel ? '#fff' : '#eee'}
+                                fill={labelColor(skrjabinFill(i))}
                                 opacity={majOpacity}
                                 style={{ userSelect: 'none' }}
                             >
@@ -195,7 +208,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 textAnchor="middle" dominantBaseline="central"
                                 fontSize={minSel ? 24 : 20}
                                 fontWeight={minSel ? 'bold' : 'normal'}
-                                fill={minSel ? '#fff' : '#ccc'}
+                                fill='#fff'
                                 opacity={minOpacity}
                                 style={{ userSelect: 'none' }}
                             >
