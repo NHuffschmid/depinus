@@ -91,10 +91,14 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
     const longWindowRef = useRef<Array<{ note: number; time: number }>>([]);
     const longTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevNotesRef = useRef<Set<number>>(new Set());
+    // Always tracks the latest pressedNotes so timer callbacks can read it.
+    const pressedNotesRef = useRef<Set<number>>(new Set());
     const [windowNotes, setWindowNotes] = useState<Set<number>>(new Set());
     const [longPcFreq, setLongPcFreq] = useState<Map<number, number>>(new Map());
 
     useEffect(() => {
+        pressedNotesRef.current = pressedNotes;   // keep ref in sync unconditionally
+
         const prev = prevNotesRef.current;
         const now = Date.now();
         let newNoteOn = false;
@@ -110,29 +114,60 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
         }
 
         if (newNoteOn) {
-            // Prune events outside the window.
-            windowRef.current = windowRef.current.filter(e => now - e.time < WINDOW_MS);
+            // Prune expired events; re-stamp notes still held so they stay
+            // in the window for as long as the key is physically pressed.
+            windowRef.current = windowRef.current
+                .filter(e => now - e.time < WINDOW_MS || pressedNotes.has(e.note))
+                .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
             setWindowNotes(new Set(windowRef.current.map(e => e.note)));
-            // Restart expiry timer: clear 2 s after the last note-on.
-            if (timerRef.current) clearTimeout(timerRef.current);
-            timerRef.current = setTimeout(() => {
-                windowRef.current = [];
-                setWindowNotes(new Set());
-            }, WINDOW_MS);
 
-            // Long window: accumulate pitch-class frequencies for major/minor discrimination.
-            longWindowRef.current = longWindowRef.current.filter(e => now - e.time < LONG_WINDOW_MS);
-            const freqMap = new Map<number, number>();
-            for (const e of longWindowRef.current) {
-                const pc = e.note % 12;
-                freqMap.set(pc, (freqMap.get(pc) ?? 0) + 1);
-            }
-            setLongPcFreq(freqMap);
+            // Self-rescheduling expiry: on each tick, keep notes that are still
+            // pressed (re-stamping them), drop the rest. Reschedule as long as
+            // held notes remain so they never disappear while the key is down.
+            if (timerRef.current) clearTimeout(timerRef.current);
+            const scheduleWindowExpiry = () => {
+                timerRef.current = setTimeout(function tick() {
+                    const t = Date.now();
+                    windowRef.current = windowRef.current
+                        .filter(e => pressedNotesRef.current.has(e.note))
+                        .map(e => ({ note: e.note, time: t }));
+                    setWindowNotes(new Set(windowRef.current.map(e => e.note)));
+                    if (windowRef.current.length > 0) {
+                        timerRef.current = setTimeout(tick, WINDOW_MS);
+                    }
+                }, WINDOW_MS);
+            };
+            scheduleWindowExpiry();
+
+            // Long window: same self-rescheduling approach.
+            longWindowRef.current = longWindowRef.current
+                .filter(e => now - e.time < LONG_WINDOW_MS || pressedNotes.has(e.note))
+                .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
+
+            const rebuildLongFreq = () => {
+                const freqMap = new Map<number, number>();
+                for (const e of longWindowRef.current) {
+                    const pc = e.note % 12;
+                    freqMap.set(pc, (freqMap.get(pc) ?? 0) + 1);
+                }
+                setLongPcFreq(freqMap);
+            };
+            rebuildLongFreq();
+
             if (longTimerRef.current) clearTimeout(longTimerRef.current);
-            longTimerRef.current = setTimeout(() => {
-                longWindowRef.current = [];
-                setLongPcFreq(new Map());
-            }, LONG_WINDOW_MS);
+            const scheduleLongExpiry = () => {
+                longTimerRef.current = setTimeout(function tick() {
+                    const t = Date.now();
+                    longWindowRef.current = longWindowRef.current
+                        .filter(e => pressedNotesRef.current.has(e.note))
+                        .map(e => ({ note: e.note, time: t }));
+                    rebuildLongFreq();
+                    if (longWindowRef.current.length > 0) {
+                        longTimerRef.current = setTimeout(tick, LONG_WINDOW_MS);
+                    }
+                }, LONG_WINDOW_MS);
+            };
+            scheduleLongExpiry();
         }
 
         prevNotesRef.current = new Set(pressedNotes);
