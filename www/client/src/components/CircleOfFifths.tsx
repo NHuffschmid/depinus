@@ -13,25 +13,25 @@ export interface CircleOfFifthsProps {
 // Index 0 = C (12 o'clock), each step +30° clockwise (circle of fifths order).
 
 const MAJOR_KEYS: Record<string, string[]> = {
-    de: ['C', 'G', 'D', 'A', 'E', 'H', 'Fis', 'Cis', 'Gis', 'Dis', 'Ais', 'F'],
-    en: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'F'],
-    fr: ['do', 'sol', 'ré', 'la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'ré#', 'la#', 'fa'],
-    it: ['do', 'sol', 're', 'la', 'mi', 'si', 'fa#', 'do#', 'sol#', 're#', 'la#', 'fa'],
-    es: ['do', 'sol', 're', 'la', 'mi', 'si', 'fa#', 'do#', 'sol#', 're#', 'la#', 'fa'],
-    pt: ['dó', 'sol', 'ré', 'lá', 'mi', 'si', 'fá#', 'dó#', 'sol#', 'ré#', 'lá#', 'fá'],
+    de: ['C', 'G', 'D', 'A', 'E', 'H', 'Ges/Fis', 'Des', 'As', 'Es', 'B', 'F'],
+    en: ['C', 'G', 'D', 'A', 'E', 'B', 'G♭/F#', 'D♭', 'A♭', 'E♭', 'B♭', 'F'],
+    fr: ['do', 'sol', 'ré', 'la', 'mi', 'si', 'sol♭/fa#', 'ré♭', 'la♭', 'mi♭', 'si♭', 'fa'],
+    it: ['do', 'sol', 're', 'la', 'mi', 'si', 'sol♭/fa#', 're♭', 'la♭', 'mi♭', 'si♭', 'fa'],
+    es: ['do', 'sol', 're', 'la', 'mi', 'si', 'sol♭/fa#', 're♭', 'la♭', 'mi♭', 'si♭', 'fa'],
+    pt: ['dó', 'sol', 'ré', 'lá', 'mi', 'si', 'sol♭/fá#', 'ré♭', 'lá♭', 'mi♭', 'si♭', 'fá'],
 };
 
 const MINOR_KEYS: Record<string, string[]> = {
-    de: ['a', 'e', 'h', 'fis', 'cis', 'gis', 'dis', 'ais', 'f', 'c', 'g', 'd'],
-    en: ['a', 'e', 'b', 'f#', 'c#', 'g#', 'd#', 'a#', 'f', 'c', 'g', 'd'],
-    fr: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'ré#', 'la#', 'fa', 'do', 'sol', 'ré'],
-    it: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 're#', 'la#', 'fa', 'do', 'sol', 're'],
-    es: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 're#', 'la#', 'fa', 'do', 'sol', 're'],
-    pt: ['lá', 'mi', 'si', 'fá#', 'dó#', 'sol#', 'ré#', 'lá#', 'fá', 'dó', 'sol', 'ré'],
+    de: ['a', 'e', 'h', 'fis', 'cis', 'gis', 'es/dis', 'b', 'f', 'c', 'g', 'd'],
+    en: ['a', 'e', 'b', 'f#', 'c#', 'g#', 'e♭/d#', 'b♭', 'f', 'c', 'g', 'd'],
+    fr: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/ré#', 'si♭', 'fa', 'do', 'sol', 'ré'],
+    it: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/re#', 'si♭', 'fa', 'do', 'sol', 're'],
+    es: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/re#', 'si♭', 'fa', 'do', 'sol', 're'],
+    pt: ['lá', 'mi', 'si', 'fá#', 'dó#', 'sol#', 'mi♭/ré#', 'si♭', 'fá', 'dó', 'sol', 'ré'],
 };
 
 // Accidentals for each index (sharps: ♯, flats: ♭, empty for C).
-const ACCIDENTALS = ['', '1♯', '2♯', '3♯', '4♯', '5♯', '6♯', '7♯', '4♭', '3♭', '2♭', '1♭'];
+const ACCIDENTALS = ['', '1♯', '2♯', '3♯', '4♯', '5♯', '6♭/6♯', '5♭', '4♭', '3♭', '2♭', '1♭'];
 
 const SUPPORTED_LANGS = ['de', 'en', 'fr', 'it', 'es', 'pt'];
 
@@ -102,7 +102,7 @@ const segAngle = (i: number) => -90 + i * 30;
 
 // ── Opacity constants (adjust to taste) ─────────────────────────────────────
 /** Overall opacity when nothing is selected (watermark look). */
-const OPACITY_IDLE = 0.10;
+const OPACITY_IDLE = 0.20;
 /** Opacity of a selected segment. */
 const OPACITY_SELECTED = 0.9;
 /** Opacity of a non-selected segment when a selection is active. */
@@ -194,7 +194,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             <text
                                 x={tx(majMidR)} y={ty(majMidR)}
                                 textAnchor="middle" dominantBaseline="central"
-                                fontSize={majSel ? 30 : 26}
+                                fontSize={majSel ? 24 : 21}
                                 fontWeight={majSel ? 'bold' : 'normal'}
                                 fill={labelColor(skrjabinFill(i))}
                                 opacity={majOpacity}
@@ -206,7 +206,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             <text
                                 x={tx(minMidR)} y={ty(minMidR)}
                                 textAnchor="middle" dominantBaseline="central"
-                                fontSize={minSel ? 24 : 20}
+                                fontSize={minSel ? 19 : 16}
                                 fontWeight={minSel ? 'bold' : 'normal'}
                                 fill='#fff'
                                 opacity={minOpacity}
@@ -219,7 +219,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                 <text
                                     x={tx(accMidR)} y={ty(accMidR)}
                                     textAnchor="middle" dominantBaseline="central"
-                                    fontSize={18}
+                                    fontSize={14}
                                     fill="#bbb"
                                     opacity={accOpacity}
                                     style={{ userSelect: 'none' }}
