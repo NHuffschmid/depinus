@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 /** Duration in ms of the sliding note-accumulation window. */
 const WINDOW_MS = 2000;
 
+/** Duration of the longer window used only for major/minor discrimination. */
+const LONG_WINDOW_MS = 6000;
+
 /** Minimum unique pitch classes to enter passage mode (diatonic overlap). */
 const MIN_DIATONIC_PCS = 5;
 
@@ -85,8 +88,11 @@ export interface KeyDetectionResult {
 export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
     const windowRef = useRef<Array<{ note: number; time: number }>>([]);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const longWindowRef = useRef<Array<{ note: number; time: number }>>([]);
+    const longTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevNotesRef = useRef<Set<number>>(new Set());
     const [windowNotes, setWindowNotes] = useState<Set<number>>(new Set());
+    const [longPcFreq, setLongPcFreq] = useState<Map<number, number>>(new Map());
 
     useEffect(() => {
         const prev = prevNotesRef.current;
@@ -96,7 +102,9 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
         // Detect new note-on events (notes added since last render).
         for (const note of pressedNotes) {
             if (!prev.has(note)) {
-                windowRef.current.push({ note, time: now });
+                const ev = { note, time: now };
+                windowRef.current.push(ev);
+                longWindowRef.current.push(ev);
                 newNoteOn = true;
             }
         }
@@ -111,12 +119,29 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
                 windowRef.current = [];
                 setWindowNotes(new Set());
             }, WINDOW_MS);
+
+            // Long window: accumulate pitch-class frequencies for major/minor discrimination.
+            longWindowRef.current = longWindowRef.current.filter(e => now - e.time < LONG_WINDOW_MS);
+            const freqMap = new Map<number, number>();
+            for (const e of longWindowRef.current) {
+                const pc = e.note % 12;
+                freqMap.set(pc, (freqMap.get(pc) ?? 0) + 1);
+            }
+            setLongPcFreq(freqMap);
+            if (longTimerRef.current) clearTimeout(longTimerRef.current);
+            longTimerRef.current = setTimeout(() => {
+                longWindowRef.current = [];
+                setLongPcFreq(new Map());
+            }, LONG_WINDOW_MS);
         }
 
         prevNotesRef.current = new Set(pressedNotes);
     }, [pressedNotes]);
 
-    return useMemo(() => computeKeyDetection(windowNotes), [windowNotes]);
+    return useMemo(
+        () => discriminateMajorMinor(computeKeyDetection(windowNotes), longPcFreq),
+        [windowNotes, longPcFreq],
+    );
 }
 
 // ── Core detection (pure, no React) ──────────────────────────────────────────
@@ -150,4 +175,81 @@ function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
     }
 
     return { selectedMajorKeys, selectedMinorKeys };
+}
+
+// ── Major/minor discriminator ─────────────────────────────────────────
+
+/**
+ * Post-processing step applied on top of the existing detection result.
+ * When the result contains both a major key and its relative minor (same key
+ * signature), the one whose root pitch class appears less frequently in the
+ * 6-second long window is removed. If the frequencies are equal, or no long-
+ * window data exists yet, both candidates are kept unchanged (original behaviour).
+ */
+function discriminateMajorMinor(
+    result: KeyDetectionResult,
+    longPcFreq: Map<number, number>,
+): KeyDetectionResult {
+    if (result.selectedMajorKeys.length === 0 || result.selectedMinorKeys.length === 0) {
+        return result;
+    }
+    if (longPcFreq.size === 0) {
+        return result;
+    }
+
+    const majorToRemove = new Set<number>();
+    const minorToRemove = new Set<number>();
+
+    // ── Relative pairs: major vs its relative minor (same key signature) ──────
+    for (const majIdx of result.selectedMajorKeys) {
+        const majRoot = MAJOR_ROOTS[majIdx];
+        const relMinorRoot = (majRoot + 9) % 12;
+        const relMinorIdx = result.selectedMinorKeys.find(mIdx => MINOR_ROOTS[mIdx] === relMinorRoot);
+        if (relMinorIdx === undefined) continue;
+
+        const majFreq = longPcFreq.get(majRoot) ?? 0;
+        const minFreq = longPcFreq.get(relMinorRoot) ?? 0;
+        if (majFreq > minFreq) {
+            minorToRemove.add(relMinorIdx);
+        } else if (minFreq > majFreq) {
+            majorToRemove.add(majIdx);
+        }
+        // Equal frequencies → keep both (original behaviour)
+    }
+
+    // ── Parallel pairs: major vs minor with the same root (e.g. A-major / a-minor) ──
+    // Disambiguate by comparing frequency of the major third vs minor third above the root.
+    for (const majIdx of result.selectedMajorKeys) {
+        if (majorToRemove.has(majIdx)) continue;
+        const majRoot = MAJOR_ROOTS[majIdx];
+        const parMinorIdx = result.selectedMinorKeys.find(
+            mIdx => MINOR_ROOTS[mIdx] === majRoot && !minorToRemove.has(mIdx),
+        );
+        if (parMinorIdx === undefined) continue;
+
+        const majorThirdFreq = longPcFreq.get((majRoot + 4) % 12) ?? 0;
+        const minorThirdFreq = longPcFreq.get((majRoot + 3) % 12) ?? 0;
+        if (majorThirdFreq > minorThirdFreq) {
+            minorToRemove.add(parMinorIdx);
+        } else if (minorThirdFreq > majorThirdFreq) {
+            majorToRemove.add(majIdx);
+        }
+    }
+
+    if (majorToRemove.size === 0 && minorToRemove.size === 0) {
+        return result;
+    }
+
+    const filteredMajor = result.selectedMajorKeys.filter(i => !majorToRemove.has(i));
+    const filteredMinor = result.selectedMinorKeys.filter(i => !minorToRemove.has(i));
+
+    // Once a modal decision has been made, suppress the other mode entirely
+    // to avoid mixing unrelated major and minor candidates.
+    if (filteredMajor.length > 0 && filteredMinor.length === 0) {
+        return { selectedMajorKeys: filteredMajor, selectedMinorKeys: [] };
+    }
+    if (filteredMinor.length > 0 && filteredMajor.length === 0) {
+        return { selectedMajorKeys: [], selectedMinorKeys: filteredMinor };
+    }
+    return { selectedMajorKeys: filteredMajor, selectedMinorKeys: filteredMinor };
 }
