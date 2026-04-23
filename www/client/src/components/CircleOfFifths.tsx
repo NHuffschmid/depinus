@@ -8,6 +8,8 @@ export interface CircleOfFifthsProps {
     selectedMajorKeys?: number[];
     /** Selected minor key indices (0 = am, clockwise). Display-only – no click interaction. */
     selectedMinorKeys?: number[];
+    /** Major key indices highlighted as dominant seventh chords (shown with superscript "7"). */
+    dominantSeventhMajorKeys?: number[];
 }
 
 // ── Circle of Fifths pitch data ──────────────────────────────────────────────
@@ -114,6 +116,7 @@ const OPACITY_DIMMED = 0.20;
 const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
     selectedMajorKeys,
     selectedMinorKeys,
+    dominantSeventhMajorKeys,
 }) => {
     const [cookies] = useCookies(['color']);
     const { i18n } = useTranslation();
@@ -125,7 +128,8 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
 
     const selMajor = selectedMajorKeys ?? [];
     const selMinor = selectedMinorKeys ?? [];
-    const hasSelection = selMajor.length > 0 || selMinor.length > 0;
+    const selDom7  = dominantSeventhMajorKeys ?? [];
+    const hasSelection = selMajor.length > 0 || selMinor.length > 0 || selDom7.length > 0;
 
     return (
         <div style={{
@@ -149,14 +153,15 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 {Array.from({ length: 12 }, (_, i) => {
                     const angle = segAngle(i);
                     const rad   = toRad(angle);
-                    const majSel = selMajor.includes(i);
-                    const minSel = selMinor.includes(i);
+                    const majSel  = selMajor.includes(i);
+                    const minSel  = selMinor.includes(i);
+                    const dom7Sel = selDom7.includes(i);
 
                     // When a selection exists, dim non-selected segments strongly.
-                    const majOpacity = hasSelection ? (majSel ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
+                    const majOpacity = hasSelection ? ((majSel || dom7Sel) ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
                     const minOpacity = hasSelection ? (minSel ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
                     // Accidentals ring: major and relative minor share the same key signature.
-                    const accOpacity = hasSelection ? ((majSel || minSel) ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
+                    const accOpacity = hasSelection ? ((majSel || minSel || dom7Sel) ? OPACITY_SELECTED : OPACITY_DIMMED) : 1;
 
                     const majMidR = (R_MAJOR_INNER + R_MAJOR_OUTER) / 2;
                     const minMidR = (R_MINOR_INNER + R_MINOR_OUTER) / 2;
@@ -196,13 +201,19 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             <text
                                 x={tx(majMidR)} y={ty(majMidR)}
                                 textAnchor="middle" dominantBaseline="central"
-                                fontSize={majSel ? 24 : 21}
-                                fontWeight={majSel ? 'bold' : 'normal'}
+                                fontSize={(majSel || dom7Sel) ? 24 : 21}
+                                fontWeight={(majSel || dom7Sel) ? 'bold' : 'normal'}
                                 fill={labelColor(skrjabinFill(i))}
                                 opacity={majOpacity}
                                 style={{ userSelect: 'none' }}
                             >
                                 {majorKeys[i]}
+                                {dom7Sel && (
+                                    <tspan
+                                        fontSize={(majSel || dom7Sel) ? 14 : 12}
+                                        dy={-(((majSel || dom7Sel) ? 24 : 21) * 0.45)}
+                                    >7</tspan>
+                                )}
                             </text>
                             {/* ── Minor key label ── */}
                             <text

@@ -36,7 +36,7 @@ function App(): JSX.Element {
   const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
-  const { selectedMajorKeys, selectedMinorKeys } = useKeyDetection(pressedNotes);
+  const { selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys } = useKeyDetection(pressedNotes);
 
   const checkBackendConnection = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -139,7 +139,7 @@ function App(): JSX.Element {
               <Dashboard />
               <ProgressBar />
               <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} />
+                <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} dominantSeventhMajorKeys={dominantSeventhMajorKeys} />
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                   <Routes>
                     <Route path="/" element={<Home />} />

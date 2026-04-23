@@ -29,6 +29,13 @@ const MINOR_ROOTS = [9, 4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2];
 const MAJOR_TONIC_SETS = MAJOR_ROOTS.map(r => new Set([r, (r + 4) % 12, (r + 7) % 12]));
 const MINOR_TONIC_SETS = MINOR_ROOTS.map(r => new Set([r, (r + 3) % 12, (r + 7) % 12]));
 
+// ── Dominant seventh chords (chord mode: exactly 4 unique pitch classes) ──────
+//   {root, root+4, root+7, root+10}  (major triad + minor 7th)
+//   e.g. G7 = G-B-D-F → index 1 (G major position on circle)
+const DOMINANT_7TH_SETS = MAJOR_ROOTS.map(r =>
+    new Set([r, (r + 4) % 12, (r + 7) % 12, (r + 10) % 12]),
+);
+
 // ── Diatonic scales (passage mode: 5+ unique pitch classes) ──────────────────
 const MAJOR_SCALE_SETS = [
     [0, 2, 4, 5, 7, 9, 11],  // C  major
@@ -67,6 +74,11 @@ export interface KeyDetectionResult {
     selectedMajorKeys: number[];
     /** Circle-of-fifths indices of detected minor keys (empty = none). */
     selectedMinorKeys: number[];
+    /**
+     * Circle-of-fifths indices of dominant seventh chords (empty = none).
+     * E.g. playing G7 yields index 1 (G), displayed with a superscript "7".
+     */
+    dominantSeventhMajorKeys: number[];
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
@@ -190,7 +202,11 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
     }, [pressedNotes]);
 
     return useMemo(
-        () => discriminateMajorMinor(computeKeyDetection(windowNotes), longPcFreq),
+        () => {
+            const raw = computeKeyDetection(windowNotes);
+            const discriminated = discriminateMajorMinor(raw, longPcFreq);
+            return { ...discriminated, dominantSeventhMajorKeys: raw.dominantSeventhMajorKeys };
+        },
         [windowNotes, longPcFreq],
     );
 }
@@ -199,7 +215,7 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
 
 function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
     if (windowNotes.size === 0) {
-        return { selectedMajorKeys: [], selectedMinorKeys: [] };
+        return { selectedMajorKeys: [], selectedMinorKeys: [], dominantSeventhMajorKeys: [] };
     }
 
     // Reduce to unique pitch-classes.
@@ -208,6 +224,7 @@ function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
 
     const selectedMajorKeys: number[] = [];
     const selectedMinorKeys: number[] = [];
+    const dominantSeventhMajorKeys: number[] = [];
 
     if (pcs.size >= MIN_DIATONIC_PCS) {
         // ── Passage mode: diatonic overlap ───────────────────────────────────
@@ -223,9 +240,19 @@ function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
             if (pcs.has(MAJOR_ROOTS[i]) && [...pcs].every(pc => MAJOR_TONIC_SETS[i].has(pc))) selectedMajorKeys.push(i);
             if (pcs.has(MINOR_ROOTS[i]) && [...pcs].every(pc => MINOR_TONIC_SETS[i].has(pc))) selectedMinorKeys.push(i);
         }
+        // ── Dominant seventh chord detection (exactly 4 pitch classes) ───────
+        //   A dominant seventh = major triad + minor 7th: {r, r+4, r+7, r+10}
+        //   Only matched when no tonic triad was found, to avoid double highlighting.
+        if (pcs.size === 4 && selectedMajorKeys.length === 0 && selectedMinorKeys.length === 0) {
+            for (let i = 0; i < 12; i++) {
+                if ([...pcs].every(pc => DOMINANT_7TH_SETS[i].has(pc))) {
+                    dominantSeventhMajorKeys.push(i);
+                }
+            }
+        }
     }
 
-    return { selectedMajorKeys, selectedMinorKeys };
+    return { selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys };
 }
 
 // ── Major/minor discriminator ─────────────────────────────────────────
@@ -240,7 +267,7 @@ function computeKeyDetection(windowNotes: Set<number>): KeyDetectionResult {
 function discriminateMajorMinor(
     result: KeyDetectionResult,
     longPcFreq: Map<number, number>,
-): KeyDetectionResult {
+): Omit<KeyDetectionResult, 'dominantSeventhMajorKeys'> {
     if (result.selectedMajorKeys.length === 0 || result.selectedMinorKeys.length === 0) {
         return result;
     }
@@ -304,3 +331,4 @@ function discriminateMajorMinor(
     }
     return { selectedMajorKeys: filteredMajor, selectedMinorKeys: filteredMinor };
 }
+
