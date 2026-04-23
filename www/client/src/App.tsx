@@ -140,14 +140,16 @@ function App(): JSX.Element {
               <ProgressBar />
               <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} />
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/Archive" element={<Archive />} />
-                  <Route path="/Playlist" element={<Playlist />} />
-                  <Route path="/Score" element={<Score />} />
-                  <Route path="/Settings" element={<Settings />} />
-                  <Route path="/About" element={<About />} />
-                </Routes>
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/Archive" element={<Archive />} />
+                    <Route path="/Playlist" element={<Playlist />} />
+                    <Route path="/Score" element={<Score />} />
+                    <Route path="/Settings" element={<Settings />} />
+                    <Route path="/About" element={<About />} />
+                  </Routes>
+                </div>
               </div>
             </BrowserRouter>
             <Overlay />
