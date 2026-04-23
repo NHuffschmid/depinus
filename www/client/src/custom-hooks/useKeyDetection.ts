@@ -114,11 +114,32 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
         }
 
         if (newNoteOn) {
-            // Prune expired events; re-stamp notes still held so they stay
-            // in the window for as long as the key is physically pressed.
-            windowRef.current = windowRef.current
-                .filter(e => now - e.time < WINDOW_MS || pressedNotes.has(e.note))
-                .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
+            // If the currently pressed notes alone already form a detectable chord,
+            // reset both windows to eliminate history bleed-over from the previous
+            // chord. This ensures that switching chords quickly (within WINDOW_MS)
+            // does not pollute the new chord's detection with old pitch classes.
+            const pressedResult = computeKeyDetection(new Set(pressedNotes));
+            const shouldReset =
+                pressedResult.selectedMajorKeys.length > 0 ||
+                pressedResult.selectedMinorKeys.length > 0;
+
+            if (shouldReset) {
+                // Overwrite both windows with only the currently pressed notes.
+                windowRef.current = [...pressedNotes].map(note => ({ note, time: now }));
+                longWindowRef.current = [...pressedNotes].map(note => ({ note, time: now }));
+            } else {
+                // Accumulate: prune expired events; re-stamp notes still held so they
+                // stay in the window for as long as the key is physically pressed.
+                windowRef.current = windowRef.current
+                    .filter(e => now - e.time < WINDOW_MS || pressedNotes.has(e.note))
+                    .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
+
+                // Long window: same accumulation approach.
+                longWindowRef.current = longWindowRef.current
+                    .filter(e => now - e.time < LONG_WINDOW_MS || pressedNotes.has(e.note))
+                    .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
+            }
+
             setWindowNotes(new Set(windowRef.current.map(e => e.note)));
 
             // Self-rescheduling expiry: on each tick, keep notes that are still
@@ -138,11 +159,6 @@ export function useKeyDetection(pressedNotes: Set<number>): KeyDetectionResult {
                 }, WINDOW_MS);
             };
             scheduleWindowExpiry();
-
-            // Long window: same self-rescheduling approach.
-            longWindowRef.current = longWindowRef.current
-                .filter(e => now - e.time < LONG_WINDOW_MS || pressedNotes.has(e.note))
-                .map(e => pressedNotes.has(e.note) ? { note: e.note, time: now } : e);
 
             const rebuildLongFreq = () => {
                 const freqMap = new Map<number, number>();
