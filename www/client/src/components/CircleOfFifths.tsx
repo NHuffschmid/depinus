@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
 import { skrjabinColors } from './react-piano-keyboard/src/Keyboard';
 
@@ -114,6 +115,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
     selectedMajorKeys,
     selectedMinorKeys,
 }) => {
+    const [cookies] = useCookies(['color']);
     const { i18n } = useTranslation();
     const baseLang = i18n.language.split('-')[0];
     const lang = SUPPORTED_LANGS.includes(baseLang) ? baseLang : 'en';
@@ -184,7 +186,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                             {ACCIDENTALS[i] && (
                                 <path
                                     d={arcPath(R_ACC_INNER, R_ACC_OUTER, angle)}
-                                    fill={skrjabinFillDim(i)}
+                                    fill={cookies.color}
                                     stroke="#111"
                                     strokeWidth={0.8}
                                     opacity={accOpacity}
@@ -220,7 +222,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                     x={tx(accMidR)} y={ty(accMidR)}
                                     textAnchor="middle" dominantBaseline="central"
                                     fontSize={14}
-                                    fill="#bbb"
+                                    fill="#fff"
                                     opacity={accOpacity}
                                     style={{ userSelect: 'none' }}
                                 >
