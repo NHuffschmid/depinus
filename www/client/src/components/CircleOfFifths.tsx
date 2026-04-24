@@ -171,74 +171,69 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
 
                     return (
                         <g key={i}>
-                            {/* ── Major key segment ── */}
-                            <path
-                                d={arcPath(R_MAJOR_INNER, R_MAJOR_OUTER, angle)}
-                                fill={skrjabinFill(i)}
-                                stroke={majSel ? 'white' : '#111'}
-                                strokeWidth={majSel ? 2.5 : 0.8}
-                                opacity={majOpacity}
-                            />
-                            {/* ── Minor key segment ── */}
-                            <path
-                                d={arcPath(R_MINOR_INNER, R_MINOR_OUTER, angle)}
-                                fill={skrjabinFillDim(i)}
-                                stroke={minSel ? 'white' : '#111'}
-                                strokeWidth={minSel ? 2.5 : 0.8}
-                                opacity={minOpacity}
-                            />
-                            {/* ── Accidentals segment ── */}
-                            {ACCIDENTALS[i] && (
+                            {/* ── Major ring: path + label grouped so opacity composites text against segment fill ── */}
+                            <g opacity={majOpacity}>
                                 <path
-                                    d={arcPath(R_ACC_INNER, R_ACC_OUTER, angle)}
-                                    fill={cookies.color}
-                                    stroke="#111"
-                                    strokeWidth={0.8}
-                                    opacity={accOpacity}
+                                    d={arcPath(R_MAJOR_INNER, R_MAJOR_OUTER, angle)}
+                                    fill={skrjabinFill(i)}
+                                    stroke={majSel ? 'white' : '#111'}
+                                    strokeWidth={majSel ? 2.5 : 0.8}
                                 />
-                            )}
-                            {/* ── Major key label ── */}
-                            <text
-                                x={tx(majMidR)} y={ty(majMidR)}
-                                textAnchor="middle" dominantBaseline="central"
-                                fontSize={(majSel || dom7Sel) ? 24 : 21}
-                                fontWeight={(majSel || dom7Sel) ? 'bold' : 'normal'}
-                                fill={labelColor(skrjabinFill(i))}
-                                opacity={majOpacity}
-                                style={{ userSelect: 'none' }}
-                            >
-                                {majorKeys[i]}
-                                {dom7Sel && (
-                                    <tspan
-                                        fontSize={(majSel || dom7Sel) ? 14 : 12}
-                                        dy={-(((majSel || dom7Sel) ? 24 : 21) * 0.45)}
-                                    >7</tspan>
-                                )}
-                            </text>
-                            {/* ── Minor key label ── */}
-                            <text
-                                x={tx(minMidR)} y={ty(minMidR)}
-                                textAnchor="middle" dominantBaseline="central"
-                                fontSize={minSel ? 19 : 16}
-                                fontWeight={minSel ? 'bold' : 'normal'}
-                                fill='#fff'
-                                opacity={minOpacity}
-                                style={{ userSelect: 'none' }}
-                            >
-                                {minorKeys[i]}
-                            </text>
-                            {/* ── Accidentals label ── */}
-                            {ACCIDENTALS[i] && (
                                 <text
-                                    x={tx(accMidR)} y={ty(accMidR)}
+                                    x={tx(majMidR)} y={ty(majMidR)}
                                     textAnchor="middle" dominantBaseline="central"
-                                    fontSize={14}
-                                    fill="#fff"
-                                    opacity={accOpacity}
+                                    fontSize={(majSel || dom7Sel) ? 24 : 21}
+                                    fontWeight={(majSel || dom7Sel) ? 'bold' : 'normal'}
+                                    fill={labelColor(skrjabinFill(i))}
                                     style={{ userSelect: 'none' }}
                                 >
-                                    {ACCIDENTALS[i]}
+                                    {majorKeys[i]}
+                                    {dom7Sel && (
+                                        <tspan
+                                            fontSize={(majSel || dom7Sel) ? 14 : 12}
+                                            dy={-(((majSel || dom7Sel) ? 24 : 21) * 0.45)}
+                                        >7</tspan>
+                                    )}
                                 </text>
+                            </g>
+                            {/* ── Minor ring: path + label grouped ── */}
+                            <g opacity={minOpacity}>
+                                <path
+                                    d={arcPath(R_MINOR_INNER, R_MINOR_OUTER, angle)}
+                                    fill={skrjabinFillDim(i)}
+                                    stroke={minSel ? 'white' : '#111'}
+                                    strokeWidth={minSel ? 2.5 : 0.8}
+                                />
+                                <text
+                                    x={tx(minMidR)} y={ty(minMidR)}
+                                    textAnchor="middle" dominantBaseline="central"
+                                    fontSize={minSel ? 19 : 16}
+                                    fontWeight={minSel ? 'bold' : 'normal'}
+                                    fill='#fff'
+                                    style={{ userSelect: 'none' }}
+                                >
+                                    {minorKeys[i]}
+                                </text>
+                            </g>
+                            {/* ── Accidentals ring: path + label grouped ── */}
+                            {ACCIDENTALS[i] && (
+                                <g opacity={accOpacity}>
+                                    <path
+                                        d={arcPath(R_ACC_INNER, R_ACC_OUTER, angle)}
+                                        fill={cookies.color}
+                                        stroke="#111"
+                                        strokeWidth={0.8}
+                                    />
+                                    <text
+                                        x={tx(accMidR)} y={ty(accMidR)}
+                                        textAnchor="middle" dominantBaseline="central"
+                                        fontSize={14}
+                                        fill="#fff"
+                                        style={{ userSelect: 'none' }}
+                                    >
+                                        {ACCIDENTALS[i]}
+                                    </text>
+                                </g>
                             )}
                         </g>
                     );
