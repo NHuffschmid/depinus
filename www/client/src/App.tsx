@@ -18,16 +18,19 @@ import Overlay from "./components/Overlay";
 import WaitingIndicator from './components/WaitingIndicator';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next";
-import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from './custom-hooks/useDepinusWebsocket';
+import { type CircleOfFifthsMode } from './components/CircleOfFifthsSelector';
 import { useKeyDetection } from './custom-hooks/useKeyDetection';
 import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode', 'circleOfFifths']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
+
+  const [isStoppable, setIsStoppable] = useState<boolean>(false);
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
@@ -61,10 +64,20 @@ function App(): JSX.Element {
     });
   };
 
+  const circleOfFifthsMode: CircleOfFifthsMode = (cookies.circleOfFifths as CircleOfFifthsMode) || 'idle';
+  const showCircleOfFifths =
+    circleOfFifthsMode === 'always' ||
+    (circleOfFifthsMode === 'idle' && !isStoppable);
+
   const webSocket = useDepinusWebSocket({
     name: 'App',
     onOpen: (): void => {
       waitForBackend();
+    },
+    onInfoMessage: (message: DepinusInfoMessage): void => {
+      if (message.infoType === 'playState' && message.isStoppable !== undefined) {
+        setIsStoppable(message.isStoppable);
+      }
     },
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
@@ -139,7 +152,7 @@ function App(): JSX.Element {
               <Dashboard />
               <ProgressBar />
               <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} dominantSeventhMajorKeys={dominantSeventhMajorKeys} />
+                {showCircleOfFifths && <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} dominantSeventhMajorKeys={dominantSeventhMajorKeys} />}
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                   <Routes>
                     <Route path="/" element={<Home />} />

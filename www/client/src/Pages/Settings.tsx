@@ -1,6 +1,7 @@
 import React from 'react';
 import LanguageSelector from "../components/LanguageSelector";
 import ColorSelector from "../components/ColorSelector";
+import CircleOfFifthsSelector from "../components/CircleOfFifthsSelector";
 import MidiOutPortSelector from "../components/MidiOutPortSelector";
 import MidiInPortSelector from '../components/MidiInPortSelector';
 import DynamicsController from "../components/DynamicsController";
@@ -16,6 +17,7 @@ const Settings: React.FC = () => {
 		}}>
 			<ColorSelector />
 			<LanguageSelector />
+			<CircleOfFifthsSelector />
 			<MidiOutPortSelector />
 			<MidiInPortSelector />
 			<DynamicsController />
