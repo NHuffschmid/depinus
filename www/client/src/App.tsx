@@ -18,19 +18,16 @@ import Overlay from "./components/Overlay";
 import WaitingIndicator from './components/WaitingIndicator';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next";
-import useDepinusWebSocket, { DepinusInfoMessage } from './custom-hooks/useDepinusWebsocket';
-import { type CircleOfFifthsMode } from './components/CircleOfFifthsSelector';
-import { useKeyDetection } from './custom-hooks/useKeyDetection';
+import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
+import { useCircleOfFifths } from './custom-hooks/useCircleOfFifths';
 import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode', 'circleOfFifths']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
-
-  const [isStoppable, setIsStoppable] = useState<boolean>(false);
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
@@ -39,7 +36,9 @@ function App(): JSX.Element {
   const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
   const { t } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
-  const { selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys } = useKeyDetection(pressedNotes);
+
+  const { show: showCircleOfFifths, selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys } =
+    useCircleOfFifths(pressedNotes, pressedNotesRef, setPressedNotes);
 
   const checkBackendConnection = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -64,20 +63,10 @@ function App(): JSX.Element {
     });
   };
 
-  const circleOfFifthsMode: CircleOfFifthsMode = (cookies.circleOfFifths as CircleOfFifthsMode) || 'idle';
-  const showCircleOfFifths =
-    circleOfFifthsMode === 'always' ||
-    (circleOfFifthsMode === 'idle' && !isStoppable);
-
   const webSocket = useDepinusWebSocket({
     name: 'App',
     onOpen: (): void => {
       waitForBackend();
-    },
-    onInfoMessage: (message: DepinusInfoMessage): void => {
-      if (message.infoType === 'playState' && message.isStoppable !== undefined) {
-        setIsStoppable(message.isStoppable);
-      }
     },
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
