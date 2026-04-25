@@ -43,7 +43,17 @@ describe('SettingsSlider', () => {
 
         mockUseDepinusWebSocket.mockImplementation((opts: any) => {
             capturedOnInfoMessage = opts.onInfoMessage;
-            return { sendSettingsCommand: vi.fn() };
+            return {
+                sendKeyboardCommand: vi.fn(),
+                sendStopCommand: vi.fn(),
+                sendPlayCommand: vi.fn(),
+                sendPauseCommand: vi.fn(),
+                sendRecordCommand: vi.fn(),
+                sendSettingsCommand: vi.fn(),
+                sendPlaylistCommand: vi.fn(),
+                sendGotoPlayTimeCommand: vi.fn(),
+                sendRpcCall: vi.fn(),
+            };
         });
 
         const { getByRole } = render(<SettingsSlider {...defaultProps} />);
