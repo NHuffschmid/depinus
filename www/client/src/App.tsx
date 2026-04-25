@@ -31,7 +31,7 @@ function App(): JSX.Element {
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [bgColor, setBgColor] = useState<string>("#444");
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
 
   const checkBackendConnection = (): Promise<boolean> => {
@@ -127,6 +127,7 @@ function App(): JSX.Element {
                   pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyUp}
+                  language={i18n.language}
                 />
               </header>
               <Navbar />
