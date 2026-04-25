@@ -2,6 +2,9 @@
 
 ## [0.9.x] - To be defined
 
+### Features
+- Added key labels
+
 ### Tech stuff
 - Redesigned websocket interface
 
