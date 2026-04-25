@@ -16,8 +16,8 @@ const Settings: React.FC = () => {
 			gap: '1rem'
 		}}>
 			<ColorSelector />
-			<KeyLabelToggle />
 			<LanguageSelector />
+			<KeyLabelToggle />
 			<MidiOutPortSelector />
 			<MidiInPortSelector />
 			<DynamicsController />

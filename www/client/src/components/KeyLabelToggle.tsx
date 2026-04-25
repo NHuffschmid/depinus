@@ -5,7 +5,7 @@ import { useCookies } from 'react-cookie';
 
 const KeyLabelToggle: React.FC = () => {
     const { t } = useTranslation();
-    const [cookies, setCookie] = useCookies(['keyLabels']);
+    const [cookies, setCookie] = useCookies(['keyLabels', 'color']);
     const [enabled, setEnabled] = useState<boolean>(cookies.keyLabels === 'true');
 
     const handleChange = (checked: boolean) => {
@@ -14,11 +14,14 @@ const KeyLabelToggle: React.FC = () => {
     };
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <label htmlFor="key-labels-toggle" style={{ cursor: 'pointer' }}>
+                {t('Key labels')}:
+            </label>
             <Switch
                 checked={enabled}
                 onChange={handleChange}
-                onColor="#4a90d9"
+                onColor={cookies.color ?? '#4a90d9'}
                 offColor="#888"
                 checkedIcon={false}
                 uncheckedIcon={false}
@@ -26,9 +29,6 @@ const KeyLabelToggle: React.FC = () => {
                 width={44}
                 id="key-labels-toggle"
             />
-            <label htmlFor="key-labels-toggle" style={{ cursor: 'pointer' }}>
-                {t('Key labels')}
-            </label>
         </div>
     );
 };
