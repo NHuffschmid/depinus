@@ -22,7 +22,7 @@ import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode', 'keyLabels']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
@@ -127,7 +127,7 @@ function App(): JSX.Element {
                   pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyUp}
-                  language={i18n.language}
+                  language={cookies.keyLabels === 'true' ? i18n.language : undefined}
                 />
               </header>
               <Navbar />

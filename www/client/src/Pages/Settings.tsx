@@ -6,6 +6,7 @@ import MidiInPortSelector from '../components/MidiInPortSelector';
 import DynamicsController from "../components/DynamicsController";
 import TempoController from "../components/TempoController";
 import TranspositionController from "../components/TranspositionController";
+import KeyLabelToggle from "../components/KeyLabelToggle";
 
 const Settings: React.FC = () => {
 	return (
@@ -15,6 +16,7 @@ const Settings: React.FC = () => {
 			gap: '1rem'
 		}}>
 			<ColorSelector />
+			<KeyLabelToggle />
 			<LanguageSelector />
 			<MidiOutPortSelector />
 			<MidiInPortSelector />
