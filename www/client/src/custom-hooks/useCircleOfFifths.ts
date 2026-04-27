@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { useCookies } from 'react-cookie';
 import useDepinusWebSocket, { DepinusInfoMessage } from './useDepinusWebsocket';
 import { type CircleOfFifthsMode } from '../components/CircleOfFifthsSelector';
@@ -113,7 +113,7 @@ export interface CircleOfFifthsResult {
  */
 export function useCircleOfFifths(
     pressedNotes: Set<number>,
-    pressedNotesRef: React.MutableRefObject<Set<number>>,
+    pressedNotesRef: MutableRefObject<Set<number>>,
     setPressedNotes: (notes: Set<number>) => void,
 ): CircleOfFifthsResult {
     const [cookies] = useCookies(['circleOfFifths']);
