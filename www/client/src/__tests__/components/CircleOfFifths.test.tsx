@@ -35,7 +35,7 @@ describe('CircleOfFifths', () => {
     it('renders all 12 major key labels in English', () => {
         const { container } = render(<CircleOfFifths />);
         const texts = svgTexts(container);
-        const majorKeys = ['C', 'G', 'D', 'A', 'E', 'B', 'D♭', 'A♭', 'E♭', 'B♭', 'F'];
+        const majorKeys = ['C', 'G', 'D', 'A', 'E', 'B', 'G♭/F#', 'D♭', 'A♭', 'E♭', 'B♭', 'F'];
         for (const key of majorKeys) {
             expect(texts.some(t => t.includes(key))).toBe(true);
         }
@@ -44,7 +44,7 @@ describe('CircleOfFifths', () => {
     it('renders all 12 minor key labels in English', () => {
         const { container } = render(<CircleOfFifths />);
         const texts = svgTexts(container);
-        const minorKeys = ['a', 'e', 'b', 'f#', 'c#', 'g#', 'b♭', 'f', 'c', 'g', 'd'];
+        const minorKeys = ['a', 'e', 'b', 'f#', 'c#', 'g#', 'e♭/d#', 'b♭', 'f', 'c', 'g', 'd'];
         for (const key of minorKeys) {
             expect(texts.some(t => t.includes(key))).toBe(true);
         }
