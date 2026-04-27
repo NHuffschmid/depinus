@@ -1,7 +1,8 @@
 import React from 'react';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from 'react-i18next';
-import { skrjabinColors } from './react-piano-keyboard/src/Keyboard';
+import { skrjabinColors, NOTE_NAMES, resolveLanguage } from './react-piano-keyboard/src';
+import type { SupportedLanguage } from './react-piano-keyboard/src';
 
 export interface CircleOfFifthsProps {
     /** Selected major key indices (0 = C, clockwise). Display-only – no click interaction. */
@@ -12,31 +13,8 @@ export interface CircleOfFifthsProps {
     dominantSeventhMajorKeys?: number[];
 }
 
-// ── Circle of Fifths pitch data ──────────────────────────────────────────────
-// Index 0 = C (12 o'clock), each step +30° clockwise (circle of fifths order).
-
-const MAJOR_KEYS: Record<string, string[]> = {
-    de: ['C', 'G', 'D', 'A', 'E', 'H', 'Ges/Fis', 'Des', 'As', 'Es', 'B', 'F'],
-    en: ['C', 'G', 'D', 'A', 'E', 'B', 'G♭/F#', 'D♭', 'A♭', 'E♭', 'B♭', 'F'],
-    fr: ['do', 'sol', 'ré', 'la', 'mi', 'si', 'sol♭/fa#', 'ré♭', 'la♭', 'mi♭', 'si♭', 'fa'],
-    it: ['do', 'sol', 're', 'la', 'mi', 'si', 'sol♭/fa#', 're♭', 'la♭', 'mi♭', 'si♭', 'fa'],
-    es: ['do', 'sol', 're', 'la', 'mi', 'si', 'sol♭/fa#', 're♭', 'la♭', 'mi♭', 'si♭', 'fa'],
-    pt: ['dó', 'sol', 'ré', 'lá', 'mi', 'si', 'sol♭/fá#', 'ré♭', 'lá♭', 'mi♭', 'si♭', 'fá'],
-};
-
-const MINOR_KEYS: Record<string, string[]> = {
-    de: ['a', 'e', 'h', 'fis', 'cis', 'gis', 'es/dis', 'b', 'f', 'c', 'g', 'd'],
-    en: ['a', 'e', 'b', 'f#', 'c#', 'g#', 'e♭/d#', 'b♭', 'f', 'c', 'g', 'd'],
-    fr: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/ré#', 'si♭', 'fa', 'do', 'sol', 'ré'],
-    it: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/re#', 'si♭', 'fa', 'do', 'sol', 're'],
-    es: ['la', 'mi', 'si', 'fa#', 'do#', 'sol#', 'mi♭/re#', 'si♭', 'fa', 'do', 'sol', 're'],
-    pt: ['lá', 'mi', 'si', 'fá#', 'dó#', 'sol#', 'mi♭/ré#', 'si♭', 'fá', 'dó', 'sol', 'ré'],
-};
-
 // Accidentals for each index (sharps: ♯, flats: ♭, empty for C).
 const ACCIDENTALS = ['', '1♯', '2♯', '3♯', '4♯', '5♯', '6♭/6♯', '5♭', '4♭', '3♭', '2♭', '1♭'];
-
-const SUPPORTED_LANGS = ['de', 'en', 'fr', 'it', 'es', 'pt'];
 
 // ── SVG geometry constants ───────────────────────────────────────────────────
 
@@ -66,6 +44,29 @@ const FIFTHS_TO_CHROMATIC = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
 
 /** Returns the Skrjabin colour for a circle-of-fifths segment index. */
 const skrjabinFill = (index: number) => skrjabinColors[FIFTHS_TO_CHROMATIC[index]] ?? '#888888';
+
+/**
+ * Derives the major key label for a circle-of-fifths segment from NOTE_NAMES.
+ * Positions 0-5: primary name. Position 6: secondary/primary (enharmonic). Positions 7-10: secondary. Position 11: primary.
+ */
+function getMajorKeyLabel(lang: SupportedLanguage, fifthsIndex: number): string {
+    const { primary, secondary } = NOTE_NAMES[lang][FIFTHS_TO_CHROMATIC[fifthsIndex]];
+    if (fifthsIndex === 6) return `${secondary}/${primary}`;
+    if (fifthsIndex >= 7 && fifthsIndex <= 10) return secondary ?? primary;
+    return primary;
+}
+
+/**
+ * Derives the relative minor key label for a circle-of-fifths segment from NOTE_NAMES.
+ * The relative minor is 9 semitones above (a minor third below) the major key.
+ */
+function getMinorKeyLabel(lang: SupportedLanguage, fifthsIndex: number): string {
+    const chromaticIndex = (FIFTHS_TO_CHROMATIC[fifthsIndex] + 9) % 12;
+    const { primary, secondary } = NOTE_NAMES[lang][chromaticIndex];
+    if (fifthsIndex === 6) return `${secondary}/${primary}`.toLowerCase();
+    if (fifthsIndex >= 7 && fifthsIndex <= 10) return (secondary ?? primary).toLowerCase();
+    return primary.toLowerCase();
+}
 
 /**
  * Returns '#000' for light backgrounds and '#fff' for dark ones (WCAG luminance threshold).
@@ -120,11 +121,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
 }) => {
     const [cookies] = useCookies(['color']);
     const { i18n } = useTranslation();
-    const baseLang = i18n.language.split('-')[0];
-    const lang = SUPPORTED_LANGS.includes(baseLang) ? baseLang : 'en';
-
-    const majorKeys = MAJOR_KEYS[lang];
-    const minorKeys = MINOR_KEYS[lang];
+    const lang = resolveLanguage(i18n.language.split('-')[0]);
 
     const selMajor = selectedMajorKeys ?? [];
     const selMinor = selectedMinorKeys ?? [];
@@ -187,7 +184,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                     fill={labelColor(skrjabinFill(i))}
                                     style={{ userSelect: 'none' }}
                                 >
-                                    {majorKeys[i]}
+                                    {getMajorKeyLabel(lang, i)}
                                     {dom7Sel && (
                                         <tspan
                                             fontSize={(majSel || dom7Sel) ? 14 : 12}
@@ -212,7 +209,7 @@ const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                                     fill='#fff'
                                     style={{ userSelect: 'none' }}
                                 >
-                                    {minorKeys[i]}
+                                    {getMinorKeyLabel(lang, i)}
                                 </text>
                             </g>
                             {/* ── Accidentals ring: path + label grouped ── */}
