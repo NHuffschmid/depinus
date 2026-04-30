@@ -3,6 +3,7 @@
 ## [0.9.x] - To be defined
 
 ### Features
+- Added circle of fifths
 - Added key labels
 
 ### Tech stuff
