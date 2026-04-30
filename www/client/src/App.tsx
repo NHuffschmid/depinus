@@ -135,7 +135,7 @@ function App(): JSX.Element {
                   pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyUp}
-                  language={cookies.keyLabels === 'true' ? i18n.language : undefined}
+                  language={cookies.keyLabels === 'true' ? i18n.language.split('-')[0] : undefined}
                 />
               </header>
               <Navbar />
