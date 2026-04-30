@@ -7,6 +7,7 @@ import MidiInPortSelector from '../components/MidiInPortSelector';
 import DynamicsController from "../components/DynamicsController";
 import TempoController from "../components/TempoController";
 import TranspositionController from "../components/TranspositionController";
+import KeyLabelToggle from "../components/KeyLabelToggle";
 
 const Settings: React.FC = () => {
 	return (
@@ -18,6 +19,7 @@ const Settings: React.FC = () => {
 			<ColorSelector />
 			<LanguageSelector />
 			<CircleOfFifthsSelector />
+			<KeyLabelToggle />
 			<MidiOutPortSelector />
 			<MidiInPortSelector />
 			<DynamicsController />

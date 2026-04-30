@@ -24,7 +24,7 @@ import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode', 'keyLabels']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
@@ -34,7 +34,7 @@ function App(): JSX.Element {
   const [bgColor, setBgColor] = useState<string>("#444");
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
   const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
 
   const { show: showCircleOfFifths, selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys } =
@@ -135,6 +135,7 @@ function App(): JSX.Element {
                   pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyUp}
+                  language={cookies.keyLabels === 'true' ? i18n.language.split('-')[0] : undefined}
                 />
               </header>
               <Navbar />
