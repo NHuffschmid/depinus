@@ -91,7 +91,6 @@ const HomeNav: React.FC = () => {
 
             <BlackKey
                 icon={<PowerSettingsNewIcon fontSize="inherit" />}
-                aria-label={t('Shutdown')}
                 label={t('Shutdown')}
                 onClick={requestShutdown}
             />
