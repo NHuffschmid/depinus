@@ -16,19 +16,19 @@ interface WhiteKeyProps {
     icon: React.ReactNode;
     label: string;
     onClick: () => void;
-    danger?: boolean;
 }
 
 interface BlackKeyProps {
     icon: React.ReactNode;
+    label: string;
     onClick: () => void;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick, danger }) => (
+const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick }) => (
     <button
-        className={`piano-nav__key piano-nav__key--white ${IVORY_REALISTIC_CLASS}${danger ? ' piano-nav__key--danger' : ''}`}
+        className={`piano-nav__key piano-nav__key--white ${IVORY_REALISTIC_CLASS}`}
         onClick={onClick}
         type="button"
     >
@@ -37,11 +37,12 @@ const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick, danger }) => 
     </button>
 );
 
-const BlackKey: React.FC<BlackKeyProps> = ({ icon, onClick }) => (
+const BlackKey: React.FC<BlackKeyProps> = ({ icon, label, onClick }) => (
     <button
         className={`piano-nav__key piano-nav__key--black ${EBONY_REALISTIC_CLASS}`}
         onClick={onClick}
         type="button"
+        aria-label={label}
     >
         <span className="piano-nav__icon piano-nav__icon--black">{icon}</span>
     </button>
@@ -90,6 +91,7 @@ const HomeNav: React.FC = () => {
 
             <BlackKey
                 icon={<PowerSettingsNewIcon fontSize="inherit" />}
+                label={t('Shutdown')}
                 onClick={requestShutdown}
             />
 

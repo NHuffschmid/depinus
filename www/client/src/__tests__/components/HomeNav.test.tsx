@@ -11,16 +11,6 @@ vi.mock('react-i18next', () => ({
     })),
 }));
 
-vi.mock('../components/archive/ExportArchiveDialog', () => ({
-    default: ({ open }: { open: boolean }) =>
-        open ? <div data-testid="export-dialog" /> : null,
-}));
-
-vi.mock('../components/archive/ImportArchiveDialog', () => ({
-    default: ({ open }: { open: boolean }) =>
-        open ? <div data-testid="import-dialog" /> : null,
-}));
-
 vi.mock('../../components/archive/ExportArchiveDialog', () => ({
     default: ({ open }: { open: boolean }) =>
         open ? <div data-testid="export-dialog" /> : null,
@@ -29,6 +19,11 @@ vi.mock('../../components/archive/ExportArchiveDialog', () => ({
 vi.mock('../../components/archive/ImportArchiveDialog', () => ({
     default: ({ open }: { open: boolean }) =>
         open ? <div data-testid="import-dialog" /> : null,
+}));
+
+vi.mock('../../components/react-piano-keyboard/src', () => ({
+    IVORY_REALISTIC_CLASS: 'ivory',
+    EBONY_REALISTIC_CLASS: 'ebony',
 }));
 
 import HomeNav from '../../components/HomeNav';
@@ -48,7 +43,7 @@ describe('HomeNav', () => {
         const { getByRole, getByText } = render(<HomeNav />);
         expect(getByRole('navigation')).toBeInTheDocument();
         expect(getByText('Demo')).toBeInTheDocument();
-        expect(getByText('Shutdown')).toBeInTheDocument();
+        expect(getByRole('button', { name: /shutdown/i })).toBeInTheDocument();
         expect(getByText('Export archive')).toBeInTheDocument();
         expect(getByText('Import archive')).toBeInTheDocument();
     });
@@ -63,24 +58,26 @@ describe('HomeNav', () => {
     });
 
     it('opens the shutdown confirmation dialog when Shutdown is clicked', () => {
-        const { getByText, queryByText } = render(<HomeNav />);
+        const { getByRole, queryByText } = render(<HomeNav />);
         expect(queryByText('Are you sure?')).not.toBeInTheDocument();
-        fireEvent.click(getByText('Shutdown').closest('button')!);
-        expect(getByText('Are you sure?')).toBeInTheDocument();
+        fireEvent.click(getByRole('button', { name: /shutdown/i }));
+        expect(queryByText('Are you sure?')).toBeInTheDocument();
     });
 
-    it('does not call fetch for shutdown when confirmation is cancelled', () => {
-        const { getByText, getAllByText } = render(<HomeNav />);
-        fireEvent.click(getByText('Shutdown').closest('button')!);
+    it('does not call fetch for shutdown when confirmation is cancelled', async () => {
+        const { getByRole, getAllByText } = render(<HomeNav />);
+        fireEvent.click(getByRole('button', { name: /shutdown/i }));
         // Click the cancel/no button in the confirmation dialog
         const noButtons = getAllByText('No');
         fireEvent.click(noButtons[0]);
-        expect(fetch).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(fetch).not.toHaveBeenCalled();
+        });
     });
 
     it('calls fetch with the shutdown endpoint when confirmation is accepted', async () => {
-        const { getByText, getAllByText } = render(<HomeNav />);
-        fireEvent.click(getByText('Shutdown').closest('button')!);
+        const { getByRole, getAllByText } = render(<HomeNav />);
+        fireEvent.click(getByRole('button', { name: /shutdown/i }));
         const yesButtons = getAllByText('Yes');
         fireEvent.click(yesButtons[0]);
         await waitFor(() =>
