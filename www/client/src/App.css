@@ -309,8 +309,8 @@ html, body {
   gap: 0.3rem;
   font-size: 1.6rem;
   color: #ddd;
-  margin-left: -36px;
-  margin-right: -36px;
+  margin-left: -20px;
+  margin-right: -52px;
   z-index: 1;
 }
 
