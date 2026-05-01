@@ -5,6 +5,8 @@
 ### Features
 - Added circle of fifths
 - Added key labels
+- Beautified home screen
+- Beautified keyboard (ebony/ivory layout)
 
 ### Tech stuff
 - Redesigned websocket interface
