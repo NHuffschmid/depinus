@@ -283,11 +283,6 @@ html, body {
   position: relative;
   width: 110px;
   height: 280px;
-  background: linear-gradient(175deg, #f5f0e8 0%, #fffef8 60%, #e8dfc8 100%);
-  border: 2px solid #222;
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  box-shadow: 2px 6px 12px rgba(0, 0, 0, 0.45), inset 0 -4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -297,18 +292,7 @@ html, body {
   gap: 0.4rem;
   font-size: 2rem;
   color: #222;
-  transition: background 0.08s, box-shadow 0.08s, transform 0.08s;
   z-index: 0;
-}
-
-.piano-nav__key--white:hover {
-  background: linear-gradient(175deg, #ddeeff 0%, #eef6ff 60%, #ccddf0 100%);
-  box-shadow: 2px 8px 18px rgba(0, 0, 0, 0.55), inset 0 -4px 8px rgba(0, 0, 0, 0.12);
-}
-
-.piano-nav__key--white:active {
-  transform: translateY(5px);
-  box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.4), inset 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Black key */
@@ -316,11 +300,6 @@ html, body {
   position: relative;
   width: 68px;
   height: 170px;
-  background: linear-gradient(175deg, #1a1a1a 0%, #2d2d2d 70%, #111 100%);
-  border: 2px solid #000;
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  box-shadow: 2px 6px 14px rgba(0, 0, 0, 0.75), inset 0 -3px 6px rgba(255, 255, 255, 0.04);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -330,20 +309,9 @@ html, body {
   gap: 0.3rem;
   font-size: 1.6rem;
   color: #ddd;
-  transition: background 0.08s, box-shadow 0.08s, transform 0.08s;
   margin-left: -36px;
   margin-right: -36px;
   z-index: 1;
-}
-
-.piano-nav__key--black:hover {
-  background: linear-gradient(175deg, #1a1a3a 0%, #2a2a4a 70%, #0d0d20 100%);
-  box-shadow: 2px 8px 18px rgba(0, 0, 0, 0.85), inset 0 -3px 6px rgba(255, 255, 255, 0.06);
-}
-
-.piano-nav__key--black:active {
-  transform: translateY(4px);
-  box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.7), inset 0 -1px 3px rgba(255, 255, 255, 0.04);
 }
 
 /* Icons and labels */

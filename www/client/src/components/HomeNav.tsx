@@ -8,6 +8,7 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
+import { IVORY_REALISTIC_CLASS, EBONY_REALISTIC_CLASS } from './react-piano-keyboard/src';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ interface BlackKeyProps {
 
 const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick, danger }) => (
     <button
-        className={`piano-nav__key piano-nav__key--white${danger ? ' piano-nav__key--danger' : ''}`}
+        className={`piano-nav__key piano-nav__key--white ${IVORY_REALISTIC_CLASS}${danger ? ' piano-nav__key--danger' : ''}`}
         onClick={onClick}
         type="button"
     >
@@ -39,7 +40,7 @@ const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick, danger }) => 
 
 const BlackKey: React.FC<BlackKeyProps> = ({ icon, label, onClick }) => (
     <button
-        className="piano-nav__key piano-nav__key--black"
+        className={`piano-nav__key piano-nav__key--black ${EBONY_REALISTIC_CLASS}`}
         onClick={onClick}
         type="button"
     >
