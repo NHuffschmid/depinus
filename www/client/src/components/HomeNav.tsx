@@ -21,7 +21,6 @@ interface WhiteKeyProps {
 
 interface BlackKeyProps {
     icon: React.ReactNode;
-    label: string;
     onClick: () => void;
 }
 
@@ -38,14 +37,13 @@ const WhiteKey: React.FC<WhiteKeyProps> = ({ icon, label, onClick, danger }) => 
     </button>
 );
 
-const BlackKey: React.FC<BlackKeyProps> = ({ icon, label, onClick }) => (
+const BlackKey: React.FC<BlackKeyProps> = ({ icon, onClick }) => (
     <button
         className={`piano-nav__key piano-nav__key--black ${EBONY_REALISTIC_CLASS}`}
         onClick={onClick}
         type="button"
     >
         <span className="piano-nav__icon piano-nav__icon--black">{icon}</span>
-        <span className="piano-nav__label piano-nav__label--black">{label}</span>
     </button>
 );
 
@@ -92,7 +90,6 @@ const HomeNav: React.FC = () => {
 
             <BlackKey
                 icon={<PowerSettingsNewIcon fontSize="inherit" />}
-                label={t('Shutdown')}
                 onClick={requestShutdown}
             />
 
