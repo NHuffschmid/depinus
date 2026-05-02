@@ -232,6 +232,21 @@ export function useCircleOfFifths(
         prevNotesRef.current = new Set(activeNotes);
     }, [activeNotes]);
 
+    // Cleanup: cancel any running timers when the hook unmounts to prevent
+    // state updates on an unmounted component.
+    useEffect(() => {
+        return () => {
+            if (timerRef.current !== null) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
+            if (longTimerRef.current !== null) {
+                clearTimeout(longTimerRef.current);
+                longTimerRef.current = null;
+            }
+        };
+    }, []);
+
     const detection = useMemo(() => {
         const raw = computeKeyDetection(windowNotes);
         const discriminated = discriminateMajorMinor(raw, longPcFreq);
