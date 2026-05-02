@@ -6,7 +6,7 @@ import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import { Midi } from '@tonejs/midi';
 import { Base64 } from 'js-base64';
 import WaitingIndicator from './WaitingIndicator';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 import { useMidi2MusicXMLWorker } from '../modules/midi2musicxml/react';
 import { ClefType } from '../modules/midi2musicxml/types';
 
@@ -154,103 +154,105 @@ const ScoreView: React.FC<ScoreViewProps> = () => {
                 currentPlayTimeSecondsRef.current = playTime;
             }
         },
-        onInfoMessage: (message: any) => {
-            if (message.isRecording === true) {
-                //console.log('Recording started - clearing score');
-                setMode('recording');
-                setMidi(null);
-                setCurrentCompositionId(null);
-                const midi = new Midi();
-                midi.header.setTempo(120); // Default tempo
-                midi.addTrack();
-                setLiveMidi(midi);
-                liveActiveNotesRef.current = new Map();
-                liveTickRef.current = 0;
-                lastEventTimeRef.current = null;
-            }
-            else if (message.composition && message.composition.compositionId) {
-                const newId = message.composition.compositionId;
-                if (newId !== currentCompositionId) {
-                    //console.log('New composition detected:', newId);
-                    setCurrentCompositionId(newId);
-                    if (webSocket.sendRpcCall) {
-                        //console.log('Requesting MIDI data via RPC for new composition...');
-                        webSocket.sendRpcCall('GetCurrentMidiData', {});
+        onInfoMessage: (message: DepinusInfoMessage) => {
+            if (message.infoType === 'playState') {
+                if (message.isRecording === true) {
+                    //console.log('Recording started - clearing score');
+                    setMode('recording');
+                    setMidi(null);
+                    setCurrentCompositionId(null);
+                    const midi = new Midi();
+                    midi.header.setTempo(120); // Default tempo
+                    midi.addTrack();
+                    setLiveMidi(midi);
+                    liveActiveNotesRef.current = new Map();
+                    liveTickRef.current = 0;
+                    lastEventTimeRef.current = null;
+                }
+                else if (message.composition && message.composition.compositionId) {
+                    const newId = message.composition.compositionId;
+                    if (newId !== currentCompositionId) {
+                        //console.log('New composition detected:', newId);
+                        setCurrentCompositionId(newId);
+                        if (webSocket.sendRpcCall) {
+                            //console.log('Requesting MIDI data via RPC for new composition...');
+                            webSocket.sendRpcCall('GetCurrentMidiData', {});
+                        }
                     }
                 }
-            }
 
-            // Playback stopped or ended: reset cursor to note 0
-            if (message.isStoppable === false && message.isPlayable === true) {
-                currentPlayTimeSecondsRef.current = 0;
-                stopCursorLoop();
-                if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
-                    osmdRef.current.cursor.reset();
-                    osmdRef.current.cursor.show();
+                // Playback stopped or ended: reset cursor to note 0
+                if (message.isStoppable === false && message.isPlayable === true) {
+                    currentPlayTimeSecondsRef.current = 0;
+                    stopCursorLoop();
+                    if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
+                        osmdRef.current.cursor.reset();
+                        osmdRef.current.cursor.show();
+                    }
                 }
-            }
 
-            // Playback started or resumed: (re)start cursor loop if OSMD is ready.
-            // Guard against new-composition messages (those carry compositionId and
-            // will trigger a full re-render via GetCurrentMidiData instead).
-            if (message.isStoppable === true && message.isPauseable === true &&
-                !message.composition?.compositionId) {
-                if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
-                    startCursorLoop();
+                // Playback started or resumed: (re)start cursor loop if OSMD is ready.
+                // Guard against new-composition messages (those carry compositionId and
+                // will trigger a full re-render via GetCurrentMidiData instead).
+                if (message.isStoppable === true && message.isPauseable === true &&
+                    !message.composition?.compositionId) {
+                    if (osmdRef.current && noteCursorTimesRef.current.length > 0) {
+                        startCursorLoop();
+                    }
                 }
-            }
-            // Receive live MIDI event as base64 bytes
-            if (message.midiEventBytes && mode === 'recording') {
-                const bytes = Base64.toUint8Array(message.midiEventBytes);
-                // Only handle note-on and note-off events (3 bytes)
-                if (bytes.length >= 3) {
-                    const status = bytes[0] & 0xf0;
-                    const channel = bytes[0] & 0x0f;
-                    const note = bytes[1];
-                    const velocity = bytes[2];
-                    if (liveMidi) {
-                        const track = liveMidi.tracks[0];
-                        // Time measurement for correct tick calculation
-                        const now = performance.now();
-                        const pulsesPerQuarterNote = liveMidi.header.ppq || 480;
-                        const tempo = (liveMidi.header.tempos && liveMidi.header.tempos.length > 0)
-                            ? liveMidi.header.tempos[0].bpm
-                            : 120;
-                        const msPerQuarter = 60000 / tempo;
+            } else if (message.infoType === 'recordingMidi') {
+                if (mode === 'recording') {
+                    const bytes = Base64.toUint8Array(message.midiEventBytes);
+                    // Only handle note-on and note-off events (3 bytes)
+                    if (bytes.length >= 3) {
+                        const status = bytes[0] & 0xf0;
+                        const channel = bytes[0] & 0x0f;
+                        const note = bytes[1];
+                        const velocity = bytes[2];
+                        if (liveMidi) {
+                            const track = liveMidi.tracks[0];
+                            // Time measurement for correct tick calculation
+                            const now = performance.now();
+                            const pulsesPerQuarterNote = liveMidi.header.ppq || 480;
+                            const tempo = (liveMidi.header.tempos && liveMidi.header.tempos.length > 0)
+                                ? liveMidi.header.tempos[0].bpm
+                                : 120;
+                            const msPerQuarter = 60000 / tempo;
 
-                        let tick = liveTickRef.current;
-                        if (status === 0x90 && velocity > 0) {
-                            // Note-On: remember time
-                            liveActiveNotesRef.current.set(note, {
-                                startTick: tick,
-                                velocity,
-                                startTimeMs: now
-                            });
-                        } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
-                            // Note-Off: calculate duration from time difference
-                            const active = liveActiveNotesRef.current.get(note);
-                            if (active && typeof active.startTimeMs === 'number') {
-                                const msSinceOn = now - active.startTimeMs;
-                                const durationTicks = Math.round((msSinceOn / msPerQuarter) * pulsesPerQuarterNote);
-                                track.addNote({
-                                    midi: note,
-                                    ticks: active.startTick,
-                                    durationTicks: Math.max(1, durationTicks),
-                                    velocity: active.velocity / 127,
+                            let tick = liveTickRef.current;
+                            if (status === 0x90 && velocity > 0) {
+                                // Note-On: remember time
+                                liveActiveNotesRef.current.set(note, {
+                                    startTick: tick,
+                                    velocity,
+                                    startTimeMs: now
                                 });
-                                liveActiveNotesRef.current.delete(note);
-                            } else {
-                                console.warn(`[LIVE] Note-Off without Note-On: note=${note}`);
+                            } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
+                                // Note-Off: calculate duration from time difference
+                                const active = liveActiveNotesRef.current.get(note);
+                                if (active && typeof active.startTimeMs === 'number') {
+                                    const msSinceOn = now - active.startTimeMs;
+                                    const durationTicks = Math.round((msSinceOn / msPerQuarter) * pulsesPerQuarterNote);
+                                    track.addNote({
+                                        midi: note,
+                                        ticks: active.startTick,
+                                        durationTicks: Math.max(1, durationTicks),
+                                        velocity: active.velocity / 127,
+                                    });
+                                    liveActiveNotesRef.current.delete(note);
+                                } else {
+                                    console.warn(`[LIVE] Note-Off without Note-On: note=${note}`);
+                                }
                             }
+                            // Increment tick counter for event time (for note time property)
+                            if (lastEventTimeRef.current !== null) {
+                                const msSinceLast = now - lastEventTimeRef.current;
+                                const ticksSinceLast = Math.round((msSinceLast / msPerQuarter) * pulsesPerQuarterNote);
+                                liveTickRef.current += ticksSinceLast;
+                            }
+                            lastEventTimeRef.current = now;
+                            setLiveMidi(liveMidi.clone());
                         }
-                        // Increment tick counter for event time (for note time property)
-                        if (lastEventTimeRef.current !== null) {
-                            const msSinceLast = now - lastEventTimeRef.current;
-                            const ticksSinceLast = Math.round((msSinceLast / msPerQuarter) * pulsesPerQuarterNote);
-                            liveTickRef.current += ticksSinceLast;
-                        }
-                        lastEventTimeRef.current = now;
-                        setLiveMidi(liveMidi.clone());
                     }
                 }
             }

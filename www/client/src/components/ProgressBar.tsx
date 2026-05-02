@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import WaitingIndicator from './WaitingIndicator';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 import ReactSlider from 'react-slider';
 import { formattedPlaytime } from '../utils';
 
@@ -36,39 +36,42 @@ const ProgressBar: React.FC = () => {
 
     const webSocket = useDepinusWebSocket({
         name: 'ProgressBar',
-        onInfoMessage: (message: any) => {
+        onInfoMessage: (message: DepinusInfoMessage) => {
             //console.log('ProgressBar received Info message: ' + JSON.stringify(message));
-            if ('composition' in message) {
-                setTotalTime(message['composition']['duration']);
-                const pt: number = message['composition']['playTime'];
-                setPlayTime(pt);
-                resetAnchor(pt);  // authoritative server position → re-anchor
-            }
-            if ('tempo' in message) {
-                const newTempo: number = message['tempo'];
-                tempoRef.current = newTempo;
-                setTempo(newTempo);
-                if (tickInterval.current) {
-                    const currentPt = computePlayTime();
-                    clearInterval(tickInterval.current);
-                    resetAnchor(currentPt);
-                    tickInterval.current = setInterval(tick, 1000 / newTempo);
+            if (message.infoType === 'playState') {
+                if (message.composition) {
+                    setTotalTime(message.composition.duration);
+                    const pt: number = message.composition.playTime;
+                    setPlayTime(pt);
+                    resetAnchor(pt);  // authoritative server position → re-anchor
                 }
-            }
-            if ('isPauseable' in message) {
-                if (tickInterval.current) {
-                    //console.log('Clear interval with ID ' + tickInterval.current);
-                    clearInterval(tickInterval.current);
-                    tickInterval.current = null;
+                if (message.isPauseable !== undefined) {
+                    if (tickInterval.current) {
+                        //console.log('Clear interval with ID ' + tickInterval.current);
+                        clearInterval(tickInterval.current);
+                        tickInterval.current = null;
+                    }
+                    if (message.isPauseable) {
+                        // startTimestamp is reset so elapsed time counts from now
+                        resetAnchor(playTimeAtStart.current);
+                        tickInterval.current = setInterval(tick, 1000 / tempoRef.current);
+                    }
                 }
-                if (message['isPauseable']) {
-                    // startTimestamp is reset so elapsed time counts from now
-                    resetAnchor(playTimeAtStart.current);
-                    tickInterval.current = setInterval(tick, 1000 / tempoRef.current);
+                if (message.isWaiting !== undefined) {
+                    setIsWaiting(message.isWaiting);
                 }
-            }
-            if ('isWaiting' in message) {
-                setIsWaiting(message['isWaiting']);
+            } else if (message.infoType === 'settings') {
+                if (message.tempo !== undefined) {
+                    const newTempo: number = message.tempo;
+                    tempoRef.current = newTempo;
+                    setTempo(newTempo);
+                    if (tickInterval.current) {
+                        const currentPt = computePlayTime();
+                        clearInterval(tickInterval.current);
+                        resetAnchor(currentPt);
+                        tickInterval.current = setInterval(tick, 1000 / newTempo);
+                    }
+                }
             }
         }
     });

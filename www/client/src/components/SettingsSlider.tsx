@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useDepinusWebSocket from '../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage } from '../custom-hooks/useDepinusWebsocket';
 import ReactSlider from 'react-slider';
 
 export interface SettingsSliderProps {
@@ -19,12 +19,15 @@ const SettingsSlider: React.FC<SettingsSliderProps> = (props) => {
 
     const webSocket = useDepinusWebSocket({
         name: 'SettingsSlider',
-        onInfoMessage: (message: any) => {
-            if (props.websocketCommand in message) {
-                if (props.websocketToSliderConverter) {
-                    setSliderValue(props.websocketToSliderConverter(message[props.websocketCommand]));
-                } else {
-                    setSliderValue(message[props.websocketCommand]);
+        onInfoMessage: (message: DepinusInfoMessage) => {
+            if (message.infoType === 'settings') {
+                const value = (message as any)[props.websocketCommand];
+                if (value !== undefined) {
+                    if (props.websocketToSliderConverter) {
+                        setSliderValue(props.websocketToSliderConverter(value));
+                    } else {
+                        setSliderValue(value);
+                    }
                 }
             }
         }

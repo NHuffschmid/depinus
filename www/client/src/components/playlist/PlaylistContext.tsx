@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import useDepinusWebSocket from '../../custom-hooks/useDepinusWebsocket';
+import useDepinusWebSocket, { DepinusInfoMessage, RepeatMode } from '../../custom-hooks/useDepinusWebsocket';
 import { backendUrl } from '../../config';
 
 export interface Playlist {
@@ -15,8 +15,6 @@ export interface Track {
     composerFirstname: string;
     composerSurname: string;
 }
-
-type RepeatMode = 'off' | 'playlist' | 'composition';
 
 interface PlaylistContextType {
     playlists: Playlist[];
@@ -224,8 +222,8 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
 
     const webSocket = useDepinusWebSocket({
         name: 'Playlist',
-        onInfoMessage: async (message: any) => {
-            if (message.playlist) {
+        onInfoMessage: async (message: DepinusInfoMessage) => {
+            if (message.infoType === 'playlist') {
                 //console.log('Playlist info message received:', message.playlist);
                 if (message.playlist.id) {
                     const found = playlists.find(p => p.id === message.playlist.id);
@@ -248,8 +246,7 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                 if (typeof message.playlist.compositionId === 'number') {
                     setPlayingCompositionId(message.playlist.compositionId);
                 }
-            }
-            else {
+            } else if (message.infoType === 'playState') {
                 if (!message.composition &&
                     !message.isStoppable &&
                     (message.isPlayable !== message.isPauseable)) {
@@ -258,23 +255,21 @@ export const PlaylistProvider = ({ children }: { children: ReactNode }) => {
                     setBackwardable(false);
                     return;
                 }
-            }
 
-            if (message.composition && message.composition.compositionId) {
-                setPlayingCompositionId(message.composition.compositionId);
-            }
+                if (message.composition?.compositionId) {
+                    setPlayingCompositionId(message.composition.compositionId);
+                }
 
-            if (playingCompositionId) { // playlist is active
-                if ('isStoppable' in message && !message['wasCancelled']) {
-                    if (!message['isStoppable'] &&
-                        message['isPlayable']) {
-                        // piano daemon has finished playing a composition
-                        // ==> play next item in playlist
-                        await nextTrack();
-                    }
-                    else {
-                        setForwardable(await evaluateNextTrack() !== null);
-                        setBackwardable(await evaluatePreviousTrack() !== null);
+                if (playingCompositionId) { // playlist is active
+                    if (message.isStoppable !== undefined && !message.wasCancelled) {
+                        if (!message.isStoppable && message.isPlayable) {
+                            // piano daemon has finished playing a composition
+                            // ==> play next item in playlist
+                            await nextTrack();
+                        } else {
+                            setForwardable(await evaluateNextTrack() !== null);
+                            setBackwardable(await evaluatePreviousTrack() !== null);
+                        }
                     }
                 }
             }

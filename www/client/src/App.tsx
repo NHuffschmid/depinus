@@ -13,16 +13,18 @@ import Score from "./Pages/Score";
 import Navbar from "./components/Navbar";
 import Dashboard from "./components/Dashboard";
 import ProgressBar from "./components/ProgressBar";
+import CircleOfFifths from './components/CircleOfFifths';
 import Overlay from "./components/Overlay";
 import WaitingIndicator from './components/WaitingIndicator';
 import { useCookies } from 'react-cookie';
 import { useTranslation } from "react-i18next";
 import useDepinusWebSocket from './custom-hooks/useDepinusWebsocket';
+import { useCircleOfFifths } from './custom-hooks/useCircleOfFifths';
 import { backendUrl } from './config';
 import { PlaylistProvider } from './components/playlist/PlaylistContext';
 
 function App(): JSX.Element {
-  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode']);
+  const [cookies, setCookie] = useCookies(['color', 'skrjabinMode', 'keyLabels']);
   if (!cookies.color) {
     setCookie('color', '#DC143C', { path: '/' });
   }
@@ -31,8 +33,12 @@ function App(): JSX.Element {
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [bgColor, setBgColor] = useState<string>("#444");
   const pressedNotesRef = React.useRef<Set<number>>(new Set());
-  const { t } = useTranslation();
+  const [pressedNotes, setPressedNotes] = useState<Set<number>>(new Set());
+  const { t, i18n } = useTranslation();
   const keyboardRef = useRef<KeyboardRef | null>(null);
+
+  const { show: showCircleOfFifths, selectedMajorKeys, selectedMinorKeys, dominantSeventhMajorKeys } =
+    useCircleOfFifths(pressedNotes, pressedNotesRef, setPressedNotes);
 
   const checkBackendConnection = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -65,18 +71,20 @@ function App(): JSX.Element {
     onKeyboardMessage: (note: number, velocity: number): void => {
       if (note > 0) {
         keyboardRef.current?.setKeyPressed(note, velocity);
+        if (velocity > 0) {
+          pressedNotesRef.current.add(note);
+        } else {
+          pressedNotesRef.current.delete(note);
+        }
         if (cookies.skrjabinMode === 'true') {
-          if (velocity > 0) {
-            pressedNotesRef.current.add(note);
-          } else {
-            pressedNotesRef.current.delete(note);
-          }
           setBgColor(computeAvgSkrjabinColor(pressedNotesRef.current));
         }
+        setPressedNotes(new Set(pressedNotesRef.current));
       } else {
         keyboardRef.current?.reset();
         pressedNotesRef.current.clear();
         setBgColor("#444");
+        setPressedNotes(new Set());
       }
     },
     onClose: (): void => {
@@ -127,19 +135,25 @@ function App(): JSX.Element {
                   pressedColor={cookies.skrjabinMode === 'true' ? 'Skrjabin' : cookies.color}
                   onKeyDown={handleKeyDown}
                   onKeyUp={handleKeyUp}
+                  language={cookies.keyLabels === 'true' ? i18n.language.split('-')[0] : undefined}
                 />
               </header>
               <Navbar />
               <Dashboard />
               <ProgressBar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/Archive" element={<Archive />} />
-                <Route path="/Playlist" element={<Playlist />} />
-                <Route path="/Score" element={<Score />} />
-                <Route path="/Settings" element={<Settings />} />
-                <Route path="/About" element={<About />} />
-              </Routes>
+              <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {showCircleOfFifths && <CircleOfFifths selectedMajorKeys={selectedMajorKeys} selectedMinorKeys={selectedMinorKeys} dominantSeventhMajorKeys={dominantSeventhMajorKeys} />}
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/Archive" element={<Archive />} />
+                    <Route path="/Playlist" element={<Playlist />} />
+                    <Route path="/Score" element={<Score />} />
+                    <Route path="/Settings" element={<Settings />} />
+                    <Route path="/About" element={<About />} />
+                  </Routes>
+                </div>
+              </div>
             </BrowserRouter>
             <Overlay />
             <img src='../../images/shutdown.png' alt='for cache only' height='0px' />

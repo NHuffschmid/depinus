@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.9.7] - Haydn
+
+### Features
+- Added circle of fifths
+- Added key labels
+- Beautified home screen
+- Beautified keyboard (ebony/ivory layout)
+
+### Tech stuff
+- Redesigned websocket interface
+
+
 ## [0.9.6] - Händel
 
 ### Features

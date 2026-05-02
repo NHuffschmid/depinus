@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Switch from 'react-switch';
 import { useTranslation } from "react-i18next";
 import { CirclePicker, ColorResult } from 'react-color';
 import { useCookies } from 'react-cookie';
@@ -16,9 +17,9 @@ const ColorSelector: React.FC = () => {
 		setBlockPickerColor(color.hex);
 	}
 
-	const handleSkrjabinModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setSkrjabinMode(e.target.checked);
-		setCookie('skrjabinMode', e.target.checked, { path: '/' });
+	const handleSkrjabinModeChange = (checked: boolean) => {
+		setSkrjabinMode(checked);
+		setCookie('skrjabinMode', String(checked), { path: '/' });
 	}
 
 	return (
@@ -46,15 +47,19 @@ const ColorSelector: React.FC = () => {
 							selectColor(color as ColorResult);
 						}}
 					/>
-					<div style={{ display: 'flex', alignItems: 'center', marginTop: '0.5em' }}>
-						<input
-							type="checkbox"
-							id="skrjabin-mode"
-							style={{ marginRight: '0.5em' }}
+					<div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5em' }}>
+						<label htmlFor="skrjabin-mode" style={{ cursor: 'pointer' }}>{t('Skrjabin mode')}:</label>
+						<Switch
 							checked={skrjabinMode}
 							onChange={handleSkrjabinModeChange}
+							onColor={blockPickerColor}
+							offColor="#888"
+							checkedIcon={false}
+							uncheckedIcon={false}
+							height={22}
+							width={44}
+							id="skrjabin-mode"
 						/>
-						<label htmlFor="skrjabin-mode">{t('Skrjabin mode')}</label>
 					</div>
 				</div>
 				: null}
