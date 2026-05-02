@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.9.x] - To be defined
+## [0.9.7] - Haydn
 
 ### Features
 - Added circle of fifths
