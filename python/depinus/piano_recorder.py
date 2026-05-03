@@ -228,6 +228,38 @@ class PianoRecorder:
         # Device didn't disappear, no reset needed
         return True
 
+    async def _reopen_midi_port(self):
+        '''Closes and reopens the MIDI input port and restarts the monitor task.
+        Used after USB reset to ensure a fresh, valid port handle.
+        '''
+        # Cancel existing monitor task (handles both running and already-crashed tasks)
+        if self._monitor_task is not None and not self._monitor_task.done():
+            self._monitor_task.cancel()
+            try:
+                await self._monitor_task
+            except asyncio.CancelledError:
+                pass
+        self._monitor_task = None
+
+        # Close old (potentially stale) port handle
+        if self._midi_input is not None:
+            try:
+                self._midi_input.close()
+            except Exception as e:
+                logger.debug(f'Error closing stale MIDI port: {e}')
+            self._midi_input = None
+
+        # Open fresh port and restart monitor task
+        if self._midi_in_port:
+            try:
+                logger.debug(f'Reopening MIDI port: {self._midi_in_port}')
+                self._midi_input = mido.open_input(self._midi_in_port)
+                self._monitor_task = asyncio.create_task(self._monitor_midi_input())
+                logger.debug('MIDI port reopened and monitor task restarted.')
+            except (OSError, IOError) as e:
+                logger.error(f"Failed to reopen MIDI port '{self._midi_in_port}': {e}")
+                self._midi_input = None
+
     async def start_recording(self):
         '''Starts recording MIDI messages.'''
         if self._recording:
@@ -252,6 +284,16 @@ class PianoRecorder:
         for callback in self._waiting_callbacks:
             await callback(False)
 
+        # On Linux: After USB reset, always reopen the MIDI port to get a fresh handle.
+        # The persistent _monitor_task may have crashed or may hold a stale handle from
+        # the disconnected device. The observer (5s interval) may not have updated it yet.
+        if platform.system() != 'Windows':
+            logger.debug('Reopening MIDI port after USB reset to ensure fresh handle...')
+            await self._reopen_midi_port()
+            if self._midi_input is None:
+                logger.error('Failed to reopen MIDI port after USB reset - aborting recording')
+                return
+
         logger.info('Start recording MIDI messages')
         self._recording = True
         self._paused = False
@@ -259,7 +301,7 @@ class PianoRecorder:
         self._start_time = time.time()
         self._pause_start_time = None
         self._total_pause_duration = 0
-        # Monitor task is already running (started in set_midi_in_port)
+        # Monitor task is already running (started in set_midi_in_port or _reopen_midi_port)
 
     def pause_recording(self):
         '''Pauses the recording.'''
