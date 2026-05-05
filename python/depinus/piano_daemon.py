@@ -6,6 +6,7 @@ import asyncio
 import base64
 import mido
 import io
+import platform
 import requests
 
 from depinus import logger
@@ -94,6 +95,11 @@ class PianoDaemon:
             self._piano_recorder.register_for_midi_messages(self._on_recording_midi_message)
             self._piano_recorder.register_for_live_midi_messages(self._on_live_midi_message)
 
+            # Trigger a startup USB MIDI reset (Linux only) after the observer has had time
+            # to detect the initial MIDI ports. This ensures a clean ALSA state from the
+            # beginning, fixing timing issues (e.g. delayed circle-of-fifths display).
+            self._background_tasks.add(asyncio.create_task(self._perform_startup_reset()))
+
             logger.info('Entering main loop...')
             self._mainloop = asyncio.Future()
             await self._mainloop
@@ -102,6 +108,32 @@ class PianoDaemon:
 
         except Exception:
             logger.exception("Piano daemon aborted unexpectedly.")
+
+
+    async def _perform_startup_reset(self):
+        '''Performs a USB MIDI reset at startup (Linux only).
+        Waits for the MidiInterfaceObserver to complete its first port detection
+        before triggering the reset, then reopens both MIDI in and out ports.
+        '''
+        if platform.system() == 'Windows':
+            return
+
+        # Give the MidiInterfaceObserver time to do its first poll and set up ports
+        logger.debug('Startup reset: waiting for initial MIDI port detection...')
+        await asyncio.sleep(2.0)
+
+        if not self._midi_in_ports_selected:
+            logger.debug('Startup reset: no MIDI input port available, skipping')
+            return
+
+        await self._piano_recorder.perform_startup_reset()
+
+        # Reopen the output port so the player has a fresh handle after the reset
+        if self._midi_out_ports_selected:
+            logger.debug('Startup reset: reopening MIDI output port...')
+            await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
+
+        logger.info('Startup USB MIDI reset complete - MIDI interfaces ready.')
 
 
     async def _on_control_command(self, cmd):
@@ -478,6 +510,12 @@ class PianoDaemon:
             'infoType': 'playState',
             'isWaiting': is_waiting
         })
+        # On Linux the USB reset invalidates the MIDI output handle in PianoPlayer.
+        # The MidiInterfaceObserver may not detect the brief disconnect (5s interval),
+        # so we proactively reopen the output port once the reset is complete.
+        if not is_waiting and platform.system() != 'Windows' and self._midi_out_ports_selected:
+            logger.debug('Reopening MIDI output port after USB reset...')
+            await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
 
     async def _on_recording_midi_message(self, midi_event_base64):
         '''Callback for MIDI messages during recording - send raw MIDI bytes (base64).'''

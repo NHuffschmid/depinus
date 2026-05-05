@@ -228,6 +228,55 @@ class PianoRecorder:
         # Device didn't disappear, no reset needed
         return True
 
+    async def perform_startup_reset(self):
+        '''Triggers a USB MIDI reset at startup (Linux only) to ensure clean ALSA state from
+        the beginning. Unlike the pre-recording reset, this runs silently without waiting
+        state callbacks.
+        '''
+        if platform.system() == 'Windows':
+            return
+
+        if not self._midi_in_port:
+            logger.debug('Startup reset: no MIDI input port configured, skipping')
+            return
+
+        logger.info('Performing startup USB MIDI reset...')
+        saved_port_name = self._midi_in_port
+        self._trigger_usb_reset()
+
+        # Phase 1: Wait for device to disappear
+        max_wait_disappear = 2
+        wait_increment = 0.1
+        waited = 0
+        while waited < max_wait_disappear:
+            await asyncio.sleep(wait_increment)
+            waited += wait_increment
+            if self._midi_in_port is None:
+                logger.info(f'Startup reset: USB MIDI device disappeared after {waited:.1f}s')
+                break
+        else:
+            logger.debug('Startup reset: device did not disappear (daemon not running?)')
+            await asyncio.sleep(0.2)
+            await self._reopen_midi_port()
+            return
+
+        # Phase 2: Wait for device to come back
+        if self._midi_in_port is None:
+            max_wait_reappear = 8
+            waited = 0
+            while waited < max_wait_reappear:
+                await asyncio.sleep(wait_increment)
+                waited += wait_increment
+                if self._midi_in_port == saved_port_name:
+                    logger.info(f'Startup reset: USB MIDI device re-enumerated after {waited:.1f}s')
+                    break
+            else:
+                logger.error(f'Startup reset: port "{saved_port_name}" did not re-enumerate after {max_wait_reappear}s')
+                return
+
+        await self._reopen_midi_port()
+        logger.info('Startup USB MIDI reset complete.')
+
     async def _reopen_midi_port(self):
         '''Closes and reopens the MIDI input port and restarts the monitor task.
         Used after USB reset to ensure a fresh, valid port handle.
@@ -270,29 +319,22 @@ class PianoRecorder:
             logger.error('No MIDI input port selected for recording')
             return
 
-        # Save the port name before USB reset (it will be cleared during reset)
-        saved_port_name = self._midi_in_port
-
-        # Wait for USB reset to complete
-        if not await self._wait_for_usb_reset_complete(saved_port_name):
-            # Notify about waiting state ending
-            for callback in self._waiting_callbacks:
-                await callback(False)
-            return
-
-        # Notify about waiting state ending
-        for callback in self._waiting_callbacks:
-            await callback(False)
-
-        # On Linux: After USB reset, always reopen the MIDI port to get a fresh handle.
-        # The persistent _monitor_task may have crashed or may hold a stale handle from
-        # the disconnected device. The observer (5s interval) may not have updated it yet.
-        if platform.system() != 'Windows':
-            logger.debug('Reopening MIDI port after USB reset to ensure fresh handle...')
-            await self._reopen_midi_port()
-            if self._midi_input is None:
-                logger.error('Failed to reopen MIDI port after USB reset - aborting recording')
-                return
+        # NOTE: Pre-recording USB reset is currently disabled for testing.
+        # Only the startup reset (in PianoDaemon._perform_startup_reset) is active.
+        # Re-enable this block if timing issues reoccur after playback.
+        #
+        # saved_port_name = self._midi_in_port
+        # if not await self._wait_for_usb_reset_complete(saved_port_name):
+        #     for callback in self._waiting_callbacks:
+        #         await callback(False)
+        #     return
+        # for callback in self._waiting_callbacks:
+        #     await callback(False)
+        # if platform.system() != 'Windows':
+        #     await self._reopen_midi_port()
+        #     if self._midi_input is None:
+        #         logger.error('Failed to reopen MIDI port after USB reset - aborting recording')
+        #         return
 
         logger.info('Start recording MIDI messages')
         self._recording = True
