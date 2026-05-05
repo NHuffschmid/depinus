@@ -139,7 +139,12 @@ class PianoRecorder:
         self._live_midi_callbacks.add(callback)
 
     def _trigger_usb_reset(self):
-        '''Triggers the USB MIDI reset daemon (Linux only, silently ignored on Windows).'''
+        '''Triggers the USB MIDI reset daemon (Linux only).
+        
+        Returns:
+            True if the reset was successfully sent to the daemon, False if the daemon
+            is not available (not installed or disabled).
+        '''
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1.0)
@@ -148,11 +153,14 @@ class PianoRecorder:
             sock.shutdown(socket.SHUT_WR)  # Signal end of send, allow server to read
             sock.close()
             logger.info('USB MIDI reset triggered successfully')
+            return True
         except (ConnectionRefusedError, TimeoutError, OSError):
             # Daemon not running (Windows or disabled on Linux) - this is OK
             logger.debug('USB reset daemon not available (expected on Windows or when disabled)')
+            return False
         except Exception as e:
             logger.error(f'Error triggering USB reset: {e}')
+            return False
 
     async def perform_startup_reset(self):
         '''Triggers a USB MIDI reset at startup (Linux only) to ensure clean ALSA state from
@@ -168,7 +176,9 @@ class PianoRecorder:
 
         logger.info('Performing startup USB MIDI reset...')
         saved_port_name = self._midi_in_port
-        self._trigger_usb_reset()
+        if not self._trigger_usb_reset():
+            logger.debug('Startup reset: daemon not available, skipping')
+            return
 
         # Phase 1: Wait for device to disappear
         max_wait_disappear = 2
