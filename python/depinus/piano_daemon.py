@@ -91,7 +91,6 @@ class PianoDaemon:
             self._piano_player.register_for_play_end(self._on_play_end)
 
             self._piano_recorder.register_for_recording_end(self._on_recording_end)
-            self._piano_recorder.register_for_waiting_state(self._on_recording_waiting_state)
             self._piano_recorder.register_for_midi_messages(self._on_recording_midi_message)
             self._piano_recorder.register_for_live_midi_messages(self._on_live_midi_message)
 
@@ -503,19 +502,6 @@ class PianoDaemon:
         '''Callback for live MIDI input messages - forwards to UI for keyboard visualization.'''
         await self._websocket_server.send_keyboard_message(mido_message)
 
-
-    async def _on_recording_waiting_state(self, is_waiting):
-        '''Callback when recording preparation state changes.'''
-        await self._websocket_server.send_info_message({
-            'infoType': 'playState',
-            'isWaiting': is_waiting
-        })
-        # On Linux the USB reset invalidates the MIDI output handle in PianoPlayer.
-        # The MidiInterfaceObserver may not detect the brief disconnect (5s interval),
-        # so we proactively reopen the output port once the reset is complete.
-        if not is_waiting and platform.system() != 'Windows' and self._midi_out_ports_selected:
-            logger.debug('Reopening MIDI output port after USB reset...')
-            await self._piano_player.set_midi_out_port(self._midi_out_ports_selected)
 
     async def _on_recording_midi_message(self, midi_event_base64):
         '''Callback for MIDI messages during recording - send raw MIDI bytes (base64).'''
