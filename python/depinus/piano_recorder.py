@@ -180,35 +180,36 @@ class PianoRecorder:
             logger.debug('Startup reset: daemon not available, skipping')
             return
 
-        # Phase 1: Wait for device to disappear
-        max_wait_disappear = 2
-        wait_increment = 0.1
+        # Poll mido.get_input_names() directly - do NOT rely on self._midi_in_port, which
+        # is only updated by the MidiInterfaceObserver every 5 seconds and would never
+        # change within the short wait windows below.
+
+        # Phase 1: Wait for device to disappear from the OS (up to 6s)
+        max_wait_disappear = 6
+        wait_increment = 0.2
         waited = 0
         while waited < max_wait_disappear:
             await asyncio.sleep(wait_increment)
             waited += wait_increment
-            if self._midi_in_port is None:
+            if saved_port_name not in mido.get_input_names():
                 logger.info(f'Startup reset: USB MIDI device disappeared after {waited:.1f}s')
                 break
         else:
-            logger.debug('Startup reset: device did not disappear (daemon not running?)')
-            await asyncio.sleep(0.2)
-            await self._reopen_midi_port()
+            logger.debug('Startup reset: device did not disappear within timeout')
             return
 
-        # Phase 2: Wait for device to come back
-        if self._midi_in_port is None:
-            max_wait_reappear = 8
-            waited = 0
-            while waited < max_wait_reappear:
-                await asyncio.sleep(wait_increment)
-                waited += wait_increment
-                if self._midi_in_port == saved_port_name:
-                    logger.info(f'Startup reset: USB MIDI device re-enumerated after {waited:.1f}s')
-                    break
-            else:
-                logger.error(f'Startup reset: port "{saved_port_name}" did not re-enumerate after {max_wait_reappear}s')
-                return
+        # Phase 2: Wait for device to re-enumerate (up to 10s)
+        max_wait_reappear = 10
+        waited = 0
+        while waited < max_wait_reappear:
+            await asyncio.sleep(wait_increment)
+            waited += wait_increment
+            if saved_port_name in mido.get_input_names():
+                logger.info(f'Startup reset: USB MIDI device re-enumerated after {waited:.1f}s')
+                break
+        else:
+            logger.error(f'Startup reset: port "{saved_port_name}" did not re-enumerate after {max_wait_reappear}s')
+            return
 
         await self._reopen_midi_port()
         logger.info('Startup USB MIDI reset complete.')
