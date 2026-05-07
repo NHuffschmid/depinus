@@ -13,13 +13,13 @@ const ColorSelector: React.FC = () => {
 	const [skrjabinMode, setSkrjabinMode] = useState<boolean>(cookies.skrjabinMode === 'true');
 
 	const selectColor = (color: ColorResult) => {
-		setCookie('color', color.hex, { path: '/' });
+		setCookie('color', color.hex, { path: '/', maxAge: 31536000 });
 		setBlockPickerColor(color.hex);
 	}
 
 	const handleSkrjabinModeChange = (checked: boolean) => {
 		setSkrjabinMode(checked);
-		setCookie('skrjabinMode', String(checked), { path: '/' });
+		setCookie('skrjabinMode', String(checked), { path: '/', maxAge: 31536000 });
 	}
 
 	return (
