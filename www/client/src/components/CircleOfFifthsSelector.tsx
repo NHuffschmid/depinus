@@ -9,7 +9,7 @@ const CircleOfFifthsSelector: React.FC = () => {
 	const [cookies, setCookie] = useCookies(['circleOfFifths']);
 
 	const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-		setCookie('circleOfFifths', e.target.value as CircleOfFifthsMode, { path: '/' });
+		setCookie('circleOfFifths', e.target.value as CircleOfFifthsMode, { path: '/', maxAge: 31536000 });
 	};
 
 	return (

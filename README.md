@@ -60,16 +60,15 @@ If you wish to run the frontend server on port 80, the procedure depends on your
 
 ### Recording on Linux
 
-On Linux systems using ALSA with USB MIDI devices, MIDI recording may experience strange timing issues. This is probably caused by a kernel-level state corruption in ALSA's bidirectional MIDI port handling, where the playback operation leaves the MIDI device in an inconsistent state.
+On Linux systems using ALSA with USB MIDI devices, MIDI recording may experience strange timing issues. This is probably caused by a kernel-level state corruption in ALSA's bidirectional MIDI port handling, where the startup procedure leaves the MIDI device in an inconsistent state.
 
 **Symptoms:**
 - MIDI events arrive with significant delays (100-400ms)
 - Recording timing is accurate again after plugging off/in the MIDI USB device
-- Problem reoccurs after playing MIDI files
 
 **Workaround:**
 
-DEPINUS includes an optional USB MIDI Reset Daemon that automatically resets the USB MIDI device before each recording session. To enable this feature:
+DEPINUS includes an optional USB MIDI Reset Daemon that automatically resets the USB MIDI device once at startup to ensure a clean ALSA state. To enable this feature:
 
 1. Navigate to the resources folder in your DEPINUS installation
 2. Run the following command with administrator privileges:
@@ -78,7 +77,7 @@ DEPINUS includes an optional USB MIDI Reset Daemon that automatically resets the
    sudo ./midi_usb_reset enable
    ```
 
-The daemon will now start automatically on each system boot and reset the USB MIDI device before each recording, ensuring accurate timing.
+The daemon will now start automatically on each system boot. DEPINUS triggers a single reset shortly after startup, ensuring accurate timing for all subsequent playback and recording sessions.
 
 To disable the daemon:
 

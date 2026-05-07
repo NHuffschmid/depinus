@@ -10,7 +10,7 @@ const KeyLabelToggle: React.FC = () => {
 
     const handleChange = (checked: boolean) => {
         setEnabled(checked);
-        setCookie('keyLabels', String(checked), { path: '/' });
+        setCookie('keyLabels', String(checked), { path: '/', maxAge: 31536000 });
     };
 
     return (
