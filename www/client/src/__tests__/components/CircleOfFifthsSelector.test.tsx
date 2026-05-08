@@ -58,13 +58,13 @@ describe('CircleOfFifthsSelector', () => {
         const { getByRole } = render(<CircleOfFifthsSelector />);
         const select = getByRole('combobox');
         fireEvent.change(select, { target: { value: 'never' } });
-        expect(mockSetCookie).toHaveBeenCalledWith('circleOfFifths', 'never', { path: '/' });
+        expect(mockSetCookie).toHaveBeenCalledWith('circleOfFifths', 'never', { path: '/', maxAge: 31536000 });
     });
 
     it('calls setCookie with "always" when that option is selected', () => {
         const { getByRole } = render(<CircleOfFifthsSelector />);
         const select = getByRole('combobox');
         fireEvent.change(select, { target: { value: 'always' } });
-        expect(mockSetCookie).toHaveBeenCalledWith('circleOfFifths', 'always', { path: '/' });
+        expect(mockSetCookie).toHaveBeenCalledWith('circleOfFifths', 'always', { path: '/', maxAge: 31536000 });
     });
 });
