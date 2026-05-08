@@ -47,7 +47,7 @@ describe('KeyLabelToggle', () => {
         const { getByRole } = render(<KeyLabelToggle />);
         fireEvent.click(getByRole('switch'));
 
-        expect(mockSetCookie).toHaveBeenCalledWith('keyLabels', 'true', { path: '/' });
+        expect(mockSetCookie).toHaveBeenCalledWith('keyLabels', 'true', { path: '/', maxAge: 31536000 });
     });
 
     it('sets keyLabels cookie to "false" when toggled off', () => {
@@ -56,6 +56,6 @@ describe('KeyLabelToggle', () => {
         const { getByRole } = render(<KeyLabelToggle />);
         fireEvent.click(getByRole('switch'));
 
-        expect(mockSetCookie).toHaveBeenCalledWith('keyLabels', 'false', { path: '/' });
+        expect(mockSetCookie).toHaveBeenCalledWith('keyLabels', 'false', { path: '/', maxAge: 31536000 });
     });
 });
