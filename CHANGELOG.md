@@ -2,7 +2,8 @@
 
 ## [0.9.x] - John Cage
 
-...
+### Tech stuff
+- Relocated CircleOfFifths component to submodule
 
 
 ## [0.9.7] - Haydn
