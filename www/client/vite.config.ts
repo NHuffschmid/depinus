@@ -14,6 +14,7 @@ export default defineConfig({
     open: false
   },
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       'react-piano-keyboard': path.resolve(__dirname, 'src/components/react-piano-keyboard/src/index.ts'),
     },
