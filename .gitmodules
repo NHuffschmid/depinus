@@ -4,3 +4,6 @@
 [submodule "www/client/src/modules/midi2musicxml"]
 	path = www/client/src/modules/midi2musicxml
 	url = https://github.com/NHuffschmid/midi2musicxml.git
+[submodule "www/client/src/components/react-circle-of-fifths"]
+	path = www/client/src/components/react-circle-of-fifths
+	url = https://github.com/NHuffschmid/react-circle-of-fifths.git
