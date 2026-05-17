@@ -18,6 +18,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
+    "baseUrl": ".",
     "paths": {
       "react-piano-keyboard": ["./src/components/react-piano-keyboard/src/index.ts"]
     }
