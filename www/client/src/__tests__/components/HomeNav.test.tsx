@@ -21,11 +21,6 @@ vi.mock('../../components/archive/ImportArchiveDialog', () => ({
         open ? <div data-testid="import-dialog" /> : null,
 }));
 
-vi.mock('../../components/react-piano-keyboard/src', () => ({
-    IVORY_REALISTIC_CLASS: 'ivory',
-    EBONY_REALISTIC_CLASS: 'ebony',
-}));
-
 import HomeNav from '../../components/HomeNav';
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
